@@ -27,4 +27,6 @@ paths:
 - **Scope locators to a section** (`section#contact`): Next.js injects its own `role="alert"`.
 - **Accessibility:** `e2e/a11y.spec.ts` runs axe (WCAG 2.1 AA) on every page. Toptal's badge
   (`#r`) is excluded as third-party markup.
-- **A test that passes before the change exists** is a finding about the test.
+- **A test that passes before the change exists** is a finding about the test. A red run counts
+  only when the message shows the failure under test: on 2026-09-24 a "red" 429 check was a 500
+  from a stale server.
