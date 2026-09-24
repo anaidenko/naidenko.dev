@@ -100,6 +100,7 @@ async function respond(request: Request, deps: ContactDeps, host: string): Promi
     const subject = singleLine(`[naidenko.dev] New message from ${name}${company ? ` (${company})` : ""}`).slice(0, SUBJECT_MAX);
     const text = [`Name: ${name}`, `Email: ${email}`, `Company or website: ${company || "—"}`, "", message].join("\n");
 
+    let emailError: unknown = null;
     try {
         await deps.sendEmail({
             to: deps.to,
@@ -109,16 +110,14 @@ async function respond(request: Request, deps: ContactDeps, host: string): Promi
             text
         });
     } catch (error) {
+        emailError = error;
         console.error("contact: send failed", error);
-        // Slack is the fallback inbox: once the message lands there, the visitor has reached Andrii.
-        const forwarded = await deps.alert(
-            [
-                `:warning: *Contact form on ${host}: the email did not go out* (${escapeSlack(describe(error))}). The message is below; reply to the sender by email.`,
-                "",
-                escapeSlack(text)
-            ].join("\n")
-        );
-        return forwarded ? json({ ok: true }) : json({ ok: false, error: "send" }, 502);
     }
-    return json({ ok: true });
+    // Slack gets every message: a copy in case the email lands in spam, and the only copy when it failed.
+    const heading =
+        emailError === null
+            ? `:envelope_with_arrow: *New message on ${host}*`
+            : `:warning: *Contact form on ${host}: the email did not go out* (${escapeSlack(describe(emailError))}). Reply to the sender by email.`;
+    const posted = await deps.alert([heading, "", escapeSlack(text)].join("\n"));
+    return emailError === null || posted ? json({ ok: true }) : json({ ok: false, error: "send" }, 502);
 }

@@ -28,13 +28,13 @@ export const privacy = {
         {
             title: "How long it is kept",
             paragraphs: [
-                "Your message stays in my mailbox, or in Slack if it was forwarded there, for up to twelve months after our last exchange. If we start working together, it is kept for as long as the work and its records require."
+                "Your message stays in my mailbox and in Slack for up to twelve months after our last exchange. If we start working together, it is kept for as long as the work and its records require."
             ]
         },
         {
             title: "Who else handles it",
             paragraphs: [
-                "Cloudflare hosts the site, runs Turnstile and delivers the form’s email to my inbox, where my email provider stores it. If that email cannot be delivered, the form forwards your message to my private Slack workspace instead, so it is not lost, and Slack stores it. The Toptal badge on the page loads a typeface from Adobe Fonts (use.typekit.net), which receives your IP address. GoatCounter counts visits for me, as described below. Nothing is sold or shared for advertising."
+                "Cloudflare hosts the site, runs Turnstile and delivers the form’s email to my inbox, where my email provider stores it. The form also posts your message to my private Slack workspace, so it reaches me even if the email does not, and Slack stores it. The Toptal badge on the page loads a typeface from Adobe Fonts (use.typekit.net), which receives your IP address. GoatCounter counts visits for me, as described below. Nothing is sold or shared for advertising."
             ]
         },
         {

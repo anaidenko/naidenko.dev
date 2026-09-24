@@ -49,7 +49,7 @@ reach `challenges.cloudflare.com` for Turnstile's test keys. Google Analytics is
 | `NEXT_PUBLIC_GOATCOUNTER_URL` | build: `.env.production.local` | GoatCounter's count endpoint, `https://CODE.goatcounter.com/count`. |
 | `TURNSTILE_SECRET_KEY` | Worker secret | Verifies Turnstile tokens. |
 | `CONTACT_TO` | Worker secret | The inbox that receives the form: a verified Email Routing destination. |
-| `SLACK_WEBHOOK_URL` | Worker secret | A Slack incoming webhook for form alerts. When the email fails, the message itself goes there, so it is not lost. |
+| `SLACK_WEBHOOK_URL` | Worker secret | A Slack incoming webhook: a copy of every message, and alerts when something fails. |
 | `STATS_PASSWORD` | Worker secret | The password for `/stats`. Without it the page does not exist. |
 | `STATS_DB` | `wrangler.jsonc` | The D1 database `naidenko-stats`, created with `wrangler d1 create`. Its schema is in `worker/migrations/`. |
 | `CONTACT_FROM` | `wrangler.jsonc` | The sender address, on the site's domain. |
@@ -98,9 +98,9 @@ cost.
 
 ## Alerts
 
-The Worker posts to Slack through `SLACK_WEBHOOK_URL` when:
-- the email does not go out: the alert carries the message itself, and the visitor is told it
-  went through;
+The Worker posts to Slack through `SLACK_WEBHOOK_URL`:
+- a copy of every message, in case the email lands in spam. When the email does not go out,
+  the post says so, and the visitor is still told the message went through;
 - Turnstile refuses the site's own check: a wrong secret, or siteverify out of reach;
 - anything else fails unexpectedly.
 

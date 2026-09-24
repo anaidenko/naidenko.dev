@@ -105,6 +105,23 @@ describe("handleContact", () => {
         expect(sent[0].text).toContain("We need an iOS and Android app for our field crews.");
     });
 
+    it("posts a copy of every message to Slack, in case the email lands in spam", async () => {
+        const alert = vi.fn(async (_text: string) => true);
+        const { deps } = setup({ alert });
+        expect((await handleContact(post(valid), deps)).status).toBe(200);
+        expect(alert).toHaveBeenCalledTimes(1);
+        const text = alert.mock.calls[0][0];
+        expect(text).toContain("New message on naidenko.dev");
+        for (const part of [valid.name, valid.email, valid.company, valid.message]) expect(text).toContain(part);
+        expect(text).not.toContain("did not go out");
+    });
+
+    it("still reports success when the email goes out but Slack is down", async () => {
+        const { deps, sent } = setup({ alert: vi.fn(async () => false) });
+        expect((await handleContact(post(valid), deps)).status).toBe(200);
+        expect(sent).toHaveLength(1);
+    });
+
     it("keeps the subject on one line and at most 120 characters", async () => {
         const { deps, sent } = setup();
         await handleContact(post({ ...valid, name: "A".repeat(100), company: `Acme\r\nBcc: x@example.com ${"B".repeat(150)}` }), deps);
