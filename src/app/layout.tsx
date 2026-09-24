@@ -34,7 +34,14 @@ export const metadata: Metadata = {
         images: [ogImage]
     },
     twitter: { card: "summary_large_image", title, description: site.description, images: [ogImage] },
-    icons: { icon: [{ url: "/icon.svg", type: "image/svg+xml" }], apple: "/apple-touch-icon.png" }
+    // The .ico comes first and is sized 32x32, not "any", so browsers that read SVG still pick the SVG.
+    icons: {
+        icon: [
+            { url: "/favicon.ico", sizes: "32x32" },
+            { url: "/icon.svg", type: "image/svg+xml" }
+        ],
+        apple: "/apple-touch-icon.png"
+    }
 };
 
 export const viewport: Viewport = { themeColor: "#0b0c0e", colorScheme: "dark" };

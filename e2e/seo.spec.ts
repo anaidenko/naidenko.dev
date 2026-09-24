@@ -74,6 +74,11 @@ test("publishes structured data about the person", async ({ page }) => {
     expect(await page.locator('link[rel="alternate"][type="text/markdown"]').getAttribute("href")).toBe(`${SITE}/index.md`);
 });
 
+test("names the person in the portrait's alt text, for image search", async ({ page }) => {
+    await page.goto("/");
+    await expect(page.locator("header img").first()).toHaveAttribute("alt", "Andrii Naidenko");
+});
+
 test("offers an icon for iOS home screens", async ({ page, request }) => {
     await page.goto("/");
     const href = await page.locator('link[rel="apple-touch-icon"]').getAttribute("href");
@@ -85,9 +90,17 @@ test("offers an icon for iOS home screens", async ({ page, request }) => {
 
 test("links the favicon", async ({ page, request }) => {
     await page.goto("/");
-    const href = await page.locator('link[rel="icon"]').first().getAttribute("href");
+    const href = await page.locator('link[rel="icon"][type="image/svg+xml"]').getAttribute("href");
     expect(href).toBeTruthy();
     const response = await request.get(href!);
     expect(response.status()).toBe(200);
     expect(response.headers()["content-type"]).toBe("image/svg+xml");
+});
+
+test("serves /favicon.ico for clients that ask for it without reading the page", async ({ page, request }) => {
+    const response = await request.get("/favicon.ico");
+    expect(response.status()).toBe(200);
+    expect(response.headers()["content-type"]).toMatch(/^image\/(x-icon|vnd\.microsoft\.icon)$/);
+    await page.goto("/");
+    await expect(page.locator('link[rel="icon"][href="/favicon.ico"]')).toHaveAttribute("sizes", "32x32");
 });

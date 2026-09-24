@@ -12,7 +12,7 @@ export function Header() {
         <header className="lg:sticky lg:top-0 lg:max-h-screen lg:w-[44%] lg:[scrollbar-width:none] lg:overflow-y-auto lg:py-20 lg:short:py-12">
             <Image
                 src={site.photo.src}
-                alt=""
+                alt={site.photo.alt}
                 width={160}
                 height={160}
                 loading="eager"

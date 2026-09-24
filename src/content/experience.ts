@@ -71,17 +71,14 @@ export const fullResume = {
     url: site.links.toptalReferral
 };
 
-/**
- * Before 2019, condensed from the same live Toptal profile (public page saved 2026-09-16). The
- * Inovo Studios and OnCue Technology line is the client's own verdict, kept as given.
- */
+/** Before 2019, condensed from the same live Toptal profile (public page saved 2026-09-16). */
 export const earlierExperience: readonly ExperienceEntry[] = [
     {
         period: "2014 — 2019",
         role: "Senior Full-stack Developer",
         company: "Freelance clients",
         summary:
-            "Built a blockchain-based content-licensing marketplace, a social-media marketing platform for franchise organizations, and the web and mobile apps of Sellr, a retail platform. A cloud task tracker I built for project coordination revolutionized Inovo Studios and OnCue Technology’s workflows and became one of the year’s highlights for the client. Top-rated, with a 100% job-success score.",
+            "Built a blockchain-based content-licensing marketplace, a social-media marketing platform for franchise organizations, and the web and mobile apps of Sellr, a retail platform. Also built a cloud task tracker for Inovo Studios and OnCue Technology to coordinate projects and plan sprints, which the client called one of the year’s highlights. Top-rated, with a 100% job-success score.",
         chips: ["Node.js", "AngularJS", "Ionic", "AWS", "Docker", "RabbitMQ", "PostgreSQL", "Redis"]
     },
     {
