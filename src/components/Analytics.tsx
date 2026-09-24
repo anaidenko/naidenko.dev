@@ -1,21 +1,13 @@
 "use client";
 
 import Script from "next/script";
-import { useEffect, useSyncExternalStore } from "react";
+import { useEffect } from "react";
 
-import { GA_MEASUREMENT_ID, eventFor, getConsent, setConsent, subscribeConsent, track } from "@/lib/analytics";
-
-import { ConsentBanner } from "./ConsentBanner";
-
-/** Before hydration the stored choice is unknown, so nothing renders (no banner flash for returning visitors). */
-const PENDING = "pending";
-const pending = () => PENDING;
+import { GOATCOUNTER_URL, eventFor, track, trackView } from "@/lib/analytics";
 
 export function Analytics() {
-    const consent = useSyncExternalStore(subscribeConsent, getConsent, pending);
-
     useEffect(() => {
-        if (!GA_MEASUREMENT_ID) return;
+        trackView();
         // Capture phase, so a click is recorded before a link takes the visitor away.
         const onClick = (event: MouseEvent) => {
             const found = eventFor(event.target);
@@ -25,20 +17,6 @@ export function Analytics() {
         return () => document.removeEventListener("click", onClick, true);
     }, []);
 
-    if (!GA_MEASUREMENT_ID || consent === PENDING || consent === "denied") return null;
-    if (consent === null) return <ConsentBanner onChoose={setConsent} />;
-    return (
-        <>
-            <Script id="ga-init" strategy="afterInteractive">
-                {`window.dataLayer = window.dataLayer || [];
-function gtag(){dataLayer.push(arguments);}
-window.gtag = gtag;
-gtag("consent", "default", { ad_storage: "denied", ad_user_data: "denied", ad_personalization: "denied", analytics_storage: "denied" });
-gtag("consent", "update", { analytics_storage: "granted" });
-gtag("js", new Date());
-gtag("config", "${GA_MEASUREMENT_ID}");`}
-            </Script>
-            <Script src={`https://www.googletagmanager.com/gtag/js?id=${GA_MEASUREMENT_ID}`} strategy="afterInteractive" />
-        </>
-    );
+    if (!GOATCOUNTER_URL) return null;
+    return <Script data-goatcounter={GOATCOUNTER_URL} src="https://gc.zgo.at/count.js" strategy="afterInteractive" />;
 }

@@ -17,10 +17,9 @@ paths:
   Locally, a server already running on 8788 is reused.
 - **Projects:** `desktop` (1440×900) and `mobile` (Pixel 7). When a test skips one, give the
   reason.
-- **Analytics:**
-  - every test starts with analytics declined (`e2e/fixtures/consent-denied.json`), so the banner
-    never covers a click;
-  - `e2e/analytics.spec.ts` starts fresh and stubs gtag.js.
+- **Analytics:** `e2e/analytics.spec.ts` stubs GoatCounter's count.js and watches the page's
+  requests to `/api/hit`. The site's own counter writes to the local D1; the web server applies
+  its migrations before `wrangler dev` starts.
 - **Turnstile** uses Cloudflare's public test keys and needs network access. The email is only
   logged.
 - **Scope locators to a section** (`section#contact`): Next.js injects its own `role="alert"`.

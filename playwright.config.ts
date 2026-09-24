@@ -11,14 +11,13 @@ export default defineConfig({
     forbidOnly: !!process.env.CI,
     retries: process.env.CI ? 1 : 0,
     reporter: [["list"]],
-    // Analytics declined by default, so the consent banner stays out of the other tests.
-    use: { baseURL: BASE_URL, trace: "retain-on-failure", storageState: "e2e/fixtures/consent-denied.json" },
+    use: { baseURL: BASE_URL, trace: "retain-on-failure" },
     projects: [
         { name: "desktop", use: { ...devices["Desktop Chrome"], channel: CHANNEL, viewport: { width: 1440, height: 900 } } },
         { name: "mobile", use: { ...devices["Pixel 7"], channel: CHANNEL } }
     ],
     webServer: {
-        command: `[ -f .dev.vars ] || cp .dev.vars.example .dev.vars; pnpm exec wrangler dev --port ${PORT} --ip 127.0.0.1`,
+        command: `[ -f .dev.vars ] || cp .dev.vars.example .dev.vars; pnpm exec wrangler d1 migrations apply naidenko-stats --local && pnpm exec wrangler dev --port ${PORT} --ip 127.0.0.1`,
         url: BASE_URL,
         env: { WRANGLER_SEND_METRICS: "false" },
         reuseExistingServer: !process.env.CI,

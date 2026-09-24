@@ -1,88 +1,57 @@
 /**
- * Google Analytics 4 behind consent. Nothing from Google loads until the visitor allows it, as EU
- * rules require for analytics cookies, and advertising storage stays denied either way.
+ * Two counters, neither of which stores anything in the browser, so there is no consent banner:
+ * GoatCounter for its dashboard (six months of history on the free plan), and the site's own
+ * counter in its Worker (/api/hit into D1), which keeps the counts for good.
  */
-export const GA_MEASUREMENT_ID = process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID ?? "";
-export const CONSENT_KEY = "analytics-consent";
-const CONSENT_EVENT = "analytics-consent-change";
-
-export type Consent = "granted" | "denied";
-type ConsentStorage = Pick<Storage, "getItem" | "setItem" | "removeItem">;
+export const GOATCOUNTER_URL = process.env.NEXT_PUBLIC_GOATCOUNTER_URL ?? "";
+export const HIT_URL = "/api/hit";
 
 declare global {
     interface Window {
-        dataLayer?: unknown[];
-        gtag?: (...args: unknown[]) => void;
+        goatcounter?: { count?: (vars: { path: string; title?: string; event?: boolean }) => void };
     }
 }
 
-/** The visitor's stored choice; null when they have not chosen yet or storage is blocked. */
-export function readConsent(storage: Pick<Storage, "getItem"> | undefined): Consent | null {
+export interface Hit {
+    kind: "view" | "event";
+    name: string;
+    detail?: string;
+    referrer?: string;
+}
+
+/** An event's parameters as one short detail, such as "badge" or "contact-rate_limit". */
+export function detailOf(params: Record<string, string>): string {
+    return Object.values(params)
+        .filter(Boolean)
+        .join("-")
+        .replace(/[^\w.-]/g, "_")
+        .slice(0, 64);
+}
+
+/** GoatCounter's name for an event; it may not start with "/". */
+export function goatcounterPath(event: string, detail: string): string {
+    return detail ? `${event}-${detail}` : event;
+}
+
+function send(hit: Hit): void {
+    const body = JSON.stringify(hit);
     try {
-        const value = storage?.getItem(CONSENT_KEY);
-        return value === "granted" || value === "denied" ? value : null;
+        if (navigator.sendBeacon?.(HIT_URL, body)) return;
     } catch {
-        return null;
+        // Some browsers refuse beacons; fetch below still gets through.
     }
+    fetch(HIT_URL, { method: "POST", body, keepalive: true }).catch(() => {});
 }
 
-/** Stores the choice, or forgets it when given null. */
-export function saveConsent(storage: ConsentStorage | undefined, choice: Consent | null): void {
-    try {
-        if (choice) storage?.setItem(CONSENT_KEY, choice);
-        else storage?.removeItem(CONSENT_KEY);
-    } catch {
-        // Storage is blocked: the choice lasts for this page view only.
-    }
+export function trackView(): void {
+    send({ kind: "view", name: window.location.pathname, referrer: document.referrer });
 }
 
-/** Names of the Google Analytics cookies in a document.cookie string. */
-export function gaCookieNames(cookies: string): string[] {
-    return cookies
-        .split(";")
-        .map(part => part.split("=")[0].trim())
-        .filter(name => name === "_ga" || name.startsWith("_ga_"));
-}
-
-function browserStorage(): Storage | undefined {
-    try {
-        return window.localStorage;
-    } catch {
-        return undefined;
-    }
-}
-
-export function getConsent(): Consent | null {
-    return readConsent(browserStorage());
-}
-
-export function subscribeConsent(onChange: () => void): () => void {
-    window.addEventListener(CONSENT_EVENT, onChange);
-    window.addEventListener("storage", onChange);
-    return () => {
-        window.removeEventListener(CONSENT_EVENT, onChange);
-        window.removeEventListener("storage", onChange);
-    };
-}
-
-/** Records the choice (null opens the banner again). Anything but "granted" also clears Google's cookies. */
-export function setConsent(choice: Consent | null): void {
-    saveConsent(browserStorage(), choice);
-    // A no-op on the first grant (gtag is not loaded yet); needed when consent returns mid-visit.
-    if (choice === "granted") window.gtag?.("consent", "update", { analytics_storage: "granted" });
-    else {
-        window.gtag?.("consent", "update", { analytics_storage: "denied" });
-        for (const name of gaCookieNames(document.cookie)) {
-            document.cookie = `${name}=; Max-Age=0; path=/`;
-            document.cookie = `${name}=; Max-Age=0; path=/; domain=.${window.location.hostname}`;
-        }
-    }
-    window.dispatchEvent(new Event(CONSENT_EVENT));
-}
-
-/** Sends a GA4 event when the visitor has allowed analytics; otherwise does nothing. */
+/** Counts an event in both counters. */
 export function track(event: string, params: Record<string, string> = {}): void {
-    if (getConsent() === "granted") window.gtag?.("event", event, params);
+    const detail = detailOf(params);
+    send({ kind: "event", name: event, detail });
+    window.goatcounter?.count?.({ path: goatcounterPath(event, detail), event: true });
 }
 
 /**

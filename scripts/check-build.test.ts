@@ -11,7 +11,7 @@ function fixture(files: Record<string, string>) {
     const root = mkdtempSync(join(tmpdir(), "check-build-"));
     writeFileSync(
         join(root, "test.env"),
-        "NEXT_PUBLIC_TURNSTILE_SITE_KEY=1x00000000000000000000AA\nNEXT_PUBLIC_GA_MEASUREMENT_ID=G-TEST000000\n"
+        "NEXT_PUBLIC_TURNSTILE_SITE_KEY=1x00000000000000000000AA\nNEXT_PUBLIC_GOATCOUNTER_URL=https://e2e-test.goatcounter.invalid/count\n"
     );
     for (const [path, contents] of Object.entries(files)) {
         mkdirSync(join(root, "out", path, ".."), { recursive: true });
@@ -26,7 +26,10 @@ function run(root: string) {
 
 describe("check-build", () => {
     it("passes a build without test values", () => {
-        expect(run(fixture({ "index.html": "<p>site key 0x4AAAAAAA</p>", "_next/app.js": "gtag('config','G-REAL123')" })).status).toBe(0);
+        expect(
+            run(fixture({ "index.html": "<p>site key 0x4AAAAAAA</p>", "_next/app.js": "count('https://naidenko.goatcounter.com/count')" }))
+                .status
+        ).toBe(0);
     });
 
     it("fails and names the file that carries a test value", () => {

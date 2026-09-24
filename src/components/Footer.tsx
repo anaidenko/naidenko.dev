@@ -3,7 +3,6 @@ import Link from "next/link";
 import { site } from "@/content/site";
 import { ui } from "@/content/ui";
 
-import { CookieSettingsButton } from "./CookieSettingsButton";
 import { CurrentYear } from "./CurrentYear";
 
 export function Footer() {
@@ -14,7 +13,6 @@ export function Footer() {
                 <Link href="/privacy" className="font-medium text-ink hover:text-accent focus-visible:text-accent">
                     {ui.privacy}
                 </Link>
-                <CookieSettingsButton />
             </p>
         </footer>
     );

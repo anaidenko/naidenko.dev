@@ -8,7 +8,6 @@ export const ui = {
     copied: "Copied",
     copiedAnnouncement: "Copied to clipboard",
     privacy: "Privacy",
-    cookieSettings: "Cookie settings",
     notFoundTitle: "This page doesn’t exist.",
     notFoundLink: "Back to the home page"
 } as const;

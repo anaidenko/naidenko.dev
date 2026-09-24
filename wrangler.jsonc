@@ -9,12 +9,25 @@
         "directory": "./out",
         "binding": "ASSETS",
         "not_found_handling": "404-page",
-        // Only the API runs the Worker; every other request is a free static-asset request.
-        "run_worker_first": ["/api/*"]
+        // Only the API and the stats page run the Worker; every other request is a free static-asset request.
+        "run_worker_first": ["/api/*", "/stats"]
     },
     "send_email": [{ "name": "EMAIL" }],
     // Three messages a minute per visitor address, so nobody can flood the inbox.
-    "ratelimits": [{ "name": "CONTACT_RATE_LIMIT", "namespace_id": "1001", "simple": { "limit": 3, "period": 60 } }],
+    "ratelimits": [
+        { "name": "CONTACT_RATE_LIMIT", "namespace_id": "1001", "simple": { "limit": 3, "period": 60 } },
+        // Page views and clicks: generous for a person, a ceiling for a script.
+        { "name": "HIT_RATE_LIMIT", "namespace_id": "1002", "simple": { "limit": 60, "period": 60 } }
+    ],
+    // The visit counter: one row per day and combination, kept for good (worker/migrations).
+    "d1_databases": [
+        {
+            "binding": "STATS_DB",
+            "database_name": "naidenko-stats",
+            "database_id": "f84a6868-a9df-47ff-a820-464c0a43de0c",
+            "migrations_dir": "worker/migrations"
+        }
+    ],
     "vars": { "CONTACT_FROM": "form@naidenko.dev" },
     "observability": { "enabled": true }
 }

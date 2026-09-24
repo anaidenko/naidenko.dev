@@ -11,14 +11,3 @@ for (const path of ["/", "/privacy"]) {
         expect(results.violations.map(violation => `${violation.id}: ${violation.nodes.length}`)).toEqual([]);
     });
 }
-
-test.describe("with the consent banner showing", () => {
-    test.use({ storageState: { cookies: [], origins: [] } });
-
-    test("has no WCAG 2.1 AA violations", async ({ page }) => {
-        await page.goto("/");
-        await expect(page.getByRole("region", { name: "Cookie consent" })).toBeVisible();
-        const results = await new AxeBuilder({ page }).withTags(TAGS).exclude("#r").analyze();
-        expect(results.violations.map(violation => `${violation.id}: ${violation.nodes.length}`)).toEqual([]);
-    });
-});

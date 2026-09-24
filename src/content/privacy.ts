@@ -34,15 +34,16 @@ export const privacy = {
         {
             title: "Who else handles it",
             paragraphs: [
-                "Cloudflare hosts the site, runs Turnstile and delivers the form’s email to my inbox, where my email provider stores it. If that email cannot be delivered, the form forwards your message to my private Slack workspace instead, so it is not lost, and Slack stores it. The Toptal badge on the page loads a typeface from Adobe Fonts (use.typekit.net), which receives your IP address. If you allow analytics, Google receives the data described below. Nothing is sold or shared for advertising."
+                "Cloudflare hosts the site, runs Turnstile and delivers the form’s email to my inbox, where my email provider stores it. If that email cannot be delivered, the form forwards your message to my private Slack workspace instead, so it is not lost, and Slack stores it. The Toptal badge on the page loads a typeface from Adobe Fonts (use.typekit.net), which receives your IP address. GoatCounter counts visits for me, as described below. Nothing is sold or shared for advertising."
             ]
         },
         {
-            title: "Cookies and analytics",
+            title: "Visit counts, without cookies",
             paragraphs: [
-                "The site sets no cookies unless you allow analytics. It asks once, and remembers your answer in your browser’s local storage.",
-                "If you allow it, Google Analytics 4 counts page views and clicks on links and buttons, such as “Contact me” or the Toptal badge, along with your approximate location, device and browser. It sets two cookies, _ga and _ga_ followed by an ID, which last up to two years. Google Ireland Limited processes this data for me; Google Analytics 4 does not log or store IP addresses, and its advertising features stay off. Reports are kept for up to 14 months. The legal basis is your consent (GDPR Article 6(1)(a)).",
-                "You can change your answer at any time with “Cookie settings” at the bottom of the home page. Withdrawing it deletes the cookies."
+                "The site sets no cookies and stores nothing in your browser.",
+                "Its own counter, which runs on Cloudflare, adds one to daily totals: the page, the site you came from, your country, and whether you use a phone, a tablet or a computer. It counts clicks on buttons and links the same way, such as “Contact me” or the Toptal badge. It keeps no IP address and nothing that tells one visitor from another, so the totals are kept without a time limit.",
+                "GoatCounter (goatcounter.com, run from Ireland) counts the same page views and clicks for a dashboard. It stores only daily totals by page, referring site, browser, operating system, country, language and screen width, and it does not store your IP address. Its free plan keeps these totals for six months.",
+                "The legal basis is my legitimate interest in knowing how the site is used (GDPR Article 6(1)(f)), limited to counts that do not identify you."
             ]
         },
         {
