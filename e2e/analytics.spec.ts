@@ -109,3 +109,21 @@ test("keeps the counts in the database and shows them only with the password", a
     expect(allTimeViews(html)).toBeGreaterThan(before);
     expect(html).toContain("linkedin.com");
 });
+
+test("drops hits over the limit without an error in the visitor's console", async ({ page }) => {
+    const errors: string[] = [];
+    page.on("console", message => {
+        if (message.type() === "error") errors.push(message.text());
+    });
+    const address = `198.51.100.${Math.floor(Math.random() * 250) + 1}`;
+    await page.route("**/api/hit", route => route.continue({ headers: { ...route.request().headers(), "cf-connecting-ip": address } }));
+    await page.goto("/");
+    await page.evaluate(async () => {
+        for (let i = 0; i < 61; i++)
+            await fetch("/api/hit", { method: "POST", body: JSON.stringify({ kind: "event", name: "limit_probe" }) });
+    });
+    await page.reload();
+    await page.getByRole("link", { name: "Contact me" }).click();
+    await page.waitForTimeout(500);
+    expect(errors).toEqual([]);
+});

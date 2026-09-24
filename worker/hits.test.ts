@@ -86,10 +86,10 @@ describe("handleHit", () => {
         expect(rows).toHaveLength(0);
     });
 
-    it("limits hits per visitor address", async () => {
+    it("drops hits over the per-address limit without an error status", async () => {
         const { deps, rows } = setup({ rateLimit: vi.fn(async () => false) });
         const res = await handleHit(hit({ kind: "view", name: "/" }, { "CF-Connecting-IP": "203.0.113.7" }), deps);
-        expect(res.status).toBe(429);
+        expect(res.status).toBe(204);
         expect(deps.rateLimit).toHaveBeenCalledWith("hit:203.0.113.7");
         expect(rows).toHaveLength(0);
     });

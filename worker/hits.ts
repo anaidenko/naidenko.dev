@@ -54,7 +54,10 @@ function fromThisSite(origin: string | null, host: string): boolean {
 
 const empty = (status: number, headers: Record<string, string> = {}) => new Response(null, { status, headers });
 
-/** Counts a page view or a click. The visitor learns nothing from the answer, so it is always empty. */
+/**
+ * Counts a page view or a click. The page ignores the answer, so it is always empty, and an address
+ * over its limit is dropped silently: a 429 would only print an error in the visitor's console.
+ */
 export async function handleHit(request: Request, deps: HitDeps): Promise<Response> {
     if (request.method !== "POST") return empty(405, { Allow: "POST" });
     const url = new URL(request.url);
@@ -62,7 +65,7 @@ export async function handleHit(request: Request, deps: HitDeps): Promise<Respon
     const userAgent = request.headers.get("User-Agent") ?? "";
     if (userAgent === "" || BOT.test(userAgent)) return empty(204);
     const ip = request.headers.get("CF-Connecting-IP");
-    if (ip && !(await deps.rateLimit(`hit:${ip}`))) return empty(429);
+    if (ip && !(await deps.rateLimit(`hit:${ip}`))) return empty(204);
 
     const raw = await readLimited(request, MAX_HIT_BYTES);
     if (raw === null) return empty(413);

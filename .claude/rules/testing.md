@@ -14,7 +14,8 @@ paths:
   without a browser or Cloudflare.
 - **End-to-end tests (Playwright):** `pnpm test:e2e` builds with `e2e/e2e.env` (public test
   keys) and runs against `wrangler dev` on port 8788, the real Worker with the static assets.
-  Locally, a server already running on 8788 is reused.
+  Locally, a server already running on 8788 is reused. After editing `worker/`, restart it:
+  its hot reload dropped the rate-limit bindings on 2026-09-24, and `/api/hit` answered 500.
 - **Projects:** `desktop` (1440×900) and `mobile` (Pixel 7). When a test skips one, give the
   reason.
 - **Analytics:** `e2e/analytics.spec.ts` stubs GoatCounter's count.js and watches the page's
