@@ -48,6 +48,8 @@ which also answers the contact form. Setup, commands, configuration and deploy: 
 - **Before a commit that touches code:**
   `pnpm format:check && pnpm lint && pnpm typecheck && pnpm test && pnpm test:e2e`.
 - **Commits** follow Conventional Commits (the `commit` skill). Work on a branch, not `main`.
+- **No bots that open branches or pull requests,** Dependabot included. Update dependencies by
+  hand, on a branch.
 - **Token budget:**
   - do not spawn subagents for work you can do directly;
   - never run agents in parallel to go faster;

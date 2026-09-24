@@ -19,7 +19,8 @@ paths:
   reason.
 - **Analytics:** `e2e/analytics.spec.ts` stubs GoatCounter's count.js and watches the page's
   requests to `/api/hit`. The site's own counter writes to the local D1; the web server applies
-  its migrations before `wrangler dev` starts.
+  its migrations before `wrangler dev` starts. The local D1 persists across runs, so assert
+  that a count grows, not that a fresh row shows in a top-N table.
 - **Turnstile** uses Cloudflare's public test keys and needs network access. The email is only
   logged.
 - **Scope locators to a section** (`section#contact`): Next.js injects its own `role="alert"`.
