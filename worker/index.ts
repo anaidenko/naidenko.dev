@@ -1,6 +1,7 @@
 import { postToSlack } from "./alert";
 import { handleContact } from "./contact";
 import { handleHit, recordHit } from "./hits";
+import { handleHome } from "./home";
 import { handleStats, loadStats } from "./stats";
 import { verifyTurnstile } from "./turnstile";
 
@@ -34,6 +35,12 @@ export default {
                 password: env.STATS_PASSWORD ?? "",
                 load: (since30, since7) => loadStats(env.STATS_DB, since30, since7),
                 now: () => new Date()
+            });
+        }
+        if (pathname === "/") {
+            return handleHome(request, {
+                page: () => env.ASSETS.fetch(request),
+                fetchAsset: path => env.ASSETS.fetch(new URL(path, request.url))
             });
         }
         return env.ASSETS.fetch(request);

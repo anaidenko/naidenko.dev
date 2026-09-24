@@ -18,7 +18,7 @@ export const metadata: Metadata = {
     metadataBase: new URL(site.url),
     title: { default: title, template: `%s · ${site.domain}` },
     description: site.description,
-    alternates: { canonical: "/" },
+    alternates: { canonical: "/", types: { "text/markdown": "/index.md" } },
     authors: [{ name: site.name, url: site.url }],
     creator: site.name,
     openGraph: {

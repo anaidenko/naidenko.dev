@@ -12,6 +12,16 @@ const structuredData = {
     "@context": "https://schema.org",
     "@graph": [
         {
+            "@type": "ProfilePage",
+            "@id": `${site.url}/#profile`,
+            "url": site.url,
+            "name": `${site.name} · ${site.role}`,
+            "inLanguage": "en",
+            "dateModified": new Date().toISOString(),
+            "isPartOf": { "@id": `${site.url}/#website` },
+            "mainEntity": { "@id": `${site.url}/#person` }
+        },
+        {
             "@type": "Person",
             "@id": `${site.url}/#person`,
             "name": site.name,

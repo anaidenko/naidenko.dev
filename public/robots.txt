@@ -1,0 +1,7 @@
+# Search engines, link previews and AI assistants are all welcome: the page is a public résumé.
+# Content Signals (contentsignals.org) state the same for search, AI answers and AI training.
+User-Agent: *
+Content-Signal: search=yes, ai-input=yes, ai-train=yes
+Allow: /
+
+Sitemap: https://naidenko.dev/sitemap.xml
