@@ -1,0 +1,36 @@
+{
+  "name": "naidenko-dev",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "eslint",
+    "test": "vitest run",
+    "preview": "wrangler dev --port 8788 --ip 127.0.0.1",
+    "typecheck": "wrangler types worker/worker-configuration.d.ts >/dev/null && tsc --noEmit && tsc --noEmit -p worker",
+    "deploy": "node scripts/require-env.mjs NEXT_PUBLIC_TURNSTILE_SITE_KEY && next build && wrangler deploy",
+    "test:e2e": "NEXT_PUBLIC_TURNSTILE_SITE_KEY=1x00000000000000000000AA next build && playwright test"
+  },
+  "dependencies": {
+    "next": "16.3.6",
+    "react": "19.2.8",
+    "react-dom": "19.2.8"
+  },
+  "devDependencies": {
+    "@axe-core/playwright": "4.13.0",
+    "@playwright/test": "1.63.0",
+    "@tailwindcss/postcss": "^4",
+    "@types/node": "^22.20.4",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "eslint": "^9",
+    "eslint-config-next": "16.3.6",
+    "tailwindcss": "^4",
+    "typescript": "^5",
+    "vitest": "5.0.1",
+    "wrangler": "4.137.0"
+  },
+  "packageManager": "pnpm@10.28.1"
+}

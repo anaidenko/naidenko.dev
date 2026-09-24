@@ -21,3 +21,21 @@ next-env.d.ts
 # OS, editors, logs
 .DS_Store
 *.log
+
+# Test and review output
+playwright-report/
+test-results/
+screenshots/
+coverage/
+
+# Generated Worker types
+worker/worker-configuration.d.ts
+
+# Vercel and editors
+.vercel/
+*.pem
+.idea/
+
+# Machine-local Claude Code state (hook metrics, local settings)
+.claude/local/
+.claude/settings.local.json

@@ -1,0 +1,3 @@
+# Copy to .dev.vars for `wrangler dev`. These are Cloudflare's public Turnstile test values.
+TURNSTILE_SECRET_KEY=1x0000000000000000000000000000000AA
+CONTACT_TO=inbox@example.net

@@ -1,0 +1,16 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "naidenko-dev",
+  "main": "worker/index.ts",
+  "compatibility_date": "2026-09-24",
+  "assets": {
+    "directory": "./out",
+    "binding": "ASSETS",
+    "not_found_handling": "404-page",
+    // Only the API runs the Worker; every other request is a free static-asset request.
+    "run_worker_first": ["/api/*"]
+  },
+  "send_email": [{ "name": "EMAIL" }],
+  "vars": { "CONTACT_FROM": "form@naidenko.dev" },
+  "observability": { "enabled": true }
+}

@@ -1,0 +1,72 @@
+import Image from 'next/image';
+import { installCommands, projects } from '@/content/projects';
+import { Chips } from './Chips';
+import { CopyButton } from './CopyButton';
+import { ArrowUpRightIcon } from './Icons';
+import { Section } from './Section';
+
+export function OpenSource() {
+  const commands = installCommands.join('\n');
+  return (
+    <Section id="open-source">
+      <p className="mb-10">General-purpose tools for Claude Code, open source under the MIT license.</p>
+      <ul className="group/list space-y-12">
+        {projects.map((project) => (
+          <li key={project.name}>
+            <article className="group relative grid gap-4 transition motion-reduce:transition-none sm:grid-cols-8 sm:gap-6 lg:group-hover/list:opacity-50 lg:hover:opacity-100!">
+              <div
+                aria-hidden="true"
+                className="absolute -inset-4 z-0 hidden rounded-xl border-l-2 border-transparent transition motion-reduce:transition-none lg:-inset-x-6 lg:block lg:group-hover:border-accent lg:group-hover:bg-surface/70"
+              />
+              <div className={`z-10 ${project.image ? 'sm:order-2 sm:col-span-6' : 'sm:col-span-8'}`}>
+                <h3 className="leading-snug text-ink-strong">
+                  <a
+                    href={project.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="group/link font-medium hover:text-accent focus-visible:text-accent"
+                  >
+                    <span aria-hidden="true" className="absolute -inset-x-4 -inset-y-3 hidden rounded lg:-inset-x-6 lg:-inset-y-4 lg:block" />
+                    {project.name}
+                    <ArrowUpRightIcon className="ml-1 inline-block size-3.5 translate-y-px transition-transform group-hover/link:-translate-y-0.5 group-hover/link:translate-x-0.5 motion-reduce:transition-none" />
+                  </a>
+                </h3>
+                <p className="mt-2 text-sm leading-normal">{project.description}</p>
+                <Chips items={project.chips} label={`${project.name} is built with`} />
+              </div>
+              {project.image ? (
+                <figure className="z-10 sm:order-1 sm:col-span-2 sm:translate-y-1">
+                  <Image
+                    src={project.image.src}
+                    alt={project.image.alt}
+                    width={project.image.width}
+                    height={project.image.height}
+                    className="rounded border-2 border-ink-faint/20 transition group-hover:border-ink-faint/40"
+                  />
+                  <figcaption className="relative z-20 mt-1.5 text-[11px] leading-tight text-ink-faint">
+                    <a href={project.image.credit.url} target="_blank" rel="noopener noreferrer" className="hover:text-ink-strong">
+                      {project.image.credit.text}
+                    </a>
+                  </figcaption>
+                </figure>
+              ) : null}
+            </article>
+          </li>
+        ))}
+      </ul>
+      <div className="mt-12">
+        <p className="text-sm font-medium text-ink-strong">Install both from the marketplace</p>
+        <div className="relative mt-3 rounded-lg bg-surface py-4 pl-4 pr-12 font-mono text-[13px] leading-6 text-ink-strong">
+          <pre
+            tabIndex={0}
+            aria-label="Install commands"
+            className="overflow-x-auto rounded focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-accent"
+          >
+            <code>{commands}</code>
+          </pre>
+          <CopyButton text={commands} label="Copy install commands" className="absolute right-2 top-2" />
+        </div>
+      </div>
+    </Section>
+  );
+}
