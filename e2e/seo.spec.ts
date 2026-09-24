@@ -55,7 +55,7 @@ test("describes the page for search engines and link previews", async ({ page, r
     expect(await meta('meta[property="og:url"]')).toBe(SITE);
     expect(await meta('meta[name="twitter:card"]')).toBe("summary_large_image");
     const image = await meta('meta[property="og:image"]');
-    expect(image).toMatch(new RegExp(`^${SITE}/`));
+    expect(image).toMatch(new RegExp(`^${SITE}/og\\.png\\?v=[0-9a-f]{8}$`));
     expect(await meta('meta[property="og:image:width"]')).toBe("1200");
     expect(await meta('meta[property="og:image:height"]')).toBe("630");
     const imageResponse = await request.get(new URL(image!).pathname);

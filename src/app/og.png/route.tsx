@@ -1,7 +1,7 @@
 import { ImageResponse } from "next/og";
 
 import { site } from "@/content/site";
-import { dataUrl, geistFonts } from "@/lib/og";
+import { OG_PHOTO, dataUrl, geistFonts } from "@/lib/og";
 
 export const dynamic = "force-static";
 const size = { width: 1200, height: 630 };
@@ -12,7 +12,7 @@ const size = { width: 1200, height: 630 };
  * one without ".png", and the host then serves it with no Content-Type.
  */
 export async function GET() {
-    const [fonts, photo] = await Promise.all([geistFonts(), dataUrl("assets/photo/andrii-naidenko-600.jpg", "image/jpeg")]);
+    const [fonts, photo] = await Promise.all([geistFonts(), dataUrl(OG_PHOTO, "image/jpeg")]);
     return new ImageResponse(
         <div
             style={{

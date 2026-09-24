@@ -5,6 +5,7 @@ import type { ReactNode } from "react";
 import { Analytics } from "@/components/Analytics";
 import { Spotlight } from "@/components/Spotlight";
 import { site } from "@/content/site";
+import { ogImageVersion } from "@/lib/og";
 
 import "./globals.css";
 
@@ -12,7 +13,7 @@ const geist = Geist({ subsets: ["latin"], variable: "--font-geist" });
 const geistMono = Geist_Mono({ subsets: ["latin"], variable: "--font-geist-mono" });
 
 const title = `${site.name} · ${site.role}`;
-const ogImage = { url: "/og.png", width: 1200, height: 630, type: "image/png", alt: `${site.name}, ${site.role}` };
+const ogImage = { url: `/og.png?v=${ogImageVersion()}`, width: 1200, height: 630, type: "image/png", alt: `${site.name}, ${site.role}` };
 
 export const metadata: Metadata = {
     metadataBase: new URL(site.url),
