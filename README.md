@@ -105,7 +105,8 @@ The Worker posts to Slack through `SLACK_WEBHOOK_URL` when:
 - anything else fails unexpectedly.
 
 A visitor's bad or expired token raises no alert. When Slack cannot be reached, the alert goes to
-the Worker's logs instead.
+the Worker's logs instead. Stream the live logs with `pnpm exec wrangler tail naidenko-dev`. Past
+logs are in the dashboard under the Worker's Logs, because Wrangler's login cannot query them.
 
 ## Analytics events
 
