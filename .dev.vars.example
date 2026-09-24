@@ -2,3 +2,5 @@
 # inbox: locally the email is only logged. Production values are Wrangler secrets (README).
 TURNSTILE_SECRET_KEY=1x0000000000000000000000000000000AA
 CONTACT_TO=inbox@example.net
+# Optional locally: a Slack incoming webhook for form alerts. Empty means alerts are only logged.
+SLACK_WEBHOOK_URL=

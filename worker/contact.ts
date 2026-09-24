@@ -1,5 +1,8 @@
 import { singleLine, validateContact } from "../src/lib/contact";
 
+import { escapeSlack } from "./alert";
+import { type TurnstileResult, isSiteFault } from "./turnstile";
+
 export interface OutgoingEmail {
     to: string;
     from: { email: string; name: string };
@@ -11,8 +14,10 @@ export interface OutgoingEmail {
 export interface ContactDeps {
     /** True while the key is under its limit. */
     rateLimit(key: string): Promise<boolean>;
-    verifyTurnstile(token: string, remoteIp: string | null): Promise<boolean>;
+    verifyTurnstile(token: string, remoteIp: string | null): Promise<TurnstileResult>;
     sendEmail(message: OutgoingEmail): Promise<unknown>;
+    /** Posts an alert to Andrii's Slack channel; true when Slack accepted it. */
+    alert(text: string): Promise<boolean>;
     to: string;
     from: string;
 }
@@ -57,7 +62,24 @@ async function readLimited(request: Request, limit: number): Promise<string | nu
     return new TextDecoder().decode(bytes);
 }
 
+function describe(error: unknown): string {
+    return error instanceof Error ? `${error.name}: ${error.message}` : String(error);
+}
+
 export async function handleContact(request: Request, deps: ContactDeps): Promise<Response> {
+    const host = new URL(request.url).host;
+    try {
+        return await respond(request, deps, host);
+    } catch (error) {
+        console.error("contact: unexpected error", error);
+        await deps.alert(
+            `:rotating_light: *Contact form on ${host}: unexpected error.* The visitor saw a failure.\n${escapeSlack(describe(error))}`
+        );
+        return json({ ok: false, error: "server" }, 500);
+    }
+}
+
+async function respond(request: Request, deps: ContactDeps, host: string): Promise<Response> {
     if (request.method !== "POST") return json({ ok: false, error: "method" }, 405, { Allow: "POST" });
     // Cloudflare sets the visitor's address on every request (and wrangler dev copies the local one).
     const ip = request.headers.get("CF-Connecting-IP");
@@ -88,7 +110,13 @@ export async function handleContact(request: Request, deps: ContactDeps): Promis
 
     const token = typeof fields.turnstileToken === "string" ? fields.turnstileToken : "";
     if (!token) return json({ ok: false, error: "turnstile" }, 400);
-    if (!(await deps.verifyTurnstile(token, ip))) {
+    const check = await deps.verifyTurnstile(token, ip);
+    if (!check.success) {
+        if (isSiteFault(check)) {
+            await deps.alert(
+                `:rotating_light: *Contact form on ${host}: Turnstile refused the site's own check* (${escapeSlack(check.errors.join(", "))}). Messages are refused while this lasts.`
+            );
+        }
         return json({ ok: false, error: "turnstile" }, 403);
     }
 
@@ -106,7 +134,15 @@ export async function handleContact(request: Request, deps: ContactDeps): Promis
         });
     } catch (error) {
         console.error("contact: send failed", error);
-        return json({ ok: false, error: "send" }, 502);
+        // Slack is the fallback inbox: once the message lands there, the visitor has reached Andrii.
+        const forwarded = await deps.alert(
+            [
+                `:warning: *Contact form on ${host}: the email did not go out* (${escapeSlack(describe(error))}). The message is below; reply to the sender by email.`,
+                "",
+                escapeSlack(text)
+            ].join("\n")
+        );
+        return forwarded ? json({ ok: true }) : json({ ok: false, error: "send" }, 502);
     }
     return json({ ok: true });
 }

@@ -10,7 +10,7 @@
     --color-accent: #bef264;
     /* Toptal's verified green (#077664), lightened to read on the canvas. */
     --color-verified: #34d399;
-    --color-spot: rgb(190 242 100 / 0.03);
+    --color-spot: rgb(190 242 100 / 0.045);
 
     /* next/font puts --font-geist and --font-geist-mono on <html>. */
     --font-sans: var(--font-geist), ui-sans-serif, system-ui, sans-serif;

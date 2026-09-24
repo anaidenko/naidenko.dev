@@ -4,4 +4,5 @@
 interface Env {
     TURNSTILE_SECRET_KEY: string;
     CONTACT_TO: string;
+    SLACK_WEBHOOK_URL: string;
 }

@@ -10,7 +10,7 @@
         "test": "vitest run",
         "preview": "wrangler dev --port 8788 --ip 127.0.0.1",
         "typecheck": "wrangler types worker/worker-configuration.d.ts >/dev/null && tsc --noEmit && tsc --noEmit -p worker",
-        "deploy": "node scripts/require-env.mjs NEXT_PUBLIC_TURNSTILE_SITE_KEY && next build && node scripts/check-build.mjs out e2e/e2e.env && wrangler secret list | node scripts/check-secrets.mjs TURNSTILE_SECRET_KEY CONTACT_TO && wrangler deploy",
+        "deploy": "node scripts/require-env.mjs NEXT_PUBLIC_TURNSTILE_SITE_KEY && next build && node scripts/check-build.mjs out e2e/e2e.env && wrangler secret list | node scripts/check-secrets.mjs TURNSTILE_SECRET_KEY CONTACT_TO SLACK_WEBHOOK_URL && wrangler deploy",
         "test:e2e": "node scripts/with-env.mjs e2e/e2e.env next build && playwright test",
         "format": "prettier --write .",
         "format:check": "prettier --check ."

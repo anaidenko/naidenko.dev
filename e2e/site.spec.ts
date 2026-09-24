@@ -187,3 +187,13 @@ test("shows the current year in the footer, not the year of the build", async ({
     await page.goto("/");
     await expect(page.locator("footer")).toContainText("© 2031");
 });
+
+test("quotes three repeat clients by name under the numbers, each with a rating", async ({ page }) => {
+    await page.goto("/");
+    await expect(page.locator("section#about figure")).toHaveCount(3);
+    for (const name of ["Bruce van Zyl", "Chris Robichaud", "Alex Harper"]) {
+        const caption = page.locator("section#about figcaption", { hasText: name });
+        await expect(caption).toContainText("Rated 5 out of 5.");
+        await expect(caption).toContainText(/Hired me (six|three) times on Upwork/);
+    }
+});

@@ -47,6 +47,7 @@ reach `challenges.cloudflare.com` for Turnstile's test keys. Google Analytics is
 | `NEXT_PUBLIC_GA_MEASUREMENT_ID` | build: `.env.production.local` | GA4 measurement ID. Empty means no analytics and no consent banner. |
 | `TURNSTILE_SECRET_KEY` | Worker secret | Verifies Turnstile tokens. |
 | `CONTACT_TO` | Worker secret | The inbox that receives the form: a verified Email Routing destination. |
+| `SLACK_WEBHOOK_URL` | Worker secret | A Slack incoming webhook for form alerts. When the email fails, the message itself goes there, so it is not lost. |
 | `CONTACT_FROM` | `wrangler.jsonc` | The sender address, on the site's domain. |
 
 `.env.example` lists the build settings. Locally, the Worker reads `.dev.vars`. Neither
@@ -74,6 +75,7 @@ cost.
    pnpm exec wrangler login
    pnpm exec wrangler secret put TURNSTILE_SECRET_KEY
    pnpm exec wrangler secret put CONTACT_TO
+   pnpm exec wrangler secret put SLACK_WEBHOOK_URL
    ```
 6. **Build settings:** create `.env.production.local` with the Turnstile site key and the GA4
    ID.
@@ -81,7 +83,7 @@ cost.
    - refuses to run without the site key;
    - rebuilds;
    - checks that `out/` carries none of the test values from `e2e/e2e.env`;
-   - checks that both Worker secrets exist;
+   - checks that the three Worker secrets exist;
    - deploys.
 
    Never run `wrangler deploy` directly: it uploads whatever is in `out/`, which after
@@ -89,6 +91,17 @@ cost.
    certificate is issued automatically.
 8. **Search:** add the domain to Google Search Console (DNS verification) and submit
    `/sitemap.xml`.
+
+## Alerts
+
+The Worker posts to Slack through `SLACK_WEBHOOK_URL` when:
+- the email does not go out: the alert carries the message itself, and the visitor is told it
+  went through;
+- Turnstile refuses the site's own check: a wrong secret, or siteverify out of reach;
+- anything else fails unexpectedly.
+
+A visitor's bad or expired token raises no alert. When Slack cannot be reached, the alert goes to
+the Worker's logs instead.
 
 ## Analytics events
 

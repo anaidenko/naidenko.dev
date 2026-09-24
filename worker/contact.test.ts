@@ -22,7 +22,8 @@ function setup(overrides: Partial<ContactDeps> = {}) {
     const sent: OutgoingEmail[] = [];
     const deps: ContactDeps = {
         rateLimit: vi.fn(async (_key: string) => true),
-        verifyTurnstile: vi.fn(async () => true),
+        verifyTurnstile: vi.fn(async () => ({ success: true, errors: [] as string[] })),
+        alert: vi.fn(async (_text: string) => false),
         sendEmail: vi.fn(async (message: OutgoingEmail) => {
             sent.push(message);
         }),
@@ -78,7 +79,7 @@ describe("handleContact", () => {
     it("requires a Turnstile token and a passing verification", async () => {
         const withoutToken = { ...valid, turnstileToken: undefined };
         expect((await handleContact(post(withoutToken), setup().deps)).status).toBe(400);
-        const failing = setup({ verifyTurnstile: vi.fn(async () => false) });
+        const failing = setup({ verifyTurnstile: vi.fn(async () => ({ success: false, errors: ["invalid-input-response"] })) });
         expect((await handleContact(post(valid), failing.deps)).status).toBe(403);
         expect(failing.sent).toHaveLength(0);
     });
@@ -112,7 +113,7 @@ describe("handleContact", () => {
         expect(sent[0].subject.length).toBeLessThanOrEqual(120);
     });
 
-    it("reports a failed send as 502 and logs the error", async () => {
+    it("reports a failed send as 502 and logs the error when Slack cannot take it either", async () => {
         const logged = vi.spyOn(console, "error").mockImplementation(() => {});
         onTestFinished(() => logged.mockRestore());
         const failing = setup({
@@ -121,7 +122,74 @@ describe("handleContact", () => {
             })
         });
         expect((await handleContact(post(valid), failing.deps)).status).toBe(502);
+        expect(failing.deps.alert).toHaveBeenCalledTimes(1);
         expect(logged).toHaveBeenCalledWith("contact: send failed", expect.objectContaining({ message: "E_RATE_LIMIT_EXCEEDED" }));
+    });
+
+    it("forwards the message to Slack when the email fails, and tells the visitor it went through", async () => {
+        vi.spyOn(console, "error").mockImplementation(() => {});
+        onTestFinished(() => {
+            vi.restoreAllMocks();
+        });
+        const alert = vi.fn(async (_text: string) => true);
+        const failing = setup({
+            alert,
+            sendEmail: vi.fn(async () => {
+                throw new Error("E_RATE_LIMIT_EXCEEDED");
+            })
+        });
+        const res = await handleContact(post(valid), failing.deps);
+        expect(res.status).toBe(200);
+        expect(await res.json()).toEqual({ ok: true });
+        const text = alert.mock.calls[0][0];
+        for (const part of ["naidenko.dev", "E_RATE_LIMIT_EXCEEDED", valid.name, valid.email, valid.company, valid.message]) {
+            expect(text).toContain(part);
+        }
+    });
+
+    it("escapes Slack markup in a forwarded message", async () => {
+        vi.spyOn(console, "error").mockImplementation(() => {});
+        onTestFinished(() => {
+            vi.restoreAllMocks();
+        });
+        const alert = vi.fn(async (_text: string) => true);
+        const failing = setup({
+            alert,
+            sendEmail: vi.fn(async () => {
+                throw new Error("down");
+            })
+        });
+        await handleContact(post({ ...valid, message: "Hi <!channel>, see <https://evil.example|this> & more" }), failing.deps);
+        const text = alert.mock.calls[0][0];
+        expect(text).not.toContain("<!channel>");
+        expect(text).toContain("&lt;!channel&gt;");
+        expect(text).toContain("&amp; more");
+    });
+
+    it("alerts when Turnstile rejects the site's own secret, but not a visitor's bad token", async () => {
+        const broken = setup({ verifyTurnstile: vi.fn(async () => ({ success: false, errors: ["invalid-input-secret"] })) });
+        expect((await handleContact(post(valid), broken.deps)).status).toBe(403);
+        expect(broken.deps.alert).toHaveBeenCalledWith(expect.stringContaining("invalid-input-secret"));
+
+        const visitor = setup({ verifyTurnstile: vi.fn(async () => ({ success: false, errors: ["timeout-or-duplicate"] })) });
+        expect((await handleContact(post(valid), visitor.deps)).status).toBe(403);
+        expect(visitor.deps.alert).not.toHaveBeenCalled();
+    });
+
+    it("answers 500 and alerts on an unexpected error", async () => {
+        vi.spyOn(console, "error").mockImplementation(() => {});
+        onTestFinished(() => {
+            vi.restoreAllMocks();
+        });
+        const crashing = setup({
+            rateLimit: vi.fn(async () => {
+                throw new Error("binding missing");
+            })
+        });
+        const res = await handleContact(post(valid, { "CF-Connecting-IP": "203.0.113.7" }), crashing.deps);
+        expect(res.status).toBe(500);
+        expect(await res.json()).toEqual({ ok: false, error: "server" });
+        expect(crashing.deps.alert).toHaveBeenCalledWith(expect.stringContaining("binding missing"));
     });
 
     it("turns away repeated sends from one address with 429", async () => {

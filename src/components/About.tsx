@@ -1,4 +1,5 @@
 import { aboutParagraphs, numbers } from "@/content/about";
+import { testimonials } from "@/content/testimonials";
 
 import { Section } from "./Section";
 
@@ -18,6 +19,27 @@ export function About() {
                     </div>
                 ))}
             </dl>
+            <h3 className="mt-12 text-sm font-medium text-ink-strong">{testimonials.heading}</h3>
+            <ul className="mt-6 space-y-8">
+                {testimonials.items.map(item => (
+                    <li key={item.name}>
+                        <figure className="border-l-2 border-ink-faint/20 pl-5">
+                            <blockquote>
+                                <p>“{item.quote}”</p>
+                            </blockquote>
+                            <figcaption className="mt-3 text-sm leading-snug">
+                                <span className="text-accent" aria-hidden="true">
+                                    {"★".repeat(item.rating)}
+                                </span>
+                                <span className="sr-only">Rated {item.rating} out of 5.</span>
+                                <span className="ml-2 font-medium text-ink-strong">{item.name}</span>
+                                {"project" in item ? <span className="text-ink-faint"> · {item.project}</span> : null}
+                                <span className="mt-0.5 block text-ink-faint">{item.hired}</span>
+                            </figcaption>
+                        </figure>
+                    </li>
+                ))}
+            </ul>
         </Section>
     );
 }

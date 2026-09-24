@@ -22,19 +22,19 @@ export const privacy = {
         {
             title: "Why",
             paragraphs: [
-                "Only to read your message, reply to it and discuss the project you describe. The legal basis is your own request: steps you asked for before a possible contract (GDPR Article 6(1)(b))."
+                "Only to read your message, reply to it and discuss what you propose. The legal basis is your own request: steps you asked for before a possible contract (GDPR Article 6(1)(b))."
             ]
         },
         {
             title: "How long it is kept",
             paragraphs: [
-                "Your message stays in my mailbox for up to twelve months after our last exchange. If we start working together, it is kept for as long as the work and its records require."
+                "Your message stays in my mailbox, or in Slack if it was forwarded there, for up to twelve months after our last exchange. If we start working together, it is kept for as long as the work and its records require."
             ]
         },
         {
             title: "Who else handles it",
             paragraphs: [
-                "Cloudflare hosts the site, runs Turnstile and delivers the form’s email to my inbox, where my email provider stores it. The Toptal badge on the page loads a typeface from Adobe Fonts (use.typekit.net), which receives your IP address. If you allow analytics, Google receives the data described below. Nothing is sold or shared for advertising."
+                "Cloudflare hosts the site, runs Turnstile and delivers the form’s email to my inbox, where my email provider stores it. If that email cannot be delivered, the form forwards your message to my private Slack workspace instead, so it is not lost, and Slack stores it. The Toptal badge on the page loads a typeface from Adobe Fonts (use.typekit.net), which receives your IP address. If you allow analytics, Google receives the data described below. Nothing is sold or shared for advertising."
             ]
         },
         {
