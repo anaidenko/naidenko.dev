@@ -77,8 +77,16 @@ cost.
    ```
 6. **Build settings:** create `.env.production.local` with the Turnstile site key and the GA4
    ID.
-7. **Deploy:** run `pnpm run deploy`. A bare `pnpm deploy` is pnpm's own command. The route in
-   `wrangler.jsonc` attaches the domain, and the certificate is issued automatically.
+7. **Deploy:** run `pnpm run deploy`. A bare `pnpm deploy` is pnpm's own command. The script:
+   - refuses to run without the site key;
+   - rebuilds;
+   - checks that `out/` carries none of the test values from `e2e/e2e.env`;
+   - checks that both Worker secrets exist;
+   - deploys.
+
+   Never run `wrangler deploy` directly: it uploads whatever is in `out/`, which after
+   `pnpm test:e2e` is a test build. The route in `wrangler.jsonc` attaches the domain, and the
+   certificate is issued automatically.
 8. **Search:** add the domain to Google Search Console (DNS verification) and submit
    `/sitemap.xml`.
 
@@ -98,7 +106,7 @@ The events are sent only after the visitor allows analytics.
 | `project_click` | A plugin's repository | `project` |
 | `copy_install` | The install-command copy button | — |
 | `generate_lead` | The form was sent | `form` |
-| `form_error` | The form could not be sent | `form` |
+| `form_error` | The form could not be sent | `form`, `reason` (`rate_limit` when limited) |
 
 To track a new link or button, give it `data-track="<event>"` and any
 `data-track-<param>="<value>"`.

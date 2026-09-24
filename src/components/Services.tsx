@@ -1,4 +1,5 @@
 import { services } from "@/content/services";
+import { ui } from "@/content/ui";
 
 import { Section } from "./Section";
 
@@ -10,7 +11,9 @@ export function Services() {
                     <li key={service.title}>
                         <h3 className="font-medium text-ink-strong">{service.title}</h3>
                         <p className="mt-2 text-sm leading-normal">{service.text}</p>
-                        <p className="mt-2 text-xs font-semibold tracking-wide text-ink-faint uppercase">Proof: {service.proof}</p>
+                        <p className="mt-2 text-xs font-semibold tracking-wide text-ink-faint uppercase">
+                            {ui.proof}: {service.proof}
+                        </p>
                     </li>
                 ))}
             </ul>

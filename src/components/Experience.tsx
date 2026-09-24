@@ -1,4 +1,5 @@
 import { earlierExperience, experience, fullResume } from "@/content/experience";
+import { ui } from "@/content/ui";
 
 import { ExperienceItem } from "./ExperienceItem";
 import { ArrowUpRightIcon, ChevronDownIcon } from "./Icons";
@@ -19,7 +20,7 @@ export function Experience() {
             </ol>
             <details className="group/earlier mt-12">
                 <summary className="inline-flex cursor-pointer list-none items-center gap-2 text-sm font-semibold text-ink-strong hover:text-accent focus-visible:text-accent [&::-webkit-details-marker]:hidden">
-                    Earlier experience, {earliestYear} — {latestEarlierYear}
+                    {ui.earlierExperience}, {earliestYear} — {latestEarlierYear}
                     <ChevronDownIcon className="size-4 transition-transform group-open/earlier:rotate-180 motion-reduce:transition-none" />
                 </summary>
                 <ol className="group/list mt-10 space-y-12">

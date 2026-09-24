@@ -6,6 +6,7 @@ import { Header } from "@/components/Header";
 import { OpenSource } from "@/components/OpenSource";
 import { Services } from "@/components/Services";
 import { site } from "@/content/site";
+import { ui } from "@/content/ui";
 
 const structuredData = {
     "@context": "https://schema.org",
@@ -41,7 +42,7 @@ export default function Home() {
                 href="#content"
                 className="sr-only focus:not-sr-only focus:fixed focus:top-4 focus:left-4 focus:z-50 focus:rounded-md focus:bg-accent focus:px-4 focus:py-2 focus:text-sm focus:font-semibold focus:text-canvas"
             >
-                Skip to content
+                {ui.skipToContent}
             </a>
             <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }} />
             <div className="lg:flex lg:justify-between lg:gap-12">

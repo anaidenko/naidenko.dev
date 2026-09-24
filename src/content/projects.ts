@@ -48,3 +48,6 @@ export const installCommands: readonly string[] = [
     "claude plugin install claude-video-digest@anaidenko",
     "claude plugin install claude-notify-resume@anaidenko"
 ];
+
+export const openSourceIntro = "General-purpose tools for Claude Code, open source under the MIT license.";
+export const installHeading = "Install both from the marketplace";

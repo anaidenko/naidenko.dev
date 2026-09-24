@@ -1,6 +1,7 @@
 import Image from "next/image";
 
-import { installCommands, projects } from "@/content/projects";
+import { installCommands, installHeading, openSourceIntro, projects } from "@/content/projects";
+import { ui } from "@/content/ui";
 
 import { Chips } from "./Chips";
 import { CopyButton } from "./CopyButton";
@@ -11,7 +12,7 @@ export function OpenSource() {
     const commands = installCommands.join("\n");
     return (
         <Section id="open-source">
-            <p className="mb-10">General-purpose tools for Claude Code, open source under the MIT license.</p>
+            <p className="mb-10">{openSourceIntro}</p>
             <ul className="group/list space-y-12">
                 {projects.map(project => (
                     <li key={project.name}>
@@ -67,7 +68,7 @@ export function OpenSource() {
                 ))}
             </ul>
             <div className="mt-12">
-                <p className="text-sm font-medium text-ink-strong">Install both from the marketplace</p>
+                <p className="text-sm font-medium text-ink-strong">{installHeading}</p>
                 <div className="relative mt-3 rounded-lg bg-surface py-4 pr-12 pl-4 font-mono text-[13px] leading-6 text-ink-strong">
                     <pre
                         tabIndex={0}
@@ -76,7 +77,7 @@ export function OpenSource() {
                     >
                         <code>{commands}</code>
                     </pre>
-                    <CopyButton text={commands} label="Copy install commands" trackAs="copy_install" className="absolute top-2 right-2" />
+                    <CopyButton text={commands} label={ui.copyInstall} trackAs="copy_install" className="absolute top-2 right-2" />
                 </div>
             </div>
         </Section>

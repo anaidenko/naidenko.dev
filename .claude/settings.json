@@ -15,13 +15,19 @@
             "Bash(pnpm test:*)",
             "Bash(pnpm typecheck:*)"
         ],
-        "ask": ["Bash(git push:*)", "Bash(pnpm exec wrangler deploy:*)", "Bash(pnpm exec wrangler secret:*)", "Bash(pnpm run deploy:*)"]
+        "ask": ["Bash(git push:*)", "Bash(pnpm exec wrangler secret:*)", "Bash(pnpm run deploy:*)"],
+        "deny": ["Bash(npx wrangler deploy:*)", "Bash(pnpm exec wrangler deploy:*)", "Bash(wrangler deploy:*)"]
     },
     "hooks": {
         "PostToolUse": [
             {
                 "matcher": "Edit|Write",
-                "hooks": [{ "type": "command", "command": "\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/format.sh" }]
+                "hooks": [
+                    {
+                        "type": "command",
+                        "command": "\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/format.sh"
+                    }
+                ]
             }
         ]
     }

@@ -68,7 +68,9 @@ export function subscribeConsent(onChange: () => void): () => void {
 /** Records the choice (null opens the banner again). Anything but "granted" also clears Google's cookies. */
 export function setConsent(choice: Consent | null): void {
     saveConsent(browserStorage(), choice);
-    if (choice !== "granted") {
+    // A no-op on the first grant (gtag is not loaded yet); needed when consent returns mid-visit.
+    if (choice === "granted") window.gtag?.("consent", "update", { analytics_storage: "granted" });
+    else {
         window.gtag?.("consent", "update", { analytics_storage: "denied" });
         for (const name of gaCookieNames(document.cookie)) {
             document.cookie = `${name}=; Max-Age=0; path=/`;

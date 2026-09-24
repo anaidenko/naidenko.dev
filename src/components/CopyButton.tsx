@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from "react";
 
+import { ui } from "@/content/ui";
+
 import { CheckIcon, CopyIcon } from "./Icons";
 
 export function CopyButton({
@@ -37,10 +39,13 @@ export function CopyButton({
             type="button"
             data-track={trackAs}
             onClick={copy}
-            aria-label={copied ? "Copied" : label}
+            aria-label={copied ? ui.copied : label}
             className={`rounded-md p-2 text-ink-faint transition hover:bg-canvas/60 hover:text-ink-strong focus-visible:text-ink-strong ${className}`}
         >
             {copied ? <CheckIcon className="size-4 text-accent" /> : <CopyIcon className="size-4" />}
+            <span aria-live="polite" className="sr-only">
+                {copied ? ui.copiedAnnouncement : ""}
+            </span>
         </button>
     );
 }

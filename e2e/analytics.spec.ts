@@ -95,3 +95,14 @@ test("lets the visitor change their mind from the footer", async ({ page }) => {
     await page.locator("footer").getByRole("button", { name: "Cookie settings" }).click();
     await expect(banner(page)).toBeVisible();
 });
+
+test("applies consent given again after it was withdrawn in the same visit", async ({ page }) => {
+    await stubGoogle(page);
+    await page.goto("/");
+    await banner(page).getByRole("button", { name: "Allow" }).click();
+    await page.locator("footer").getByRole("button", { name: "Cookie settings" }).click();
+    await banner(page).getByRole("button", { name: "Allow" }).click();
+    await expect(banner(page)).toBeHidden();
+    const updates = (await dataLayer(page)).filter(entry => entry[0] === "consent" && entry[1] === "update");
+    expect(updates.at(-1)).toEqual(["consent", "update", { analytics_storage: "granted" }]);
+});

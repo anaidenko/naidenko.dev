@@ -1,3 +1,6 @@
+import { storeMetrics } from "./metrics";
+import { site } from "./site";
+
 export interface ExperienceEntry {
     period: string;
     role: string;
@@ -22,9 +25,13 @@ export const experience: readonly ExperienceEntry[] = [
             "Owned the iOS and Android app end to end as its sole developer for seven years: architecture, features, native integrations and every store release. Built Offline Mode, the product’s most requested feature of 2025, and the GPS layer the product sells on, and carried the app from Cordova to Angular 21, Ionic 8 and Capacitor 8.",
         chips: ["Angular", "Ionic", "Capacitor", "TypeScript", "Swift", "Java"],
         links: [
-            { label: "App Store · 4.9 ★", url: "https://apps.apple.com/us/app/buddy-punch/id1100685927", store: "app_store" },
             {
-                label: "Google Play · 100,000+ installs",
+                label: `App Store · ${storeMetrics.appStoreRating} ★`,
+                url: "https://apps.apple.com/us/app/buddy-punch/id1100685927",
+                store: "app_store"
+            },
+            {
+                label: `Google Play · ${storeMetrics.googlePlayInstalls} installs`,
                 url: "https://play.google.com/store/apps/details?id=com.BuddyPunch.Mobile",
                 store: "google_play"
             }
@@ -61,7 +68,7 @@ export const experience: readonly ExperienceEntry[] = [
 
 export const fullResume = {
     label: "View full résumé on Toptal",
-    url: "https://www.toptal.com/developers/resume/andrii-naidenko#qjl3b7"
+    url: site.links.toptalReferral
 };
 
 /**

@@ -1,7 +1,8 @@
 "use client";
 
-import { type FormEvent, useRef, useState, useSyncExternalStore } from "react";
+import { type FormEvent, useEffect, useRef, useState, useSyncExternalStore } from "react";
 
+import { contact } from "@/content/contact";
 import { site } from "@/content/site";
 import { track } from "@/lib/analytics";
 import { CONTACT_LIMITS, type ContactErrors, type ContactField, validateContact } from "@/lib/contact";
@@ -26,6 +27,8 @@ export function ContactForm() {
         () => false
     );
 
+    useEffect(() => () => turnstileRef.current?.remove(), []);
+
     function turnstile() {
         if (!turnstileRef.current && widgetRef.current) turnstileRef.current = createTurnstile(widgetRef.current);
         return turnstileRef.current;
@@ -44,6 +47,7 @@ export function ContactForm() {
             return;
         }
         inFlight.current = true;
+        let sent = false;
         setErrors({});
         setStatus("sending");
         try {
@@ -70,19 +74,25 @@ export function ContactForm() {
             setSentTo(result.value.email);
             track("generate_lead", { form: "contact" });
             setStatus("sent");
+            sent = true;
         } catch {
             setStatus("failed");
             track("form_error", { form: "contact" });
         } finally {
             inFlight.current = false;
-            turnstile()?.reset();
+            if (sent) {
+                turnstileRef.current?.remove();
+                turnstileRef.current = null;
+            } else {
+                turnstileRef.current?.reset();
+            }
         }
     }
 
     if (status === "sent") {
         return (
             <p role="status" className="mt-8 rounded-lg border border-accent/40 bg-accent/10 p-5 text-ink-strong">
-                Thanks, your message is on its way. I’ll reply to <span className="font-medium">{sentTo}</span>.
+                {contact.sent} <span className="font-medium">{sentTo}</span>.
             </p>
         );
     }
@@ -99,17 +109,24 @@ export function ContactForm() {
             }
             className="relative mt-8 space-y-5"
         >
-            <Field name="name" label="Name" autoComplete="name" maxLength={CONTACT_LIMITS.name} error={errors.name} />
-            <Field name="email" label="Email" type="email" autoComplete="email" maxLength={CONTACT_LIMITS.email} error={errors.email} />
+            <Field name="name" label={contact.fields.name} autoComplete="name" maxLength={CONTACT_LIMITS.name} error={errors.name} />
+            <Field
+                name="email"
+                label={contact.fields.email}
+                type="email"
+                autoComplete="email"
+                maxLength={CONTACT_LIMITS.email}
+                error={errors.email}
+            />
             <Field
                 name="company"
-                label="Company or website"
+                label={contact.fields.company}
                 optional
                 autoComplete="organization"
                 maxLength={CONTACT_LIMITS.company}
                 error={errors.company}
             />
-            <Field name="message" label="What are you building?" multiline maxLength={CONTACT_LIMITS.messageMax} error={errors.message} />
+            <Field name="message" label={contact.fields.message} multiline maxLength={CONTACT_LIMITS.messageMax} error={errors.message} />
             <div className="absolute top-0 -left-[9999px] h-px w-px overflow-hidden" aria-hidden="true">
                 <label htmlFor="website_url">Leave this field empty</label>
                 <input id="website_url" name="website_url" type="text" tabIndex={-1} autoComplete="off" />
@@ -121,21 +138,19 @@ export function ContactForm() {
                     disabled={status === "sending"}
                     className="rounded-full bg-accent px-6 py-2.5 text-sm font-semibold text-canvas transition hover:brightness-110 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent disabled:cursor-wait disabled:opacity-60"
                 >
-                    {status === "sending" ? "Sending…" : "Send message"}
+                    {status === "sending" ? contact.sending : contact.send}
                 </button>
                 <p className="text-xs text-ink-faint">
-                    I use your details only to reply.{" "}
+                    {contact.privacyLine}{" "}
                     <a href="/privacy" className="underline underline-offset-2 hover:text-ink-strong">
-                        Privacy note
+                        {contact.privacyLink}
                     </a>
                     .
                 </p>
             </div>
             {status === "failed" || status === "limited" ? (
                 <p role="alert" className="text-sm text-ink-strong">
-                    {status === "limited"
-                        ? "That’s more messages than the form takes in a minute. Please try again shortly, or email me at "
-                        : "The message didn’t go through. Please email me at "}
+                    {status === "limited" ? contact.limited : contact.failed}{" "}
                     <a
                         className="font-medium underline underline-offset-4 hover:text-accent"
                         href={`mailto:${site.email}`}
@@ -144,7 +159,7 @@ export function ContactForm() {
                     >
                         {site.email}
                     </a>{" "}
-                    instead.
+                    {contact.instead}
                 </p>
             ) : null}
         </form>
@@ -184,7 +199,7 @@ function Field({ name, label, maxLength, error, type = "text", autoComplete, opt
         <div>
             <label htmlFor={id} className="text-sm font-medium text-ink-strong">
                 {label}
-                {optional ? <span className="font-normal text-ink-faint"> (optional)</span> : null}
+                {optional ? <span className="font-normal text-ink-faint"> {contact.fields.optional}</span> : null}
             </label>
             {multiline ? <textarea rows={5} {...shared} /> : <input type={type} {...shared} />}
             {error ? (

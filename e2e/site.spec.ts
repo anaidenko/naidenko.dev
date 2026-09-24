@@ -118,3 +118,9 @@ test("keeps earlier experience, back to 2007, behind a toggle", async ({ page })
     await expect(earlier).toContainText("2007");
     await expect(earlier).toContainText("GlobalLogic");
 });
+
+test("shows the current year in the footer, not the year of the build", async ({ page }) => {
+    await page.clock.setFixedTime(new Date("2031-06-01T12:00:00Z"));
+    await page.goto("/");
+    await expect(page.locator("footer")).toContainText("© 2031");
+});

@@ -1,5 +1,6 @@
 import Link from "next/link";
 
+import { consent } from "@/content/consent";
 import type { Consent } from "@/lib/analytics";
 
 const button =
@@ -9,22 +10,22 @@ const button =
 export function ConsentBanner({ onChoose }: { onChoose: (choice: Consent) => void }) {
     return (
         <section
-            aria-label="Cookie consent"
+            aria-label={consent.label}
             className="fixed inset-x-4 bottom-4 z-40 mx-auto max-w-md rounded-xl border border-ink-faint/30 bg-surface/95 p-5 text-sm shadow-2xl backdrop-blur sm:right-auto sm:bottom-6 sm:left-6"
         >
-            <p className="font-medium text-ink-strong">May I count visits with Google Analytics?</p>
+            <p className="font-medium text-ink-strong">{consent.question}</p>
             <p className="mt-2 leading-normal">
-                It shows me which parts of this page are useful. Cookies are set only if you allow them.{" "}
+                {consent.explanation}{" "}
                 <Link href="/privacy" className="underline underline-offset-2 hover:text-ink-strong">
-                    Privacy note
+                    {consent.privacyLink}
                 </Link>
             </p>
             <div className="mt-4 flex gap-3">
                 <button type="button" onClick={() => onChoose("granted")} className={button}>
-                    Allow
+                    {consent.allow}
                 </button>
                 <button type="button" onClick={() => onChoose("denied")} className={button}>
-                    Decline
+                    {consent.decline}
                 </button>
             </div>
         </section>

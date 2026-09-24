@@ -142,4 +142,35 @@ describe("handleContact", () => {
         expect(deps.rateLimit).not.toHaveBeenCalled();
         expect(sent).toHaveLength(1);
     });
+
+    it("stops reading a body without Content-Length once it passes the limit", async () => {
+        let pulled = 0;
+        const chunk = new TextEncoder().encode("x".repeat(4096));
+        const body = new ReadableStream<Uint8Array>({
+            pull(controller) {
+                pulled += chunk.byteLength;
+                controller.enqueue(chunk);
+                if (pulled > 10_000_000) controller.close();
+            }
+        });
+        const request = new Request("https://naidenko.dev/api/contact", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body,
+            duplex: "half"
+        } as RequestInit);
+        expect((await handleContact(request, setup().deps)).status).toBe(413);
+        expect(pulled).toBeLessThan(MAX_BODY_BYTES * 2);
+    });
+
+    it("accepts only the application/json media type, not a parameter that mentions it", async () => {
+        const sneaky = new Request("https://naidenko.dev/api/contact", {
+            method: "POST",
+            headers: { "Content-Type": "text/plain;charset=application/json" },
+            body: JSON.stringify(valid)
+        });
+        expect((await handleContact(sneaky, setup().deps)).status).toBe(415);
+        const withCharset = post(valid, { "Content-Type": "application/json; charset=utf-8" });
+        expect((await handleContact(withCharset, setup().deps)).status).toBe(200);
+    });
 });
