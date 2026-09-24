@@ -1,7 +1,5 @@
 import { defineConfig, devices } from "@playwright/test";
 
-// The installed Google Chrome locally; Playwright's own Chromium in CI.
-const CHANNEL = process.env.CI ? undefined : "chrome";
 const PORT = 8788;
 const BASE_URL = `http://127.0.0.1:${PORT}`;
 
@@ -13,8 +11,8 @@ export default defineConfig({
     reporter: [["list"]],
     use: { baseURL: BASE_URL, trace: "retain-on-failure" },
     projects: [
-        { name: "desktop", use: { ...devices["Desktop Chrome"], channel: CHANNEL, viewport: { width: 1440, height: 900 } } },
-        { name: "mobile", use: { ...devices["Pixel 7"], channel: CHANNEL } }
+        { name: "desktop", use: { ...devices["Desktop Chrome"], viewport: { width: 1440, height: 900 } } },
+        { name: "mobile", use: { ...devices["Pixel 7"] } }
     ],
     webServer: {
         command: `[ -f .dev.vars ] || cp .dev.vars.example .dev.vars; pnpm exec wrangler d1 migrations apply naidenko-stats --local && pnpm exec wrangler dev --port ${PORT} --ip 127.0.0.1`,

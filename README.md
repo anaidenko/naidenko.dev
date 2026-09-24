@@ -38,8 +38,9 @@ pnpm test:e2e      # builds with e2e/e2e.env, starts wrangler dev, runs Playwrig
 pnpm typecheck && pnpm lint && pnpm format:check
 ```
 
-The end-to-end tests use the installed Google Chrome locally (Playwright's Chromium in CI) and
-reach `challenges.cloudflare.com` for Turnstile's test keys. Google Analytics is stubbed.
+The end-to-end tests run Playwright's headless Chromium, locally and in CI; install it once with
+`pnpm exec playwright install --only-shell chromium`. They reach `challenges.cloudflare.com` for
+Turnstile's test keys, and GoatCounter is stubbed.
 
 ## Configuration
 
