@@ -8,12 +8,18 @@
     --color-ink-strong: #f4f4f5;
     --color-ink-faint: #8b8b95;
     --color-accent: #bef264;
-    --color-spot: rgb(190 242 100 / 0.06);
+    /* Toptal's verified green (#077664), lightened to read on the canvas. */
+    --color-verified: #34d399;
+    --color-spot: rgb(190 242 100 / 0.03);
 
     /* next/font puts --font-geist and --font-geist-mono on <html>. */
     --font-sans: var(--font-geist), ui-sans-serif, system-ui, sans-serif;
     --font-mono: var(--font-geist-mono), ui-monospace, monospace;
 }
+
+/* Laptop viewports: the sticky header tightens so the photo, navigation and links still fit. */
+@custom-variant short (@media (max-height: 860px));
+@custom-variant shorter (@media (max-height: 720px));
 
 @utility display-name {
     font-weight: 700;
@@ -33,5 +39,5 @@ html {
 }
 
 .spotlight {
-    background: radial-gradient(600px circle at var(--spot-x, -100vw) var(--spot-y, -100vh), var(--color-spot), transparent 80%);
+    background: radial-gradient(1200px circle at var(--spot-x, -100vw) var(--spot-y, -100vh), var(--color-spot), transparent 80%);
 }

@@ -1,7 +1,7 @@
 /** Short interface labels. Claims and longer copy live in the section files next to this one. */
 export const ui = {
     skipToContent: "Skip to content",
-    startProject: "Start a project",
+    contactMe: "Contact me",
     earlierExperience: "Earlier experience",
     proof: "Proof",
     copyInstall: "Copy install commands",

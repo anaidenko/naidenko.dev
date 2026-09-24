@@ -41,7 +41,7 @@ export const privacy = {
             title: "Cookies and analytics",
             paragraphs: [
                 "The site sets no cookies unless you allow analytics. It asks once, and remembers your answer in your browser’s local storage.",
-                "If you allow it, Google Analytics 4 counts page views and clicks on links and buttons, such as “Start a project” or the Toptal badge, along with your approximate location, device and browser. It sets two cookies, _ga and _ga_ followed by an ID, which last up to two years. Google Ireland Limited processes this data for me; Google Analytics 4 does not log or store IP addresses, and its advertising features stay off. Reports are kept for up to 14 months. The legal basis is your consent (GDPR Article 6(1)(a)).",
+                "If you allow it, Google Analytics 4 counts page views and clicks on links and buttons, such as “Contact me” or the Toptal badge, along with your approximate location, device and browser. It sets two cookies, _ga and _ga_ followed by an ID, which last up to two years. Google Ireland Limited processes this data for me; Google Analytics 4 does not log or store IP addresses, and its advertising features stay off. Reports are kept for up to 14 months. The legal basis is your consent (GDPR Article 6(1)(a)).",
                 "You can change your answer at any time with “Cookie settings” at the bottom of the home page. Withdrawing it deletes the cookies."
             ]
         },

@@ -96,14 +96,14 @@ The events are sent only after the visitor allows analytics.
 
 | Event | When | Parameters |
 |---|---|---|
-| `start_project` | "Start a project" | — |
+| `contact_click` | "Contact me" in the header | — |
 | `hire_me_toptal` | "Hire me" on the Toptal badge | `placement` |
 | `toptal_profile_click` | "View full résumé on Toptal" | `placement` |
 | `profile_click` | GitHub, LinkedIn or Toptal icon | `network` |
 | `email_click` | Any email link | `placement` |
 | `client_site_click` | A client's name in Experience | `company` |
 | `store_click` | App Store or Google Play | `store` |
-| `project_click` | A plugin's repository | `project` |
+| `project_click` | A repository in Projects | `project` |
 | `copy_install` | The install-command copy button | — |
 | `generate_lead` | The form was sent | `form` |
 | `form_error` | The form could not be sent | `form`, `reason` (`rate_limit` when limited) |

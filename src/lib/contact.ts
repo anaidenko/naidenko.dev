@@ -51,7 +51,7 @@ export function validateContact(raw: unknown): ContactValidation {
         errors.company = `Please keep this under ${CONTACT_LIMITS.company} characters.`;
     }
 
-    if (!value.message) errors.message = "Please tell me what you’re building.";
+    if (!value.message) errors.message = "Please write a message.";
     else if (value.message.length < CONTACT_LIMITS.messageMin) errors.message = "Please add a little more detail.";
     else if (value.message.length > CONTACT_LIMITS.messageMax) {
         errors.message = `Please keep the message under ${CONTACT_LIMITS.messageMax} characters.`;

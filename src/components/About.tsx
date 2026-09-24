@@ -10,9 +10,9 @@ export function About() {
                     <p key={paragraph.slice(0, 32)}>{paragraph}</p>
                 ))}
             </div>
-            <dl className="mt-10 grid grid-cols-2 gap-x-6 gap-y-8 sm:grid-cols-4">
+            <dl className="mt-10 grid grid-cols-2 gap-3 md:grid-cols-4 lg:grid-cols-2 xl:grid-cols-4">
                 {numbers.map(({ value, label }) => (
-                    <div key={label} className="flex flex-col-reverse justify-end">
+                    <div key={label} className="flex flex-col-reverse justify-end rounded-xl border border-ink-faint/15 bg-surface/60 p-4">
                         <dt className="mt-1 text-sm leading-snug text-ink-faint">{label}</dt>
                         <dd className="text-3xl display-name text-ink-strong">{value}</dd>
                     </div>

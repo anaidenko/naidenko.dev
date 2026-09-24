@@ -4,7 +4,7 @@ paths:
     - e2e/**
     - "**/*.test.ts"
     - playwright.config.ts
-    - vitest.config.ts
+    - vitest.config.mts
 ---
 
 # Testing

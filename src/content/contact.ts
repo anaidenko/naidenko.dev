@@ -1,5 +1,5 @@
 export const contact = {
-    intro: "Tell me what you’re building and where it stands. I’ll reply by email.",
+    intro: "Have a role or a contract in mind? Send me a message, and I’ll reply by email.",
     noScript: "The form needs JavaScript. Email works without it:",
     emailPrompt: "Prefer email? Write to",
     toptalHeading: "Prefer to hire through Toptal?",
@@ -8,7 +8,7 @@ export const contact = {
         name: "Name",
         email: "Email",
         company: "Company or website",
-        message: "What are you building?",
+        message: "Message",
         optional: "(optional)"
     },
     send: "Send message",

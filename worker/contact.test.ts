@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from "vitest";
+import { describe, expect, it, onTestFinished, vi } from "vitest";
 
 import { type ContactDeps, MAX_BODY_BYTES, type OutgoingEmail, handleContact } from "./contact";
 
@@ -112,13 +112,16 @@ describe("handleContact", () => {
         expect(sent[0].subject.length).toBeLessThanOrEqual(120);
     });
 
-    it("reports a failed send as 502", async () => {
+    it("reports a failed send as 502 and logs the error", async () => {
+        const logged = vi.spyOn(console, "error").mockImplementation(() => {});
+        onTestFinished(() => logged.mockRestore());
         const failing = setup({
             sendEmail: vi.fn(async () => {
                 throw new Error("E_RATE_LIMIT_EXCEEDED");
             })
         });
         expect((await handleContact(post(valid), failing.deps)).status).toBe(502);
+        expect(logged).toHaveBeenCalledWith("contact: send failed", expect.objectContaining({ message: "E_RATE_LIMIT_EXCEEDED" }));
     });
 
     it("turns away repeated sends from one address with 429", async () => {

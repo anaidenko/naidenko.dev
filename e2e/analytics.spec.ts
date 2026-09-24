@@ -62,8 +62,8 @@ test("records the calls to action", async ({ page, isMobile }) => {
     await stubGoogle(page);
     await page.goto("/");
     await banner(page).getByRole("button", { name: "Allow" }).click();
-    await page.getByRole("link", { name: "Start a project" }).click();
-    await expect.poll(() => sentEvent(page, "start_project")).toBe(true);
+    await page.getByRole("link", { name: "Contact me" }).click();
+    await expect.poll(() => sentEvent(page, "contact_click")).toBe(true);
     const popup = page.context().waitForEvent("page");
     await page.locator("#r").getByRole("link", { name: "Hire me" }).click();
     await (await popup).close();
@@ -82,7 +82,7 @@ test("records a sent message as a lead", async ({ page }) => {
     const form = page.locator("section#contact form");
     await form.getByLabel("Name").fill("Ada Lovelace");
     await form.getByLabel("Email").fill("ada@example.com");
-    await form.getByLabel("What are you building?").fill("An iOS and Android app for our field crews.");
+    await form.getByLabel("Message").fill("An iOS and Android app for our field crews.");
     await form.getByRole("button", { name: "Send message" }).click();
     await expect(page.locator("section#contact").getByRole("status")).toBeVisible({ timeout: 30_000 });
     await expect.poll(() => sentEvent(page, "generate_lead")).toBe(true);

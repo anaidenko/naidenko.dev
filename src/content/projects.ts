@@ -1,6 +1,8 @@
 export interface Project {
     name: string;
-    url: string;
+    /** Absent for client work whose code is private. */
+    url?: string;
+    note?: string;
     description: string;
     chips: readonly string[];
     image?: {
@@ -12,8 +14,19 @@ export interface Project {
     };
 }
 
-/** From the repositories' READMEs and GitHub descriptions, read 2026-09-24. All three are MIT. */
+/**
+ * The engineering system: condensed from the Toptal portfolio project of the same name (public page
+ * saved 2026-09-16), names no client. The plugins: from their READMEs and GitHub descriptions, read
+ * 2026-09-24; both are MIT.
+ */
 export const projects: readonly Project[] = [
+    {
+        name: "AI-native engineering system",
+        note: "Client work · private code",
+        description:
+            "Lets AI coding agents carry a production mobile product safely, rather than just autocompleting code: planning, an independent plan review, implementation in isolated Git worktrees, code review, verification and release. The guardrails are deterministic, not advisory: hooks enforce what documentation alone cannot, each added after a specific failure happened once. Agents check the app on iOS and Android instead of trusting a green build.",
+        chips: ["Claude Code", "AI agents", "MCP", "Playwright", "Node.js", "Bash"]
+    },
     {
         name: "claude-video-digest",
         url: "https://github.com/anaidenko/claude-video-digest",
@@ -34,12 +47,6 @@ export const projects: readonly Project[] = [
         description:
             "Desktop notifications for Claude Code that tell you which conversation replied, or is waiting on you, and take you back into it. macOS and Linux.",
         chips: ["Claude Code", "Shell", "macOS", "Linux"]
-    },
-    {
-        name: "claude-plugins",
-        url: "https://github.com/anaidenko/claude-plugins",
-        description: "The marketplace both plugins install from: add it once, then install whichever plugin you want.",
-        chips: ["Claude Code", "Marketplace"]
     }
 ];
 
@@ -49,5 +56,10 @@ export const installCommands: readonly string[] = [
     "claude plugin install claude-notify-resume@anaidenko"
 ];
 
-export const openSourceIntro = "General-purpose tools for Claude Code, open source under the MIT license.";
-export const installHeading = "Install both from the marketplace";
+export const projectsIntro = "A system I built for client work, and two open-source tools for Claude Code, MIT-licensed.";
+
+export const marketplace = {
+    lead: "Install both from my plugin marketplace,",
+    name: "claude-plugins",
+    url: "https://github.com/anaidenko/claude-plugins"
+} as const;

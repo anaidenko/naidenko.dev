@@ -7,12 +7,16 @@ export function Nav() {
     const active = useActiveSection(sectionIds);
     return (
         <nav className="hidden lg:block" aria-label="In-page navigation">
-            <ul className="mt-12 w-max">
+            <ul className="mt-12 w-max short:mt-8">
                 {sections.map(({ id, label }) => {
                     const isActive = active === id;
                     return (
                         <li key={id}>
-                            <a href={`#${id}`} aria-current={isActive ? "true" : undefined} className="group flex items-center py-2.5">
+                            <a
+                                href={`#${id}`}
+                                aria-current={isActive ? "true" : undefined}
+                                className="group flex items-center py-2.5 short:py-2"
+                            >
                                 <span
                                     className={`mr-4 h-px transition-all motion-reduce:transition-none ${
                                         isActive

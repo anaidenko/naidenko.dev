@@ -1,8 +1,13 @@
+const verified = { lead: "Verified Expert", rest: "in Engineering at Toptal" } as const;
+const location = "Athens, Greece";
+
 export const site = {
     name: "Andrii Naidenko",
     role: "Full-stack and Mobile Developer",
     tagline: "I build mobile apps and full-stack products, and own them end to end.",
-    meta: "Verified Expert in Engineering at Toptal · Athens, Greece",
+    verified,
+    location,
+    meta: `${verified.lead} ${verified.rest} · ${location}`,
     description:
         "Full-stack and mobile developer since 2007: iOS and Android apps with Ionic and Capacitor, Node.js back ends, Angular and React front ends.",
     domain: "naidenko.dev",

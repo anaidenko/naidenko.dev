@@ -1,9 +1,9 @@
-export type SectionId = "about" | "experience" | "open-source" | "services" | "contact";
+export type SectionId = "about" | "experience" | "projects" | "services" | "contact";
 
 export const sections: readonly { id: SectionId; label: string }[] = [
     { id: "about", label: "About" },
     { id: "experience", label: "Experience" },
-    { id: "open-source", label: "Open source" },
+    { id: "projects", label: "Projects" },
     { id: "services", label: "Services" },
     { id: "contact", label: "Contact" }
 ];

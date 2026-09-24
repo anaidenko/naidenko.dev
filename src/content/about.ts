@@ -1,3 +1,5 @@
+import { compactFigure } from "@/lib/format";
+
 import { storeMetrics } from "./metrics";
 
 /** The About from LinkedIn (live since 2026-09-24): paragraphs 1, 2 and 4, verbatim. */
@@ -7,10 +9,14 @@ export const aboutParagraphs: readonly string[] = [
     "Master’s degree in Computer Science. Based in Greece, working with US clients in EST overlap."
 ];
 
-/** Experience measured from June 2007; the store figures come from metrics.ts. */
+/**
+ * Experience measured from June 2007; the store figures come from metrics.ts. Repeat clients,
+ * counted 2026-09-24: Brokerloop and RentWise on Toptal (three engagements each), and three
+ * Upwork clients with three to six contracts each.
+ */
 export const numbers: readonly { value: string; label: string }[] = [
     { value: "19", label: "years building software, since 2007" },
-    { value: storeMetrics.googlePlayInstalls, label: "installs on Google Play" },
+    { value: compactFigure(storeMetrics.googlePlayInstalls), label: "installs on Google Play" },
     { value: storeMetrics.appStoreRating, label: `App Store rating, from ${storeMetrics.appStoreRatings} ratings` },
-    { value: "3×", label: "Brokerloop and RentWise each hired me three times" }
+    { value: "5", label: "clients hired me three or more times" }
 ];

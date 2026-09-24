@@ -7,7 +7,7 @@ async function fillValid(page: Page) {
     await form.getByLabel("Name").fill("Ada Lovelace");
     await form.getByLabel("Email").fill("ada@example.com");
     await form.getByLabel(/Company or website/).fill("Analytical Engines");
-    await form.getByLabel("What are you building?").fill("An iOS and Android app for our field crews.");
+    await form.getByLabel("Message").fill("An iOS and Android app for our field crews.");
 }
 
 test("validates before sending", async ({ page }) => {
@@ -19,7 +19,7 @@ test("validates before sending", async ({ page }) => {
     await page.getByRole("button", { name: "Send message" }).click();
     await expect(page.getByText("Please enter your name.")).toBeVisible();
     await expect(page.getByText("Please enter your email.")).toBeVisible();
-    await expect(page.getByText("Please tell me what you’re building.")).toBeVisible();
+    await expect(page.getByText("Please write a message.")).toBeVisible();
     await expect(page.getByLabel("Name")).toBeFocused();
     expect(posts).toBe(0);
 });

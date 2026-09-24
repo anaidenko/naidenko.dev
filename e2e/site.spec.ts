@@ -1,6 +1,6 @@
 import { expect, test } from "@playwright/test";
 
-const SECTIONS = ["about", "experience", "open-source", "services", "contact"];
+const SECTIONS = ["about", "experience", "projects", "services", "contact"];
 
 test("renders the name, every section and no console errors", async ({ page }) => {
     const errors: string[] = [];
@@ -84,14 +84,77 @@ test("has no horizontal overflow at 320 px", async ({ page }) => {
     expect(overflow).toBeLessThanOrEqual(0);
 });
 
-test("puts each number at the top of its cell, whatever the label length", async ({ page }) => {
+test("puts each number at the top of its tile, whatever the label length", async ({ page }) => {
     await page.goto("/");
     const offsets = await page
         .locator("section#about dl > div")
         .evaluateAll(cells =>
             cells.map(cell => Math.round(cell.querySelector("dd")!.getBoundingClientRect().top - cell.getBoundingClientRect().top))
         );
-    expect(offsets).toEqual(offsets.map(() => 0));
+    expect(new Set(offsets).size).toBe(1);
+});
+
+test("fits every number inside its tile, at every layout width", async ({ page, isMobile }) => {
+    const widths = isMobile ? [page.viewportSize()!.width] : [1024, 1280, 1440];
+    for (const width of widths) {
+        await page.setViewportSize({ width, height: 900 });
+        await page.goto("/");
+        const overflows = await page.locator("section#about dl > div").evaluateAll(cells =>
+            cells.map(cell => {
+                const style = getComputedStyle(cell);
+                const inner = cell.getBoundingClientRect().right - parseFloat(style.paddingRight) - parseFloat(style.borderRightWidth);
+                return Math.max(0, Math.ceil(cell.querySelector("dd")!.getBoundingClientRect().right - inner));
+            })
+        );
+        expect(overflows, `at ${width} px`).toEqual(overflows.map(() => 0));
+    }
+});
+
+test("shows the portrait at 150 px or more on desktop", async ({ page, isMobile }) => {
+    test.skip(isMobile, "The portrait is smaller on phones by design");
+    await page.goto("/");
+    const box = await page.locator("header img").first().boundingBox();
+    expect(box!.width).toBeGreaterThanOrEqual(150);
+    expect(box!.height).toBe(box!.width);
+});
+
+test("puts the Toptal verification right under the role, linked to the profile", async ({ page }) => {
+    await page.goto("/");
+    const role = page.locator("header p", { hasText: "Full-stack and Mobile Developer" });
+    const verified = role.locator("xpath=following-sibling::p[1]");
+    await expect(verified.locator("svg")).toBeAttached();
+    const link = verified.getByRole("link");
+    await expect(link).toHaveText("Verified Expert in Engineering at Toptal");
+    await expect(link).toHaveAttribute("href", "https://www.toptal.com/developers/resume/andrii-naidenko#qjl3b7");
+    await expect(verified).toContainText("Athens, Greece");
+});
+
+test("keeps the header's button and links in view on laptop screens", async ({ page, isMobile }) => {
+    test.skip(isMobile, "The header is sticky on desktop only");
+    for (const [width, height] of [
+        [1440, 800],
+        [1280, 700]
+    ]) {
+        await page.setViewportSize({ width, height });
+        await page.goto("/");
+        for (const name of ["Contact me", "Email"]) {
+            const box = await page.locator("header").getByRole("link", { name, exact: true }).boundingBox();
+            expect(box!.y + box!.height, `${name} at ${width}×${height}`).toBeLessThanOrEqual(height);
+        }
+    }
+});
+
+test("leads Projects with the client system and links the marketplace from the install block", async ({ page }) => {
+    await page.goto("/");
+    const projects = page.locator("section#projects");
+    const titles = await projects.locator("article h3").allTextContents();
+    expect(titles[0]).toBe("AI-native engineering system");
+    await expect(projects.locator("article").first().getByRole("link")).toHaveCount(0);
+    expect(titles).not.toContain("claude-plugins");
+    await expect(projects.getByRole("link", { name: "claude-plugins" })).toHaveAttribute(
+        "href",
+        "https://github.com/anaidenko/claude-plugins"
+    );
 });
 
 test("carries the Toptal referral code on every Toptal link", async ({ page }) => {

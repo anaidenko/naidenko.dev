@@ -3,7 +3,7 @@ import { Contact } from "@/components/Contact";
 import { Experience } from "@/components/Experience";
 import { Footer } from "@/components/Footer";
 import { Header } from "@/components/Header";
-import { OpenSource } from "@/components/OpenSource";
+import { Projects } from "@/components/Projects";
 import { Services } from "@/components/Services";
 import { site } from "@/content/site";
 import { ui } from "@/content/ui";
@@ -47,10 +47,10 @@ export default function Home() {
             <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }} />
             <div className="lg:flex lg:justify-between lg:gap-12">
                 <Header />
-                <main id="content" tabIndex={-1} className="pt-12 outline-none lg:w-[56%] lg:py-20">
+                <main id="content" tabIndex={-1} className="pt-12 outline-none lg:w-[56%] lg:py-20 lg:short:py-12">
                     <About />
                     <Experience />
-                    <OpenSource />
+                    <Projects />
                     <Services />
                     <Contact />
                     <Footer />
