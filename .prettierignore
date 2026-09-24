@@ -1,0 +1,20 @@
+# Generated, vendored or verbatim files
+node_modules/
+.next/
+out/
+.wrangler/
+coverage/
+playwright-report/
+test-results/
+screenshots/
+.superpowers/
+pnpm-lock.yaml
+next-env.d.ts
+worker/worker-configuration.d.ts
+public/_headers
+
+# Toptal's badge is pasted verbatim
+src/content/toptal-badge.ts
+
+# Prose keeps its hand-made line breaks
+*.md

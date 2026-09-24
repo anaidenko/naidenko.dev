@@ -1,28 +1,20 @@
-import Link from 'next/link';
-import { site } from '@/content/site';
+import Link from "next/link";
+
+import { site } from "@/content/site";
+
+import { CookieSettingsButton } from "./CookieSettingsButton";
 
 export function Footer() {
-  const year = new Date().getFullYear();
-  return (
-    <footer className="max-w-md pb-16 text-sm text-ink-faint sm:pb-0">
-      <p>
-        Layout inspired by{' '}
-        <a
-          href="https://brittanychiang.com"
-          target="_blank"
-          rel="noopener noreferrer"
-          className="font-medium text-ink hover:text-accent focus-visible:text-accent"
-        >
-          Brittany Chiang
-        </a>
-        . Built with Next.js and Tailwind CSS, hosted on Cloudflare.
-      </p>
-      <p className="mt-2">
-        © {year} {site.name} ·{' '}
-        <Link href="/privacy" className="font-medium text-ink hover:text-accent focus-visible:text-accent">
-          Privacy
-        </Link>
-      </p>
-    </footer>
-  );
+    const year = new Date().getFullYear();
+    return (
+        <footer className="max-w-md pb-16 text-sm text-ink-faint sm:pb-0">
+            <p>
+                © {year} {site.name} ·{" "}
+                <Link href="/privacy" className="font-medium text-ink hover:text-accent focus-visible:text-accent">
+                    Privacy
+                </Link>
+                <CookieSettingsButton />
+            </p>
+        </footer>
+    );
 }

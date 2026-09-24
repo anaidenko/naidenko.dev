@@ -1,87 +1,37 @@
-@import 'tailwindcss';
+@import "tailwindcss";
 
+/* The "Signal" palette: graphite, zinc greys, lime (picked 2026-09-24). */
 @theme {
-  --color-canvas: var(--palette-canvas);
-  --color-surface: var(--palette-surface);
-  --color-ink: var(--palette-ink);
-  --color-ink-strong: var(--palette-ink-strong);
-  --color-ink-faint: var(--palette-ink-faint);
-  --color-accent: var(--palette-accent);
-  --font-display: var(--palette-font-display);
-  --font-sans: var(--palette-font-sans);
-  --font-mono: var(--palette-font-mono);
-}
+    --color-canvas: #0b0c0e;
+    --color-surface: #16181c;
+    --color-ink: #a1a1aa;
+    --color-ink-strong: #f4f4f5;
+    --color-ink-faint: #8b8b95;
+    --color-accent: #bef264;
+    --color-spot: rgb(190 242 100 / 0.06);
 
-/* B · Signal: graphite, zinc greys, lime. The default until Andrii picks. */
-html[data-palette='signal'] {
-  --palette-canvas: #0b0c0e;
-  --palette-surface: #16181c;
-  --palette-ink: #a1a1aa;
-  --palette-ink-strong: #f4f4f5;
-  --palette-ink-faint: #8b8b95;
-  --palette-accent: #bef264;
-  --palette-spot: rgb(190 242 100 / 0.06);
-  --palette-font-display: var(--font-geist), ui-sans-serif, system-ui, sans-serif;
-  --palette-font-sans: var(--font-geist), ui-sans-serif, system-ui, sans-serif;
-  --palette-font-mono: var(--font-geist-mono), ui-monospace, monospace;
-  --palette-display-weight: 700;
-  --palette-display-tracking: -0.03em;
-}
-
-/* A · Ember: warm near-black, stone greys, amber, a serif name. */
-html[data-palette='ember'] {
-  --palette-canvas: #0f0d0b;
-  --palette-surface: #1b1815;
-  --palette-ink: #a8a29e;
-  --palette-ink-strong: #f5f5f4;
-  --palette-ink-faint: #8f8781;
-  --palette-accent: #fcd34d;
-  --palette-spot: rgb(252 211 77 / 0.06);
-  --palette-font-display: var(--font-instrument-serif), ui-serif, Georgia, serif;
-  --palette-font-sans: var(--font-geist), ui-sans-serif, system-ui, sans-serif;
-  --palette-font-mono: var(--font-geist-mono), ui-monospace, monospace;
-  --palette-display-weight: 400;
-  --palette-display-tracking: -0.01em;
-}
-
-/* C · Iris: ink, cool greys, violet, IBM Plex. */
-html[data-palette='iris'] {
-  --palette-canvas: #0c0b14;
-  --palette-surface: #17152a;
-  --palette-ink: #a6a3ba;
-  --palette-ink-strong: #ecebf5;
-  --palette-ink-faint: #8d89a6;
-  --palette-accent: #c4b5fd;
-  --palette-spot: rgb(196 181 253 / 0.07);
-  --palette-font-display: var(--font-plex-sans), ui-sans-serif, system-ui, sans-serif;
-  --palette-font-sans: var(--font-plex-sans), ui-sans-serif, system-ui, sans-serif;
-  --palette-font-mono: var(--font-plex-mono), ui-monospace, monospace;
-  --palette-display-weight: 600;
-  --palette-display-tracking: -0.02em;
+    /* next/font puts --font-geist and --font-geist-mono on <html>. */
+    --font-sans: var(--font-geist), ui-sans-serif, system-ui, sans-serif;
+    --font-mono: var(--font-geist-mono), ui-monospace, monospace;
 }
 
 @utility display-name {
-  font-family: var(--font-display);
-  font-weight: var(--palette-display-weight);
-  letter-spacing: var(--palette-display-tracking);
+    font-weight: 700;
+    letter-spacing: -0.03em;
 }
 
 html {
-  color-scheme: dark;
-  background-color: var(--color-canvas);
-  scroll-behavior: smooth;
+    color-scheme: dark;
+    background-color: var(--color-canvas);
+    scroll-behavior: smooth;
 }
 
 @media (prefers-reduced-motion: reduce) {
-  html {
-    scroll-behavior: auto;
-  }
+    html {
+        scroll-behavior: auto;
+    }
 }
 
 .spotlight {
-  background: radial-gradient(
-    600px circle at var(--spot-x, -100vw) var(--spot-y, -100vh),
-    var(--palette-spot),
-    transparent 80%
-  );
+    background: radial-gradient(600px circle at var(--spot-x, -100vw) var(--spot-y, -100vh), var(--color-spot), transparent 80%);
 }

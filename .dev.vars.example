@@ -1,3 +1,4 @@
-# Copy to .dev.vars for `wrangler dev`. These are Cloudflare's public Turnstile test values.
+# Copy to .dev.vars for `wrangler dev`. Cloudflare's public Turnstile test secret and a dummy
+# inbox: locally the email is only logged. Production values are Wrangler secrets (README).
 TURNSTILE_SECRET_KEY=1x0000000000000000000000000000000AA
 CONTACT_TO=inbox@example.net

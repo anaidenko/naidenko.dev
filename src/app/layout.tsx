@@ -1,46 +1,52 @@
-import type { Metadata, Viewport } from 'next';
-import { Geist, Geist_Mono, IBM_Plex_Mono, IBM_Plex_Sans, Instrument_Serif } from 'next/font/google';
-import Script from 'next/script';
-import type { ReactNode } from 'react';
-import { Spotlight } from '@/components/Spotlight';
-import { site } from '@/content/site';
-import './globals.css';
+import type { Metadata, Viewport } from "next";
+import { Geist, Geist_Mono } from "next/font/google";
+import type { ReactNode } from "react";
 
-const geist = Geist({ subsets: ['latin'], variable: '--font-geist' });
-const geistMono = Geist_Mono({ subsets: ['latin'], variable: '--font-geist-mono' });
-const instrumentSerif = Instrument_Serif({ subsets: ['latin'], weight: '400', variable: '--font-instrument-serif' });
-const plexSans = IBM_Plex_Sans({ subsets: ['latin'], weight: ['400', '500', '600'], variable: '--font-plex-sans' });
-const plexMono = IBM_Plex_Mono({ subsets: ['latin'], weight: ['400', '500'], variable: '--font-plex-mono' });
+import { Analytics } from "@/components/Analytics";
+import { Spotlight } from "@/components/Spotlight";
+import { site } from "@/content/site";
+
+import "./globals.css";
+
+const geist = Geist({ subsets: ["latin"], variable: "--font-geist" });
+const geistMono = Geist_Mono({ subsets: ["latin"], variable: "--font-geist-mono" });
 
 const title = `${site.name} · ${site.role}`;
+const ogImage = { url: "/og.png", width: 1200, height: 630, type: "image/png", alt: `${site.name}, ${site.role}` };
 
 export const metadata: Metadata = {
-  metadataBase: new URL(site.url),
-  title,
-  description: site.description,
-  alternates: { canonical: '/' },
-  openGraph: { type: 'profile', url: site.url, siteName: site.domain, title, description: site.description },
+    metadataBase: new URL(site.url),
+    title: { default: title, template: `%s · ${site.domain}` },
+    description: site.description,
+    alternates: { canonical: "/" },
+    authors: [{ name: site.name, url: site.url }],
+    creator: site.name,
+    openGraph: {
+        type: "profile",
+        url: site.url,
+        siteName: site.domain,
+        locale: "en_US",
+        title,
+        description: site.description,
+        firstName: "Andrii",
+        lastName: "Naidenko",
+        images: [ogImage]
+    },
+    twitter: { card: "summary_large_image", title, description: site.description, images: [ogImage] },
+    icons: { icon: [{ url: "/icon.svg", type: "image/svg+xml" }], apple: "/apple-touch-icon.png" }
 };
 
-export const viewport: Viewport = { themeColor: '#0b0c0e', colorScheme: 'dark' };
-
-const beaconToken = process.env.NEXT_PUBLIC_CF_BEACON_TOKEN;
+export const viewport: Viewport = { themeColor: "#0b0c0e", colorScheme: "dark" };
 
 export default function RootLayout({ children }: Readonly<{ children: ReactNode }>) {
-  const fonts = [geist, geistMono, instrumentSerif, plexSans, plexMono].map((font) => font.variable).join(' ');
-  return (
-    <html lang="en" data-palette={site.palette} className={fonts}>
-      <body className="bg-canvas font-sans leading-relaxed text-ink antialiased selection:bg-accent selection:text-canvas">
-        <Spotlight />
-        {children}
-        {beaconToken ? (
-          <Script
-            src="https://static.cloudflareinsights.com/beacon.min.js"
-            data-cf-beacon={JSON.stringify({ token: beaconToken })}
-            strategy="afterInteractive"
-          />
-        ) : null}
-      </body>
-    </html>
-  );
+    const fonts = `${geist.variable} ${geistMono.variable}`;
+    return (
+        <html lang="en" className={fonts}>
+            <body className="bg-canvas font-sans leading-relaxed text-ink antialiased selection:bg-accent selection:text-canvas">
+                <Spotlight />
+                {children}
+                <Analytics />
+            </body>
+        </html>
+    );
 }

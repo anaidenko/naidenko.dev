@@ -1,0 +1,28 @@
+{
+    "permissions": {
+        "allow": [
+            "Bash(git diff:*)",
+            "Bash(git log:*)",
+            "Bash(git show:*)",
+            "Bash(git status:*)",
+            "Bash(pnpm build:*)",
+            "Bash(pnpm exec playwright test:*)",
+            "Bash(pnpm exec prettier:*)",
+            "Bash(pnpm exec vitest:*)",
+            "Bash(pnpm format:*)",
+            "Bash(pnpm lint:*)",
+            "Bash(pnpm preview:*)",
+            "Bash(pnpm test:*)",
+            "Bash(pnpm typecheck:*)"
+        ],
+        "ask": ["Bash(git push:*)", "Bash(pnpm exec wrangler deploy:*)", "Bash(pnpm exec wrangler secret:*)", "Bash(pnpm run deploy:*)"]
+    },
+    "hooks": {
+        "PostToolUse": [
+            {
+                "matcher": "Edit|Write",
+                "hooks": [{ "type": "command", "command": "\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/format.sh" }]
+            }
+        ]
+    }
+}
