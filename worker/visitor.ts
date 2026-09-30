@@ -134,7 +134,8 @@ export function networkKey(ip: string): string {
 
 /**
  * Tells a returning visitor from a new one: a keyed hash of the network, the browser and the
- * system, which cannot be turned back into the address without the key. Null without either.
+ * system. It does not contain the address, and without the key it cannot be matched to one (with
+ * the key, IPv4's 2^32 addresses could be tried one by one). Null without a key or an address.
  */
 export async function visitorHash(key: string, ip: string, userAgent: string): Promise<string | null> {
     const network = networkKey(ip);

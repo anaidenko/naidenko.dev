@@ -1,3 +1,5 @@
+import { sections as pageSections } from "../src/content/sections";
+
 import { countryName, languageName } from "./names";
 
 export interface Row {
@@ -147,6 +149,17 @@ const percent = (part: number, whole: number) => (whole > 0 ? `${Math.round((par
 const placeName = ({ country, region, city }: { country: string; region: string; city: string }) =>
     [city, region, countryName(country)].filter(Boolean).join(", ");
 const capitalized = (text: string) => text.charAt(0).toUpperCase() + text.slice(1);
+
+/** The sections in the page's order, under the page's own labels; an unknown id goes last. */
+function inPageOrder(rows: Row[]): Row[] {
+    const index = (id: string) => {
+        const found = pageSections.findIndex(section => section.id === id);
+        return found < 0 ? pageSections.length : found;
+    };
+    return [...rows]
+        .sort((a, b) => index(a.label) - index(b.label))
+        .map(row => ({ ...row, label: pageSections.find(section => section.id === row.label)?.label ?? row.label }));
+}
 
 /** A table of one label and one or more figures per line; the labels are escaped here. */
 function table(title: string, headers: string[], rows: [string, ...string[]][]): string {
@@ -338,13 +351,9 @@ ${table("Screen widths", [], counts(data.screens))}
 ${table(
     "Sections reached",
     [],
-    data.sections.map(row => [capitalized(row.label), `${row.n} · ${percent(row.n, totals.views)}`])
+    inPageOrder(data.sections).map(row => [row.label, `${row.n} · ${percent(row.n, totals.views)}`])
 )}
-${table(
-    "Menu clicks",
-    [],
-    counts(data.nav, row => capitalized(row.label))
-)}
+${table("Menu clicks", [], counts(inPageOrder(data.nav)))}
 ${table("Time on page", [], counts(data.durations))}
 ${table("Clicks and messages", [], counts(data.events))}
 ${recentTable(data.recent)}

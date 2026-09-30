@@ -140,6 +140,19 @@ describe("renderStats", () => {
         expect(html).toContain('href="?range=7&amp;country=US&amp;ref=acme"');
     });
 
+    it("lists the sections reached in the page's order, with their share of page views", () => {
+        const sections = [
+            { label: "contact", n: 10 },
+            { label: "about", n: 40 },
+            { label: "experience", n: 20 }
+        ];
+        const html = renderStats({ ...DATA, sections }, DEFAULT, NOW);
+        const reached = html.slice(html.indexOf("Sections reached"), html.indexOf("Menu clicks"));
+        expect(reached.indexOf("About")).toBeLessThan(reached.indexOf("Experience"));
+        expect(reached.indexOf("Experience")).toBeLessThan(reached.indexOf("Contact"));
+        expect(reached).toContain("40 · 100%");
+    });
+
     it("escapes what visitors and networks control", () => {
         const html = renderStats(DATA, DEFAULT, NOW);
         expect(html).not.toContain("<script>alert(1)</script>");
