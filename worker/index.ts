@@ -38,7 +38,7 @@ export default {
         if (pathname === "/stats") {
             return handleStats(request, {
                 password: env.STATS_PASSWORD ?? "",
-                load: (since30, since7) => loadStats(env.STATS_DB, since30, since7),
+                load: filter => loadStats(env.STATS_DB, filter),
                 now: () => new Date()
             });
         }
