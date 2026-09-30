@@ -1,6 +1,18 @@
 import { describe, expect, it, vi } from "vitest";
 
-import { type Filter, type StatsData, type StatsDeps, filterOf, handleStats, previousOf, renderStats, trend } from "./stats";
+import {
+    type Filter,
+    type StatsData,
+    type StatsDeps,
+    activePreset,
+    chartSeries,
+    filterOf,
+    handleStats,
+    niceCeiling,
+    previousOf,
+    renderStats,
+    trend
+} from "./stats";
 
 const NOW = new Date("2026-09-24T12:00:00Z");
 
@@ -99,6 +111,12 @@ function setup(overrides: Partial<StatsDeps> = {}): StatsDeps {
 
 const filter = (query: string) => filterOf(new URL(`https://naidenko.dev/stats${query}`), NOW);
 
+/** The part of a page from one marker to the next occurrence of another. */
+const between = (html: string, from: string, to: string) => {
+    const start = html.indexOf(from);
+    return html.slice(start, html.indexOf(to, start));
+};
+
 describe("filterOf", () => {
     it("shows the last 7 days of every country and tag by default", () => {
         expect(filter("")).toEqual(DEFAULT);
@@ -174,6 +192,128 @@ describe("trend", () => {
     });
 });
 
+describe("chartSeries", () => {
+    it("fills the days without visits with zeros, oldest first", () => {
+        const days = [
+            { label: "2026-09-24", visitors: 3, views: 4 },
+            { label: "2026-09-22", visitors: 1, views: 1 }
+        ];
+        expect(chartSeries(days, [], { ...DEFAULT, from: "2026-09-21" })).toEqual([
+            { label: "2026-09-21", visitors: 0, views: 0 },
+            { label: "2026-09-22", visitors: 1, views: 1 },
+            { label: "2026-09-23", visitors: 0, views: 0 },
+            { label: "2026-09-24", visitors: 3, views: 4 }
+        ]);
+    });
+
+    it("starts all time at the first day with visits, and draws nothing without any", () => {
+        const days = [{ label: "2026-09-23", visitors: 2, views: 2 }];
+        expect(chartSeries(days, [], { ...DEFAULT, from: "" }).map(day => day.label)).toEqual(["2026-09-23", "2026-09-24"]);
+        expect(chartSeries([], [], { ...DEFAULT, from: "" })).toEqual([]);
+    });
+
+    it("counts by month once the range is longer than a year", () => {
+        const months = [
+            { label: "2026-09", visitors: 30, views: 40 },
+            { label: "2025-07", visitors: 5, views: 6 }
+        ];
+        const series = chartSeries([], months, { ...DEFAULT, from: "2025-07-10" });
+        expect(series).toHaveLength(15);
+        expect(series[0]).toEqual({ label: "2025-07", visitors: 5, views: 6 });
+        expect(series[1]).toEqual({ label: "2025-08", visitors: 0, views: 0 });
+        expect(series.at(-1)).toEqual({ label: "2026-09", visitors: 30, views: 40 });
+    });
+});
+
+describe("niceCeiling", () => {
+    it("rounds the chart's top up to 1, 2, 2.5 or 5 times a power of ten", () => {
+        expect([0, 1, 3, 7, 14, 20, 101].map(niceCeiling)).toEqual([1, 1, 5, 10, 20, 20, 200]);
+    });
+});
+
+describe("activePreset", () => {
+    it("names the preset a filter matches, or none for a custom range", () => {
+        expect(activePreset(DEFAULT, NOW)).toBe("7");
+        expect(activePreset({ ...DEFAULT, from: "2026-09-24" }, NOW)).toBe("today");
+        expect(activePreset({ ...DEFAULT, from: "2026-09-23", to: "2026-09-23" }, NOW)).toBe("yesterday");
+        expect(activePreset({ ...DEFAULT, from: "2026-08-26" }, NOW)).toBe("30");
+        expect(activePreset({ ...DEFAULT, from: "" }, NOW)).toBe("all");
+        expect(activePreset({ ...DEFAULT, from: "2026-09-01", to: "2026-09-10" }, NOW)).toBe("");
+    });
+});
+
+describe("the redesigned page", () => {
+    it("draws visitors per day as columns, with the numbers in a tooltip and in a table", () => {
+        const days = [
+            { label: "2026-09-24", visitors: 7, views: 9 },
+            { label: "2026-09-22", visitors: 14, views: 20 }
+        ];
+        const html = renderStats({ ...DATA, days }, DEFAULT, NOW);
+        const chart = between(html, '<figure class="chart"', "</figure>");
+        expect(chart).toContain('aria-label="Visitors per day, 2026-09-18 to 2026-09-24: 21 in total, most on 2026-09-22 (14)"');
+        expect(chart.match(/class="col"/g)).toHaveLength(7);
+        expect(chart).toContain('<i style="height: 70%"></i>');
+        expect(chart).toContain('<i style="height: 35%"></i>');
+        expect(chart).toContain('<span class="tip" style="bottom: 70%"><b>14</b> visitors · 20 views');
+        expect(chart).toContain(">20</span>");
+        expect(between(chart, '<div class="dates">', "</div>")).toContain('<span class="minor">');
+        expect(between(html, "<details", "</details>")).toContain("Show the numbers");
+    });
+
+    it("draws each row's share of the largest as a bar", () => {
+        const countries = [
+            { label: "US", n: 4 },
+            { label: "KR", n: 2 },
+            { label: "", n: 1 }
+        ];
+        const table = between(renderStats({ ...DATA, countries }, DEFAULT, NOW), 'id="countries"', "</section>");
+        for (const width of ["100%", "50%", "25%"]) expect(table).toContain(`<span class="bar" style="width: ${width}"></span>`);
+    });
+
+    it("groups the tables, and links the groups from a menu", () => {
+        const html = renderStats(DATA, DEFAULT, NOW);
+        const menu = between(html, '<nav class="jump"', "</nav>");
+        for (const id of ["traffic", "sources", "audience", "technology", "engagement", "latest-visits"]) {
+            expect(menu).toContain(`href="#${id}"`);
+            expect(html).toContain(`<section id="${id}" class="group">`);
+        }
+    });
+
+    it("shows the periods as buttons, the chosen one marked", () => {
+        const html = renderStats(DATA, DEFAULT, NOW);
+        expect(html).toContain('<a class="pill" href="?range=7" aria-current="page">7 days</a>');
+        expect(html).toContain('<a class="pill" href="?range=30">30 days</a>');
+        expect(renderStats(DATA, { ...DEFAULT, from: "2026-09-01", to: "2026-09-10" }, NOW)).not.toMatch(
+            /<a class="pill"[^>]*aria-current/
+        );
+    });
+
+    it("fits a visit on one line: a short time, the device, section dots and click chips", () => {
+        const visit = { ...DATA.recent[0], path: "/", sections: "about, experience", clicks: "contact_click, profile_click · github" };
+        const html = renderStats({ ...DATA, recent: [visit] }, DEFAULT, NOW);
+        expect(html).toContain('<time title="2026-09-24 11:58:07 UTC">Sep 24, 11:58</time>');
+        expect(html).toContain(
+            '<span class="dots" title="About, Experience"><i class="on"></i><i class="on"></i><i></i><i></i><i></i></span>'
+        );
+        expect(html).toContain('<span class="chip">contact_click</span><span class="chip">profile_click · github</span>');
+        expect(html).toContain("Chrome · macOS");
+    });
+
+    it("shows the latest 20 visits, and the rest on request", () => {
+        const recent = Array.from({ length: 26 }, (_, index) => ({
+            ...DATA.recent[0],
+            at: `2026-09-24T11:${String(59 - index).padStart(2, "0")}:00.000Z`
+        }));
+        const html = renderStats({ ...DATA, recent }, DEFAULT, NOW);
+        const shown = between(html, '<tbody id="visits">', "</tbody>");
+        const more = between(html, '<tbody id="more-visits" hidden>', "</tbody>");
+        expect(shown.match(/<tr>/g)).toHaveLength(20);
+        expect(more.match(/<tr>/g)).toHaveLength(6);
+        expect(html).toContain("Show all 26");
+        expect(renderStats(DATA, DEFAULT, NOW)).not.toContain("more-visits");
+    });
+});
+
 describe("renderStats", () => {
     it("says it is the stats page", () => {
         expect(renderStats(DATA, DEFAULT, NOW)).toContain("<h1>naidenko.dev stats</h1>");
@@ -200,8 +340,8 @@ describe("renderStats", () => {
 
     it("gives every table an anchor to link to", () => {
         const html = renderStats(DATA, DEFAULT, NOW);
-        expect(html).toContain('<section id="latest-visits" class="wide"><h2><a href="#latest-visits">Latest visits</a></h2>');
-        expect(html).toContain('<section id="link-tags-ref"><h2><a href="#link-tags-ref">Link tags (?ref=)</a></h2>');
+        expect(html).toContain('<section id="latest-visits" class="group"><h2><a href="#latest-visits">Latest visits</a></h2>');
+        expect(html).toContain('<section id="link-tags-ref" class="card"><h3><a href="#link-tags-ref">Link tags (?ref=)</a></h3>');
     });
 
     it("links to GoatCounter for the same period, when it is configured", () => {
@@ -230,8 +370,7 @@ describe("renderStats", () => {
 
     it("lists the latest visits with their place, source, time and what they did", () => {
         const html = renderStats(DATA, DEFAULT, NOW);
-        for (const part of ["2026-09-24 11:58", "?ref=acme", "about, experience", "contact_click", "Returning"])
-            expect(html).toContain(part);
+        for (const part of ["2026-09-24 11:58", "?ref=acme", "contact_click", "Returning"]) expect(html).toContain(part);
     });
 
     it("keeps the filter in the form and in the preset links", () => {
@@ -265,7 +404,7 @@ describe("renderStats", () => {
         );
         expect(html.slice(html.indexOf("Sections reached"), html.indexOf("Menu clicks"))).toContain("20 · 100%");
         expect(html.slice(html.indexOf('id="pages"'), html.indexOf('id="link-tags-ref"'))).toContain("/privacy");
-        expect(html.slice(html.indexOf("Latest visits"))).toContain("/privacy");
+        expect(html.slice(html.indexOf('id="latest-visits"'))).toContain("/privacy");
     });
 
     it("escapes what visitors and networks control", () => {

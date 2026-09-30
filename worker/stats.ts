@@ -227,47 +227,204 @@ const anchorOf = (title: string) =>
         .toLowerCase()
         .replace(/[^a-z0-9]+/g, "-")
         .replace(/^-|-$/g, "");
-const heading = (title: string) => `<h2><a href="#${anchorOf(title)}">${escapeHtml(title)}</a></h2>`;
 
-/** A table of one label and one or more figures per line; the labels are escaped here. */
-function table(title: string, headers: string[], rows: [string, ...string[]][]): string {
-    const head = headers.length ? `<tr>${headers.map(header => `<th>${header}</th>`).join("")}</tr>` : "";
+/** A boxed table or chart under a heading that links to itself. */
+function card(title: string, body: string, wide = false): string {
+    const id = anchorOf(title);
+    return `<section id="${id}" class="card${wide ? " wide" : ""}"><h3><a href="#${id}">${escapeHtml(title)}</a></h3>${body}</section>`;
+}
+
+function group(id: string, title: string, body: string): string {
+    return `<section id="${id}" class="group"><h2><a href="#${id}">${title}</a></h2>${body}</section>`;
+}
+
+const GROUPS: [string, string][] = [
+    ["traffic", "Traffic"],
+    ["sources", "Sources"],
+    ["audience", "Audience"],
+    ["technology", "Technology"],
+    ["engagement", "Engagement"],
+    ["latest-visits", "Latest visits"]
+];
+
+const nothing = (columns: number) => `<tr><td colspan="${columns}" class="none">Nothing yet</td></tr>`;
+const plural = (n: number, word: string) => `${n} ${word}${n === 1 ? "" : "s"}`;
+
+/**
+ * Rows of a label and a figure, each with a bar for its share of `whole`, or of the largest row.
+ * The labels are escaped here; the figures are numbers the page formats.
+ */
+function barTable(rows: { label: string; value: string; n: number }[], whole?: number): string {
+    const max = whole ?? Math.max(0, ...rows.map(row => row.n));
     const body = rows.length
         ? rows
-              .map(([label, ...figures]) => `<tr><td>${escapeHtml(label)}</td>${figures.map(figure => `<td>${figure}</td>`).join("")}</tr>`)
+              .map(row => {
+                  const width = max > 0 ? Math.min(100, Math.round((row.n / max) * 100)) : 0;
+                  return `<tr><td>${escapeHtml(row.label)}<span class="bar" style="width: ${width}%"></span></td><td>${row.value}</td></tr>`;
+              })
               .join("")
-        : `<tr><td colspan="${Math.max(headers.length, 2)}" class="none">Nothing yet</td></tr>`;
-    return `<section id="${anchorOf(title)}">${heading(title)}<table>${head}${body}</table></section>`;
+        : nothing(2);
+    return `<table class="bars">${body}</table>`;
 }
 
-const counts = (rows: Row[], label: (row: Row) => string = row => row.label): [string, string][] =>
-    rows.map(row => [label(row), String(row.n)]);
+const counted = (rows: Row[], label: (row: Row) => string = row => row.label) =>
+    barTable(rows.map(row => ({ label: label(row), value: String(row.n), n: row.n })));
 
-function recentTable(visits: RecentVisit[]): string {
-    const headers = ["Time (UTC)", "Page", "Place", "Network", "Source", "Device", "On page", "Sections", "Clicks", "Visitor"];
-    const rows = visits.map(visit => {
-        const source = visit.ref ? `?ref=${visit.ref}` : visit.referrer || "direct";
-        return [
-            visit.at.slice(0, 16).replace("T", " "),
-            visit.path,
-            placeName(visit),
-            visit.network,
-            source,
-            `${visit.device}, ${visit.browser}, ${visit.os}`,
-            duration(visit.seconds),
-            visit.sections ?? "",
-            visit.clicks ?? "",
-            visit.returned ? "Returning" : "New"
-        ].map(cell => escapeHtml(cell));
-    });
-    const head = `<tr>${headers.map(header => `<th>${header}</th>`).join("")}</tr>`;
+function periodTable(rows: Period[], first: string): string {
+    const head = `<tr><th>${first}</th><th>Visitors</th><th>Views</th></tr>`;
     const body = rows.length
-        ? rows.map(cells => `<tr>${cells.map(cell => `<td>${cell}</td>`).join("")}</tr>`).join("")
-        : `<tr><td colspan="${headers.length}" class="none">Nothing yet</td></tr>`;
-    return `<section id="latest-visits" class="wide">${heading("Latest visits")}<div class="scroll"><table class="recent">${head}${body}</table></div></section>`;
+        ? rows.map(row => `<tr><td>${escapeHtml(row.label)}</td><td>${row.visitors}</td><td>${row.views}</td></tr>`).join("")
+        : nothing(3);
+    return `<table>${head}${body}</table>`;
 }
 
-function filterForm(filter: Filter, options: StatsData["options"]): string {
+/** The top of a chart's scale: 1, 2, 2.5 or 5 times a power of ten, at least the value. */
+export function niceCeiling(value: number): number {
+    if (value <= 1) return 1;
+    const magnitude = 10 ** Math.floor(Math.log10(value));
+    return [1, 2, 2.5, 5, 10].map(step => step * magnitude).find(nice => nice >= value) ?? 10 * magnitude;
+}
+
+/**
+ * The chart's points, oldest first, with zeros where nothing was counted: every day of the range,
+ * or every month once the range is longer than a year. All time starts at the first visit.
+ */
+export function chartSeries(days: Period[], months: Period[], filter: Filter): Period[] {
+    const firstDay = days.map(day => day.label).sort()[0];
+    const firstMonth = months.map(month => month.label).sort()[0];
+    const from = filter.from || (firstMonth && (!firstDay || firstMonth < firstDay.slice(0, 7)) ? `${firstMonth}-01` : firstDay);
+    if (!from) return [];
+    const start = Date.parse(`${from}T00:00:00Z`);
+    const span = Math.round((Date.parse(`${filter.to}T00:00:00Z`) - start) / DAY_MS) + 1;
+    if (span <= 366) {
+        const byDay = new Map(days.map(day => [day.label, day]));
+        return Array.from({ length: span }, (_, index) => {
+            const label = dayOf(start + index * DAY_MS);
+            return byDay.get(label) ?? { label, visitors: 0, views: 0 };
+        });
+    }
+    const byMonth = new Map(months.map(month => [month.label, month]));
+    const series: Period[] = [];
+    for (let date = new Date(start); date.toISOString().slice(0, 7) <= filter.to.slice(0, 7);) {
+        const label = date.toISOString().slice(0, 7);
+        series.push(byMonth.get(label) ?? { label, visitors: 0, views: 0 });
+        date = new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth() + 1, 1));
+    }
+    return series;
+}
+
+const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+/** "Sep 24" for a day, "Sep 2026" for a month. */
+const shortDate = (label: string) =>
+    label.length === 7
+        ? `${MONTHS[Number(label.slice(5, 7)) - 1]} ${label.slice(0, 4)}`
+        : `${MONTHS[Number(label.slice(5, 7)) - 1]} ${Number(label.slice(8, 10))}`;
+
+/**
+ * Visitors per day (or month) as columns on one scale. Each column shows its numbers on hover and
+ * on focus; the same numbers are in the table below the chart, so nothing depends on hovering.
+ */
+function chart(series: Period[], filter: Filter): string {
+    if (series.length === 0) return `<p class="none">Nothing yet</p>`;
+    const monthly = series[0].label.length === 7;
+    const total = series.reduce((sum, point) => sum + point.visitors, 0);
+    const peak = series.reduce((best, point) => (point.visitors > best.visitors ? point : best), series[0]);
+    const top = niceCeiling(peak.visitors);
+    const ticks = [top, top / 2, 0].filter(tick => Number.isInteger(tick));
+    const range = filter.from ? `${filter.from} to ${filter.to}` : `all time to ${filter.to}`;
+    const most = peak.visitors ? `, most ${monthly ? "in" : "on"} ${peak.label} (${peak.visitors})` : "";
+    const label = `Visitors per ${monthly ? "month" : "day"}, ${range}: ${total} in total${most}`;
+    // Labels are counted back from the latest column, so the newest date is always named.
+    const every = Math.ceil(series.length / 8);
+    const last = series.length - 1;
+    const columns = series
+        .map(point => {
+            const height = point.visitors ? Math.max(1, Math.round((point.visitors / top) * 100)) : 0;
+            const figures = `<b>${point.visitors}</b> ${point.visitors === 1 ? "visitor" : "visitors"} · ${plural(point.views, "view")}`;
+            // The tip sits on top of its own column, whatever its height.
+            const tip = `<span class="tip" style="bottom: ${height}%">${figures}<br>${escapeHtml(point.label)}</span>`;
+            return `<div class="col"${series.length <= 31 ? ' tabindex="0"' : ""}><i style="height: ${height}%"></i>${tip}</div>`;
+        })
+        .join("");
+    // Every other label hides on a phone, where the columns are too narrow for all of them.
+    const dates = series
+        .map((point, index) => {
+            const step = (last - index) / every;
+            if (!Number.isInteger(step)) return "<span></span>";
+            return `<span${step % 2 ? ' class="minor"' : ""}>${escapeHtml(shortDate(point.label))}</span>`;
+        })
+        .join("");
+    return `<figure class="chart" aria-label="${escapeHtml(label)}" style="--n: ${series.length}">
+<div class="plot"><div class="ticks">${ticks.map(tick => `<span style="bottom: ${(tick / top) * 100}%">${tick}</span>`).join("")}</div><div class="cols">${columns}</div></div>
+<div class="dates">${dates}</div>
+</figure>`;
+}
+
+/** The sections a visit reached, as one dot per section in the page's order. */
+function sectionDots(visit: RecentVisit): string {
+    if (visit.path !== "/") return `<span class="muted">—</span>`;
+    const reached = new Set((visit.sections ?? "").split(", ").filter(Boolean));
+    const names = pageSections.filter(section => reached.has(section.id)).map(section => section.label);
+    const dots = pageSections.map(section => (reached.has(section.id) ? `<i class="on"></i>` : "<i></i>")).join("");
+    return `<span class="dots" title="${escapeHtml(names.join(", ") || "No section reached")}">${dots}</span>`;
+}
+
+const SHOWN_VISITS = 20;
+
+function visitRow(visit: RecentVisit): string {
+    const at = `<time title="${visit.at.slice(0, 19).replace("T", " ")} UTC">${MONTHS[Number(visit.at.slice(5, 7)) - 1]} ${Number(visit.at.slice(8, 10))}, ${visit.at.slice(11, 16)}</time>`;
+    const place = [visit.city, countryName(visit.country)].filter(Boolean).join(", ");
+    const source = visit.ref ? `?ref=${visit.ref}` : visit.referrer || "direct";
+    const device = `${visit.browser} · ${visit.os}${visit.device === "desktop" ? "" : ` · ${visit.device}`}`;
+    const clicks = (visit.clicks ?? "")
+        .split(", ")
+        .filter(Boolean)
+        .map(click => `<span class="chip">${escapeHtml(click)}</span>`)
+        .join("");
+    const cells = [
+        at,
+        visit.returned ? `<span class="tag">Returning</span>` : `<span class="muted">New</span>`,
+        escapeHtml(visit.path),
+        `<span class="clip place" title="${escapeHtml(placeName(visit))}">${escapeHtml(place)}</span>`,
+        `<span class="clip" title="${escapeHtml(visit.network)}">${escapeHtml(visit.network)}</span>`,
+        escapeHtml(source),
+        escapeHtml(device),
+        duration(visit.seconds),
+        sectionDots(visit),
+        `<div class="chips">${clicks}</div>`
+    ];
+    return `<tr>${cells.map(cell => `<td>${cell}</td>`).join("")}</tr>`;
+}
+
+/** The latest visits, one line each; the first 20 show, the rest on request. */
+function recentVisits(visits: RecentVisit[]): string {
+    const headers = ["When (UTC)", "Visitor", "Page", "Place", "Network", "Source", "Device", "On page", "Sections", "Clicks"];
+    const head = `<thead><tr>${headers.map(header => `<th>${header}</th>`).join("")}</tr></thead>`;
+    const shown = visits.slice(0, SHOWN_VISITS).map(visitRow).join("") || nothing(headers.length);
+    const rest = visits.slice(SHOWN_VISITS);
+    const more = rest.length ? `<tbody id="more-visits" hidden>${rest.map(visitRow).join("")}</tbody>` : "";
+    const button = rest.length
+        ? `<button type="button" id="show-visits">Show all ${visits.length}</button>
+<script>
+document.getElementById("show-visits").addEventListener("click", event => {
+    document.getElementById("more-visits").hidden = false;
+    event.currentTarget.remove();
+});
+</script>`
+        : "";
+    return `<div class="scroll"><table class="recent">${head}<tbody id="visits">${shown}</tbody>${more}</table></div>${button}`;
+}
+
+/** The preset a filter matches ("7", "today", "all"...), or "" for a custom range. */
+export function activePreset(filter: Filter, now: Date): string {
+    const matches = ([range]: [string, string]) => {
+        const preset = filterOf(new URL(`https://naidenko.dev/stats?range=${range}`), now);
+        return preset.from === filter.from && preset.to === filter.to;
+    };
+    return PRESETS.find(matches)?.[0] ?? "";
+}
+
+function filterForm(filter: Filter, options: StatsData["options"], now: Date): string {
     const option = (value: string, label: string, selected: string) =>
         `<option value="${escapeHtml(value)}"${value === selected ? " selected" : ""}>${escapeHtml(label)}</option>`;
     const countries = [
@@ -277,19 +434,22 @@ function filterForm(filter: Filter, options: StatsData["options"]): string {
             .map(code => option(code, countryName(code), filter.country))
     ];
     const refs = [option("", "All link tags", filter.ref), ...options.refs.map(ref => option(ref, ref, filter.ref))];
+    const current = activePreset(filter, now);
     const presets = PRESETS.map(([range, label]) => {
         const query = new URLSearchParams({ range });
         if (filter.country) query.set("country", filter.country);
         if (filter.ref) query.set("ref", filter.ref);
-        return `<a href="?${escapeHtml(query.toString())}">${label}</a>`;
-    }).join(" · ");
+        return `<a class="pill" href="?${escapeHtml(query.toString())}"${range === current ? ' aria-current="page"' : ""}>${label}</a>`;
+    }).join("");
     return `<form class="filter" method="get">
+<div class="presets" role="group" aria-label="Period">${presets}</div>
+<div class="fields">
 <label>From <input type="date" name="from" value="${filter.from}"></label>
 <label>To <input type="date" name="to" value="${filter.to}"></label>
 <label>Country <select name="country">${countries.join("")}</select></label>
 <label>Link tag <select name="ref">${refs.join("")}</select></label>
 <button type="submit">Apply</button>
-<p class="presets">${presets}</p>
+</div>
 </form>`;
 }
 
@@ -372,8 +532,53 @@ export function renderStats(data: StatsData, filter: Filter, now: Date, goatcoun
             return `<div class="tile"><b>${value}</b><span>${label}</span>${badge}</div>`;
         })
         .join("");
-    const periods = (rows: Period[]): [string, string, string][] => rows.map(row => [row.label, String(row.visitors), String(row.views)]);
     const range = filter.from ? `${filter.from} to ${filter.to}` : `All time to ${filter.to}`;
+    const series = chartSeries(data.days, data.months, filter);
+    const unit = series[0]?.label.length === 7 ? "month" : "day";
+    const reach = inPageOrder(data.sections).map(row => ({
+        label: row.label,
+        value: `${row.n} · ${percent(row.n, totals.homeViews)}`,
+        n: row.n
+    }));
+    const traffic = [
+        card(
+            `Visitors per ${unit}`,
+            `${chart(series, filter)}<details><summary>Show the numbers</summary>${periodTable(data.days, "Day")}</details>`,
+            true
+        ),
+        card("By month", periodTable(data.months, "Month")),
+        card("Pages", counted(data.pages))
+    ];
+    const sources = [card("Link tags (?ref=)", counted(data.refs)), card("Referring sites", counted(data.referrers))];
+    const audience = [
+        card(
+            "Countries",
+            counted(data.countries, row => countryName(row.label))
+        ),
+        card("Regions", barTable(data.regions.map(row => ({ label: placeName(row), value: String(row.n), n: row.n })))),
+        card("Cities", barTable(data.cities.map(row => ({ label: placeName(row), value: String(row.n), n: row.n })))),
+        card("Networks", counted(data.networks))
+    ];
+    const technology = [
+        card(
+            "Devices",
+            counted(data.devices, row => capitalized(row.label))
+        ),
+        card("Browsers", counted(data.browsers)),
+        card("Systems", counted(data.systems)),
+        card(
+            "Languages",
+            counted(data.languages, row => languageName(row.label))
+        ),
+        card("Screen widths", counted(data.screens))
+    ];
+    const engagement = [
+        card("Sections reached", barTable(reach, totals.homeViews)),
+        card("Menu clicks", counted(inPageOrder(data.nav))),
+        card("Time on page", counted(data.durations)),
+        card("Clicks and messages", counted(data.events))
+    ];
+    const grid = (cards: string[]) => `<div class="grid">${cards.join("")}</div>`;
     return `<!doctype html>
 <html lang="en">
 <head>
@@ -382,43 +587,104 @@ export function renderStats(data: StatsData, filter: Filter, now: Date, goatcoun
 <meta name="robots" content="noindex">
 <title>Stats · naidenko.dev</title>
 <style>
-:root { color-scheme: dark; }
-body { margin: 0; padding: 32px 16px 64px; background: #0b0c0e; color: #a1a1aa; font: 15px/1.5 ui-sans-serif, system-ui, sans-serif; }
-main { max-width: 1100px; margin: 0 auto; }
-h1 { color: #f4f4f5; font-size: 22px; margin: 0; }
-h2 { color: #f4f4f5; font-size: 14px; margin: 0 0 8px; }
-h2 a { color: inherit; text-decoration: none; }
-h2 a:hover, h2 a:focus-visible { text-decoration: underline; }
+:root {
+    color-scheme: dark;
+    --canvas: #0b0c0e;
+    --card: #121317;
+    --raised: #1b1d22;
+    --ring: #8b8b9526;
+    --line: #8b8b951f;
+    --ink: #a1a1aa;
+    --strong: #f4f4f5;
+    --muted: #8b8b95;
+    --series: #3987e5;
+    --series-hover: #6aa6ee;
+    --good: #4ade80;
+    --bad: #f87171;
+}
+* { box-sizing: border-box; }
+body { margin: 0; padding: 32px 16px 64px; background: var(--canvas); color: var(--ink); font: 15px/1.5 ui-sans-serif, system-ui, sans-serif; }
+main { max-width: 1280px; margin: 0 auto; }
+a { color: var(--strong); }
+h1 { color: var(--strong); font-size: 22px; margin: 0; }
+h2 { color: var(--strong); font-size: 16px; margin: 0 0 12px; }
+h3 { color: var(--strong); font-size: 14px; margin: 0 0 10px; }
+h2 a, h3 a { color: inherit; text-decoration: none; }
+h2 a:hover, h2 a:focus-visible, h3 a:hover, h3 a:focus-visible { text-decoration: underline; }
 .top { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 4px 16px; margin-bottom: 4px; }
-.quiet { color: #8b8b95; font-size: 13px; text-decoration: none; }
-.quiet:hover, .quiet:focus-visible { color: #f4f4f5; text-decoration: underline; }
-.note { color: #8b8b95; margin: 0 0 12px; font-size: 13px; }
-button { font: inherit; font-size: 13px; color: #f4f4f5; background: #16181c; border: 1px solid #8b8b9555; border-radius: 8px; padding: 2px 10px; cursor: pointer; }
-.filter { display: flex; flex-wrap: wrap; gap: 8px 16px; align-items: end; margin: 16px 0 24px; font-size: 13px; }
-.filter label { display: flex; flex-direction: column; gap: 2px; }
-.filter input, .filter select { font: inherit; color: #f4f4f5; background: #16181c; border: 1px solid #8b8b9555; border-radius: 8px; padding: 4px 8px; }
-.presets { flex-basis: 100%; margin: 0; }
-a { color: #f4f4f5; }
-.tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; margin-bottom: 28px; }
-.tile { border: 1px solid #8b8b9526; background: #16181c99; border-radius: 12px; padding: 14px 16px; }
-.tile b { display: block; color: #f4f4f5; font-size: 26px; }
-.tile span { color: #8b8b95; font-size: 13px; }
-.trend { display: block; margin-top: 4px; font-size: 12px; font-variant-numeric: tabular-nums; }
-.trend.good { color: #4ade80; }
-.trend.bad { color: #f87171; }
-.trend.flat { color: #8b8b95; }
-.grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); align-items: start; gap: 16px; }
-.grid > section { border: 1px solid #8b8b9526; background: #16181c66; border-radius: 12px; padding: 14px 16px; scroll-margin-top: 16px; }
-.grid > section:target { border-color: #8b8b9599; }
+.quiet { color: var(--muted); font-size: 13px; text-decoration: none; }
+.quiet:hover, .quiet:focus-visible { color: var(--strong); text-decoration: underline; }
+.note { color: var(--muted); margin: 0 0 12px; font-size: 13px; }
+.muted, .none { color: var(--muted); }
+button { font: inherit; font-size: 13px; color: var(--strong); background: var(--raised); border: 1px solid #8b8b9555; border-radius: 8px; padding: 3px 12px; cursor: pointer; }
+button:hover, button:focus-visible { border-color: #8b8b9599; }
+.filter { display: grid; gap: 12px; margin: 20px 0 20px; font-size: 13px; }
+.presets { display: flex; flex-wrap: wrap; gap: 6px; }
+.pill { padding: 3px 12px; border: 1px solid #8b8b9540; border-radius: 999px; color: var(--ink); text-decoration: none; }
+.pill:hover, .pill:focus-visible { color: var(--strong); border-color: #8b8b9599; }
+.pill[aria-current="page"] { color: var(--canvas); background: var(--strong); border-color: var(--strong); font-weight: 600; }
+.fields { display: flex; flex-wrap: wrap; align-items: end; gap: 8px 12px; }
+.fields label { display: flex; flex-direction: column; gap: 2px; color: var(--muted); }
+.fields input, .fields select { font: inherit; color: var(--strong); background: var(--raised); border: 1px solid #8b8b9555; border-radius: 8px; padding: 4px 8px; }
+.jump { position: sticky; top: 0; z-index: 10; display: flex; gap: 4px 20px; overflow-x: auto; white-space: nowrap; margin: 24px 0 0; padding: 10px 0; background: #0b0c0ee6; backdrop-filter: blur(8px); border-bottom: 1px solid var(--line); font-size: 13px; }
+.jump a { color: var(--muted); text-decoration: none; }
+.jump a:hover, .jump a:focus-visible { color: var(--strong); }
+.tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; margin-bottom: 12px; }
+.tile { border: 1px solid var(--ring); background: var(--card); border-radius: 12px; padding: 14px 16px; }
+.tile b { display: block; color: var(--strong); font-size: 26px; font-weight: 600; }
+.tile > span { display: block; color: var(--muted); font-size: 13px; }
+.trend { display: inline-block; margin-top: 8px; padding: 0 8px; border-radius: 999px; font-size: 12px; line-height: 20px; font-variant-numeric: tabular-nums; }
+.trend.good { color: var(--good); background: #4ade801a; }
+.trend.bad { color: var(--bad); background: #f871711a; }
+.trend.flat { color: var(--muted); background: #8b8b951a; }
+.group { padding-top: 28px; scroll-margin-top: 40px; }
+.grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); align-items: start; gap: 16px; }
+.card { min-width: 0; border: 1px solid var(--ring); background: var(--card); border-radius: 12px; padding: 14px 16px; scroll-margin-top: 56px; }
+.card:target { border-color: #8b8b9599; }
 .wide { grid-column: 1 / -1; }
-.scroll { overflow-x: auto; }
 table { width: 100%; border-collapse: collapse; }
-th { text-align: left; font-weight: 500; color: #8b8b95; font-size: 12px; }
-td, th { padding: 4px 8px 4px 0; border-bottom: 1px solid #8b8b951f; vertical-align: top; }
-td:not(:first-child), th:not(:first-child) { text-align: right; color: #f4f4f5; font-variant-numeric: tabular-nums; }
-.recent td, .recent th { text-align: left !important; font-size: 13px; }
-.recent td { color: #a1a1aa; }
-.none { color: #8b8b95; }
+th { text-align: left; font-weight: 500; color: var(--muted); font-size: 12px; }
+td, th { padding: 5px 8px 5px 0; border-bottom: 1px solid var(--line); vertical-align: top; }
+tr:last-child td { border-bottom: 0; }
+td:not(:first-child), th:not(:first-child) { text-align: right; color: var(--strong); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.bars td:first-child { position: relative; padding-bottom: 11px; }
+.bar { position: absolute; left: 0; bottom: 4px; height: 3px; border-radius: 2px; background: var(--series); }
+.chart { margin: 4px 0 0; }
+.plot { position: relative; height: 180px; margin: 10px 0 0 32px; }
+.ticks span { position: absolute; left: -32px; right: 0; transform: translateY(50%); font-size: 11px; line-height: 1; color: var(--muted); font-variant-numeric: tabular-nums; }
+.ticks span::after { content: ""; position: absolute; left: 32px; right: 0; top: 50%; border-top: 1px solid var(--line); }
+.cols { position: absolute; inset: 0; display: grid; grid-template-columns: repeat(var(--n), minmax(0, 1fr)); column-gap: 2px; }
+.col { position: relative; display: flex; align-items: flex-end; justify-content: center; outline: none; }
+.col i { display: block; width: 100%; max-width: 24px; background: var(--series); border-radius: 4px 4px 0 0; }
+.col:hover i, .col:focus-visible i { background: var(--series-hover); }
+.tip { display: none; position: absolute; bottom: 100%; left: 50%; transform: translateX(-50%); margin-bottom: 6px; padding: 6px 10px; border: 1px solid var(--ring); border-radius: 8px; background: var(--raised); color: var(--ink); font-size: 12px; line-height: 1.4; white-space: nowrap; pointer-events: none; z-index: 5; }
+.tip b { color: var(--strong); font-size: 14px; }
+.col:hover .tip, .col:focus-visible .tip { display: block; }
+.col:nth-child(-n + 3) .tip { left: 0; transform: none; }
+.col:nth-last-child(-n + 3) .tip { left: auto; right: 0; transform: none; }
+.dates { display: grid; grid-template-columns: repeat(var(--n), minmax(0, 1fr)); column-gap: 2px; margin: 6px 0 0 32px; font-size: 11px; color: var(--muted); }
+.dates span { display: flex; justify-content: center; white-space: nowrap; }
+.dates span:last-child { justify-content: flex-end; }
+@media (max-width: 640px) {
+    .dates .minor { visibility: hidden; }
+}
+details { margin-top: 12px; font-size: 13px; }
+summary { cursor: pointer; color: var(--muted); }
+summary:hover, summary:focus-visible { color: var(--strong); }
+details table { margin-top: 8px; }
+.scroll { overflow-x: auto; border: 1px solid var(--ring); background: var(--card); border-radius: 12px; padding: 4px 16px; }
+.recent { font-size: 13px; }
+.recent td, .recent th { text-align: left; white-space: nowrap; padding: 9px 10px 9px 0; vertical-align: middle; color: var(--ink); }
+.recent time { color: var(--strong); }
+.clip { display: inline-block; max-width: 160px; overflow: hidden; text-overflow: ellipsis; vertical-align: bottom; }
+.clip.place { max-width: 180px; }
+.dots { display: inline-flex; gap: 3px; }
+.dots i { width: 8px; height: 8px; border-radius: 50%; background: #8b8b9540; }
+.dots i.on { background: var(--series); }
+.chips { display: flex; flex-wrap: wrap; gap: 3px; width: 200px; white-space: normal; }
+.chip { max-width: 100%; padding: 0 6px; border: 1px solid #8b8b9540; border-radius: 6px; font-size: 12px; line-height: 18px; overflow-wrap: anywhere; }
+.tag { color: var(--strong); }
+#show-visits { margin-top: 12px; }
 </style>
 </head>
 <body>
@@ -426,55 +692,17 @@ td:not(:first-child), th:not(:first-child) { text-align: right; color: #f4f4f5; 
 <header class="top"><h1>naidenko.dev stats</h1>${goatcounterLink(goatcounter, filter)}</header>
 <p class="note">Counted by the site's own Worker: no cookies, no IP addresses. Days and times are UTC. A visitor is one network and browser on one day, so people behind one office address count as one, and a phone that changes networks as several. Generated ${now.toISOString().slice(0, 16).replace("T", " ")} UTC.</p>
 <p class="note" id="owner"></p>
-${filterForm(filter, data.options)}
+${filterForm(filter, data.options, now)}
 <p class="note">Showing ${escapeHtml(range)}${filter.country ? `, ${escapeHtml(countryName(filter.country))}` : ""}${filter.ref ? `, ?ref=${escapeHtml(filter.ref)}` : ""}.</p>
 <div class="tiles">${tiles}</div>
 <p class="note">${period ? `Arrows compare with ${escapeHtml(period)}. ` : ""}A bounce is a visit that left within ${BOUNCE_SECONDS} s. The bounce rate and the average time count only visits that reported their time; a phone can close a page before it does.</p>
-<div class="grid">
-${table("By day", ["Day", "Visitors", "Views"], periods(data.days))}
-${table("By month", ["Month", "Visitors", "Views"], periods(data.months))}
-${table("Pages", [], counts(data.pages))}
-${table("Link tags (?ref=)", [], counts(data.refs))}
-${table("Referring sites", [], counts(data.referrers))}
-${table(
-    "Countries",
-    [],
-    counts(data.countries, row => countryName(row.label))
-)}
-${table(
-    "Regions",
-    [],
-    data.regions.map(row => [placeName(row), String(row.n)])
-)}
-${table(
-    "Cities",
-    [],
-    data.cities.map(row => [placeName(row), String(row.n)])
-)}
-${table("Networks", [], counts(data.networks))}
-${table(
-    "Devices",
-    [],
-    counts(data.devices, row => capitalized(row.label))
-)}
-${table("Browsers", [], counts(data.browsers))}
-${table("Systems", [], counts(data.systems))}
-${table(
-    "Languages",
-    [],
-    counts(data.languages, row => languageName(row.label))
-)}
-${table("Screen widths", [], counts(data.screens))}
-${table(
-    "Sections reached",
-    [],
-    inPageOrder(data.sections).map(row => [row.label, `${row.n} · ${percent(row.n, totals.homeViews)}`])
-)}
-${table("Menu clicks", [], counts(inPageOrder(data.nav)))}
-${table("Time on page", [], counts(data.durations))}
-${table("Clicks and messages", [], counts(data.events))}
-${recentTable(data.recent)}
-</div>
+<nav class="jump" aria-label="Parts of this page">${GROUPS.map(([id, title]) => `<a href="#${id}">${title}</a>`).join("")}</nav>
+${group("traffic", "Traffic", grid(traffic))}
+${group("sources", "Sources", grid(sources))}
+${group("audience", "Audience", grid(audience))}
+${group("technology", "Technology", grid(technology))}
+${group("engagement", "Engagement", grid(engagement))}
+${group("latest-visits", "Latest visits", recentVisits(data.recent))}
 </main>
 ${OWNER_SCRIPT}
 </body>
