@@ -32,8 +32,10 @@ CREATE TABLE visits (
 CREATE INDEX visits_day ON visits (day);
 CREATE INDEX visits_visitor ON visits (visitor);
 
+-- No foreign key: a click or section can reach the Worker before its visit does. Every query
+-- joins events to visits, so an event whose visit was never stored is not counted.
 CREATE TABLE events (
-    visit TEXT NOT NULL REFERENCES visits (id),
+    visit TEXT NOT NULL,
     at TEXT NOT NULL,
     name TEXT NOT NULL,
     detail TEXT NOT NULL

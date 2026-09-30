@@ -23,6 +23,7 @@ export interface PlaceRow {
 
 export interface RecentVisit {
     at: string;
+    path: string;
     country: string;
     region: string;
     city: string;
@@ -39,9 +40,19 @@ export interface RecentVisit {
 }
 
 export interface StatsData {
-    totals: { visitors: number; views: number; returning: number; avgSeconds: number | null; bounces: number; leads: number };
+    totals: {
+        visitors: number;
+        views: number;
+        /** Views of the home page, the only page with sections. */
+        homeViews: number;
+        returning: number;
+        avgSeconds: number | null;
+        bounces: number;
+        leads: number;
+    };
     days: Period[];
     months: Period[];
+    pages: Row[];
     refs: Row[];
     referrers: Row[];
     countries: Row[];
@@ -178,11 +189,12 @@ const counts = (rows: Row[], label: (row: Row) => string = row => row.label): [s
     rows.map(row => [label(row), String(row.n)]);
 
 function recentTable(visits: RecentVisit[]): string {
-    const headers = ["Time (UTC)", "Place", "Network", "Source", "Device", "On page", "Sections", "Clicks", "Visitor"];
+    const headers = ["Time (UTC)", "Page", "Place", "Network", "Source", "Device", "On page", "Sections", "Clicks", "Visitor"];
     const rows = visits.map(visit => {
         const source = visit.ref ? `?ref=${visit.ref}` : visit.referrer || "direct";
         return [
             visit.at.slice(0, 16).replace("T", " "),
+            visit.path,
             placeName(visit),
             visit.network,
             source,
@@ -316,9 +328,11 @@ td:not(:first-child), th:not(:first-child) { text-align: right; color: #f4f4f5; 
 ${filterForm(filter, data.options)}
 <p class="note">Showing ${escapeHtml(range)}${filter.country ? `, ${escapeHtml(countryName(filter.country))}` : ""}${filter.ref ? `, ?ref=${escapeHtml(filter.ref)}` : ""}.</p>
 <div class="tiles">${tiles}</div>
+<p class="note">A bounce is a visit under ${BOUNCE_SECONDS} s with no click. The average time counts only visits that reported it; a phone can close a page before it does.</p>
 <div class="grid">
 ${table("By day", ["Day", "Visitors", "Views"], periods(data.days))}
 ${table("By month", ["Month", "Visitors", "Views"], periods(data.months))}
+${table("Pages", [], counts(data.pages))}
 ${table("Link tags (?ref=)", [], counts(data.refs))}
 ${table("Referring sites", [], counts(data.referrers))}
 ${table(
@@ -353,7 +367,7 @@ ${table("Screen widths", [], counts(data.screens))}
 ${table(
     "Sections reached",
     [],
-    inPageOrder(data.sections).map(row => [row.label, `${row.n} · ${percent(row.n, totals.views)}`])
+    inPageOrder(data.sections).map(row => [row.label, `${row.n} · ${percent(row.n, totals.homeViews)}`])
 )}
 ${table("Menu clicks", [], counts(inPageOrder(data.nav)))}
 ${table("Time on page", [], counts(data.durations))}
@@ -393,6 +407,9 @@ const PEOPLE = `(COUNT(DISTINCT CASE WHEN visitor IS NOT NULL THEN day || '|' ||
     + COALESCE(SUM(CASE WHEN visitor IS NULL THEN first_today END), 0))`;
 const RETURNING = `(COUNT(DISTINCT CASE WHEN visitor IS NOT NULL AND returned = 1 THEN day || '|' || visitor END)
     + COALESCE(SUM(CASE WHEN visitor IS NULL THEN first_today * returned END), 0))`;
+/** A visit shorter than this with no click is a bounce, as in GA4. Sections are not counted: a tall
+ * screen shows two of them before anyone scrolls. */
+const BOUNCE_SECONDS = 10;
 const EVENT_LABEL = `e.name || CASE WHEN e.detail != '' THEN ' · ' || e.detail ELSE '' END`;
 
 /** One round trip for every table on the page. */
@@ -404,11 +421,10 @@ export async function loadStats(db: D1Database, filter: Filter): Promise<StatsDa
         );
     const results = await db.batch<Record<string, unknown>>([
         filtered(
-            `SELECT COUNT(*) AS views, ${PEOPLE} AS visitors, ${RETURNING} AS returners,
+            `SELECT COUNT(*) AS views, COALESCE(SUM(path = '/'), 0) AS homeViews, ${PEOPLE} AS visitors, ${RETURNING} AS returners,
                 AVG(seconds) AS avgSeconds,
-                COALESCE(SUM(CASE WHEN COALESCE(seconds, 0) < 10
-                    AND NOT EXISTS (SELECT 1 FROM events e WHERE e.visit = f.id AND e.name != 'section_view')
-                    AND (SELECT COUNT(*) FROM events e WHERE e.visit = f.id AND e.name = 'section_view') < 2 THEN 1 ELSE 0 END), 0) AS bounces,
+                COALESCE(SUM(CASE WHEN COALESCE(seconds, 0) < ${BOUNCE_SECONDS}
+                    AND NOT EXISTS (SELECT 1 FROM events e WHERE e.visit = f.id AND e.name != 'section_view') THEN 1 ELSE 0 END), 0) AS bounces,
                 (SELECT COUNT(*) FROM events e WHERE e.name = 'generate_lead' AND e.visit IN (SELECT id FROM f)) AS leads
              FROM f`
         ),
@@ -416,6 +432,7 @@ export async function loadStats(db: D1Database, filter: Filter): Promise<StatsDa
         filtered(
             `SELECT substr(day, 1, 7) AS label, ${PEOPLE} AS visitors, COUNT(*) AS views FROM f GROUP BY label ORDER BY label DESC LIMIT 120`
         ),
+        breakdown("path", 20),
         breakdown("ref", 30),
         breakdown("referrer", 30),
         filtered(`SELECT country AS label, ${PEOPLE} AS n FROM f GROUP BY country ORDER BY n DESC, label LIMIT 60`),
@@ -455,7 +472,7 @@ export async function loadStats(db: D1Database, filter: Filter): Promise<StatsDa
              WHERE e.name NOT IN ('section_view', 'nav_click') GROUP BY e.name, e.detail ORDER BY n DESC LIMIT 50`
         ),
         filtered(
-            `SELECT f.at, f.country, f.region, f.city, f.network, f.ref, f.referrer, f.device, f.browser, f.os, f.seconds, f.returned,
+            `SELECT f.at, f.path, f.country, f.region, f.city, f.network, f.ref, f.referrer, f.device, f.browser, f.os, f.seconds, f.returned,
                 (SELECT group_concat(e.detail, ', ') FROM events e WHERE e.visit = f.id AND e.name = 'section_view') AS sections,
                 (SELECT group_concat(${EVENT_LABEL}, ', ') FROM events e WHERE e.visit = f.id AND e.name != 'section_view') AS clicks
              FROM f ORDER BY f.at DESC LIMIT 50`
@@ -463,12 +480,13 @@ export async function loadStats(db: D1Database, filter: Filter): Promise<StatsDa
         db.prepare(`SELECT DISTINCT country AS label FROM visits WHERE country != '' ORDER BY country`),
         db.prepare(`SELECT DISTINCT ref AS label FROM visits WHERE ref != '' ORDER BY ref`)
     ]);
-    const [totals, days, months, refs, referrers, countries, regions, cities, networks, devices, browsers, systems, languages, screens] =
+    const [totals, days, months, pages, refs, referrers, countries, regions, cities, networks, devices, browsers, systems, languages] =
         results;
-    const [sections, nav, durations, events, recent, countryOptions, refOptions] = results.slice(14);
+    const [screens, sections, nav, durations, events, recent, countryOptions, refOptions] = results.slice(14);
     const rows = <T>(result: D1Result<Record<string, unknown>>) => result.results as T[];
     const first = totals.results[0] as {
         views: number;
+        homeViews: number;
         visitors: number;
         returners: number;
         avgSeconds: number | null;
@@ -479,6 +497,7 @@ export async function loadStats(db: D1Database, filter: Filter): Promise<StatsDa
         totals: {
             visitors: first.visitors,
             views: first.views,
+            homeViews: first.homeViews,
             returning: first.returners,
             avgSeconds: first.avgSeconds,
             bounces: first.bounces,
@@ -486,6 +505,7 @@ export async function loadStats(db: D1Database, filter: Filter): Promise<StatsDa
         },
         days: rows<Period>(days),
         months: rows<Period>(months),
+        pages: rows<Row>(pages),
         refs: rows<Row>(refs),
         referrers: rows<Row>(referrers),
         countries: rows<Row>(countries),

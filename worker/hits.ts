@@ -227,10 +227,14 @@ export function recordVisit(db: D1Database, row: VisitRow): Promise<D1Result> {
         .run();
 }
 
-/** Adds the event only to a visit that was counted, so every filter on visits applies to it. */
+/**
+ * Adds the event even before its visit arrives: the page sends the first sections within a frame
+ * of the view, and the two requests race. /stats joins events to visits, so an event whose visit
+ * was never stored (a view over the rate limit) is not counted.
+ */
 export function recordEvent(db: D1Database, row: EventRow): Promise<D1Result> {
     return db
-        .prepare(`INSERT INTO events (visit, at, name, detail) SELECT ?1, ?2, ?3, ?4 WHERE EXISTS (SELECT 1 FROM visits WHERE id = ?1)`)
+        .prepare(`INSERT INTO events (visit, at, name, detail) VALUES (?1, ?2, ?3, ?4)`)
         .bind(row.visit, row.at, row.name, row.detail)
         .run();
 }

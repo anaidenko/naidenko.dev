@@ -5,9 +5,10 @@ import { type Filter, type StatsData, type StatsDeps, filterOf, handleStats, ren
 const NOW = new Date("2026-09-24T12:00:00Z");
 
 const EMPTY: StatsData = {
-    totals: { visitors: 0, views: 0, returning: 0, avgSeconds: null, bounces: 0, leads: 0 },
+    totals: { visitors: 0, views: 0, homeViews: 0, returning: 0, avgSeconds: null, bounces: 0, leads: 0 },
     days: [],
     months: [],
+    pages: [],
     refs: [],
     referrers: [],
     countries: [],
@@ -29,9 +30,13 @@ const EMPTY: StatsData = {
 
 const DATA: StatsData = {
     ...EMPTY,
-    totals: { visitors: 31, views: 40, returning: 4, avgSeconds: 185, bounces: 10, leads: 3 },
+    totals: { visitors: 31, views: 40, homeViews: 40, returning: 4, avgSeconds: 185, bounces: 10, leads: 3 },
     days: [{ label: "2026-09-24", visitors: 7, views: 9 }],
     months: [{ label: "2026-09", visitors: 31, views: 40 }],
+    pages: [
+        { label: "/", n: 29 },
+        { label: "/privacy", n: 2 }
+    ],
     refs: [{ label: "linkedin", n: 6 }],
     referrers: [{ label: "<script>alert(1)</script>", n: 5 }],
     countries: [
@@ -53,6 +58,7 @@ const DATA: StatsData = {
     recent: [
         {
             at: "2026-09-24T11:58:07.000Z",
+            path: "/privacy",
             country: "US",
             region: "Texas",
             city: "Austin",
@@ -155,6 +161,17 @@ describe("renderStats", () => {
         expect(reached.indexOf("About")).toBeLessThan(reached.indexOf("Experience"));
         expect(reached.indexOf("Experience")).toBeLessThan(reached.indexOf("Contact"));
         expect(reached).toContain("40 · 100%");
+    });
+
+    it("measures section reach against home-page views only, and lists the pages", () => {
+        const html = renderStats(
+            { ...DATA, totals: { ...DATA.totals, views: 40, homeViews: 20 }, sections: [{ label: "about", n: 20 }] },
+            DEFAULT,
+            NOW
+        );
+        expect(html.slice(html.indexOf("Sections reached"), html.indexOf("Menu clicks"))).toContain("20 · 100%");
+        expect(html.slice(html.indexOf("<h2>Pages"), html.indexOf("Link tags"))).toContain("/privacy");
+        expect(html.slice(html.indexOf("Latest visits"))).toContain("/privacy");
     });
 
     it("escapes what visitors and networks control", () => {
