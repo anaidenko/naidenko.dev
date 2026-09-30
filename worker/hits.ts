@@ -1,4 +1,5 @@
 import { readLimited } from "./http";
+import { type Device, deviceOf, isBot } from "./visitor";
 
 export const MAX_HIT_BYTES = 1024;
 
@@ -11,7 +12,7 @@ export interface HitRow {
     detail: string;
     referrer: string;
     country: string;
-    device: "mobile" | "tablet" | "desktop";
+    device: Device;
 }
 
 export interface HitDeps {
@@ -25,12 +26,6 @@ export interface HitDeps {
 
 const NAME = /^[\w/.-]{1,64}$/;
 const DETAIL = /^[\w.-]{0,64}$/;
-const BOT = /bot|crawl|spider|slurp|headless|lighthouse|preview|monitor|facebookexternalhit|embedly/i;
-
-export function deviceOf(userAgent: string): HitRow["device"] {
-    if (/iPad|Tablet/i.test(userAgent) || (/Android/i.test(userAgent) && !/Mobile/i.test(userAgent))) return "tablet";
-    return /Mobi|iPhone|Android/i.test(userAgent) ? "mobile" : "desktop";
-}
 
 /** The referring site's host, or "" for none, the site itself, or anything that is not a URL. */
 export function referrerHost(referrer: unknown, ownHost: string): string {
@@ -63,7 +58,7 @@ export async function handleHit(request: Request, deps: HitDeps): Promise<Respon
     const url = new URL(request.url);
     if (!fromThisSite(request.headers.get("Origin"), url.host)) return empty(403);
     const userAgent = request.headers.get("User-Agent") ?? "";
-    if (userAgent === "" || BOT.test(userAgent)) return empty(204);
+    if (isBot(userAgent)) return empty(204);
     const ip = request.headers.get("CF-Connecting-IP");
     if (ip && !(await deps.rateLimit(`hit:${ip}`))) return empty(204);
 

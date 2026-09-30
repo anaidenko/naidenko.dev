@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 
-import { type HitDeps, type HitRow, MAX_HIT_BYTES, deviceOf, handleHit, referrerHost } from "./hits";
+import { type HitDeps, type HitRow, MAX_HIT_BYTES, handleHit, referrerHost } from "./hits";
 
 const CHROME = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0 Safari/537.36";
 
@@ -25,16 +25,6 @@ function setup(overrides: Partial<HitDeps> = {}) {
     };
     return { deps, rows };
 }
-
-describe("deviceOf", () => {
-    it("tells phones, tablets and desktops apart", () => {
-        expect(deviceOf("Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) Mobile/15E148")).toBe("mobile");
-        expect(deviceOf("Mozilla/5.0 (Linux; Android 15; Pixel 7) Chrome/140.0 Mobile Safari/537.36")).toBe("mobile");
-        expect(deviceOf("Mozilla/5.0 (iPad; CPU OS 18_0 like Mac OS X)")).toBe("tablet");
-        expect(deviceOf("Mozilla/5.0 (Linux; Android 15; SM-X710) Chrome/140.0 Safari/537.36")).toBe("tablet");
-        expect(deviceOf(CHROME)).toBe("desktop");
-    });
-});
 
 describe("referrerHost", () => {
     it("keeps only the host of another site", () => {
