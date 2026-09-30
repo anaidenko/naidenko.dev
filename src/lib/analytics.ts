@@ -21,6 +21,8 @@ type Hit =
 
 /** The visit this page is counted as, or null when it is not counted. */
 let visit: string | null = null;
+/** Whether this browser's hits ask to be counted even from a network the counter ignores. */
+let force = false;
 /** Whether a visit already started in this tab: a later one is a move within the site. */
 let landed = false;
 
@@ -76,6 +78,18 @@ export function isExcluded(win: Window): boolean {
     return (d.visibilityState as string) === "prerender";
 }
 
+/**
+ * Whether the owner pressed "Count it again" on /stats in this browser. Its hits then pass the
+ * counter's ignored networks, so the owner can test the counter from home.
+ */
+export function chosenToCount(win: Window): boolean {
+    try {
+        return win.localStorage.getItem(SKIP_FLAG) === "f";
+    } catch {
+        return false;
+    }
+}
+
 /** Adds up the time the page was visible, which is the time someone could have been reading it. */
 export function createVisibleClock(now: () => number, visible: boolean) {
     let total = 0;
@@ -96,7 +110,7 @@ export function createVisibleClock(now: () => number, visible: boolean) {
 }
 
 function send(hit: Hit): void {
-    const body = JSON.stringify(hit);
+    const body = JSON.stringify(force ? { ...hit, force } : hit);
     try {
         if (navigator.sendBeacon?.(HIT_URL, body)) return;
     } catch {
@@ -113,6 +127,7 @@ function send(hit: Hit): void {
 export function startVisit(win: Window): () => void {
     const id = win.crypto.randomUUID();
     visit = id;
+    force = chosenToCount(win);
     const doc = win.document;
     const internal = landed;
     landed = true;

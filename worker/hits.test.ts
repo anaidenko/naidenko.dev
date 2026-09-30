@@ -150,7 +150,14 @@ describe("handleHit", () => {
         const res = await handleHit(hit(view), deps);
         expect(res.status).toBe(204);
         expect(recorded()).toBe(0);
-        expect(deps.rateLimit).not.toHaveBeenCalled();
+    });
+
+    it("counts a browser that chose on /stats to be counted, even from an ignored network", async () => {
+        const { deps, visits, events } = setup({ ignoredNetworks: "203.0.113.0/24" });
+        await handleHit(hit({ ...view, force: true }), deps);
+        await handleHit(hit({ kind: "event", visit: VISIT, name: "contact_click", detail: "", force: true }), deps);
+        expect(visits).toHaveLength(1);
+        expect(events).toHaveLength(1);
     });
 
     it("ignores bots without counting them", async () => {
@@ -180,7 +187,8 @@ describe("handleHit", () => {
         ["an event detail with markup", { kind: "event", visit: VISIT, name: "x", detail: "<b>" }],
         ["an event without a name", { kind: "event", visit: VISIT, name: "", detail: "" }],
         ["negative seconds", { kind: "time", visit: VISIT, seconds: -1 }],
-        ["fractional seconds", { kind: "time", visit: VISIT, seconds: 1.5 }]
+        ["fractional seconds", { kind: "time", visit: VISIT, seconds: 1.5 }],
+        ["a choice to be counted that is not true or false", { ...view, force: "yes" }]
     ])("refuses %s", async (_case, body) => {
         const { deps, recorded } = setup();
         expect((await handleHit(hit(body), deps)).status).toBe(400);

@@ -425,6 +425,7 @@ describe("renderStats", () => {
         const html = renderStats(DATA, DEFAULT, NOW);
         expect(html).toContain('localStorage.setItem("skipgc", "t")');
         expect(html).toContain("Count it again");
+        expect(html).toContain("This browser is counted on naidenko.dev, even from an ignored network.");
     });
 });
 

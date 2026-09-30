@@ -96,6 +96,10 @@ cost.
    - applies new D1 migrations;
    - deploys.
 
+   The daily cron needs the account's `workers.dev` subdomain: open Workers & Pages in the
+   dashboard once, or the deploy stops at "Cron schedules" (error 10063), and
+   `pnpm exec wrangler triggers deploy` attaches it afterwards.
+
    Never run `wrangler deploy` directly: it uploads whatever is in `out/`, which after
    `pnpm test:e2e` is a test build. The route in `wrangler.jsonc` attaches the domain, and the
    certificate is issued automatically.
@@ -125,9 +129,11 @@ address. A daily cron erases the hashes older than 13 months, and the rest is ke
   `/stats`, which filters by tag, country and dates (the last 30 days by default) and compares each
   total with the period of the same length just before. A bounce is a visit that left within 10 s.
 - **Not counted:** a load with `?preview=1`; a browser that has opened `/stats` (it sets
-  GoatCounter's `skipgc` flag, which both counters honour, and has a button to undo it); addresses
-  in `IGNORE_NETWORKS`; bots, automated browsers, frames and prerendering, as GoatCounter's
-  count.js skips them.
+  GoatCounter's `skipgc` flag, which both counters honour); addresses in `IGNORE_NETWORKS`; bots,
+  automated browsers, frames and prerendering, as GoatCounter's count.js skips them.
+- **Testing from an ignored network:** press "Count it again" on `/stats` in that browser (a
+  private window keeps it until closed). Its hits then carry `force: true` and are counted even
+  from `IGNORE_NETWORKS`.
 
 ## Analytics events
 

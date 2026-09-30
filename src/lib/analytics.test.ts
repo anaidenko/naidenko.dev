@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { createVisibleClock, detailOf, goatcounterPath, isExcluded, originOf, refOf } from "./analytics";
+import { chosenToCount, createVisibleClock, detailOf, goatcounterPath, isExcluded, originOf, refOf } from "./analytics";
 
 describe("detailOf", () => {
     it("joins the parameters' values in order", () => {
@@ -65,6 +65,26 @@ describe("isExcluded", () => {
             }
         });
         expect(isExcluded(refusing)).toBe(false);
+    });
+});
+
+describe("chosenToCount", () => {
+    const storing = (flag: string | null) => browserWindow({ localStorage: { getItem: () => flag } });
+
+    it("is true only in a browser where the owner pressed Count it again on /stats", () => {
+        expect(chosenToCount(storing("f"))).toBe(true);
+        expect(chosenToCount(storing("t"))).toBe(false);
+        expect(chosenToCount(storing(null))).toBe(false);
+    });
+
+    it("is false in a browser that refuses storage", () => {
+        const refusing = browserWindow();
+        Object.defineProperty(refusing, "localStorage", {
+            get() {
+                throw new Error("SecurityError");
+            }
+        });
+        expect(chosenToCount(refusing)).toBe(false);
     });
 });
 

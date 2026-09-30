@@ -165,6 +165,25 @@ test("stops counting the owner's browser once it opens /stats, until the owner u
     await expect.poll(() => hits).toContainEqual(expect.objectContaining({ kind: "view" }));
 });
 
+test("counts the owner's browser from an ignored network once it chose to be counted", async ({ page, request }) => {
+    await asPerson(page);
+    await stubGoatCounter(page);
+    await page.route("**/api/hit", route =>
+        route.continue({ headers: { ...route.request().headers(), "cf-connecting-ip": IGNORED_ADDRESS } })
+    );
+    const ref = uniqueRef();
+    await page.goto(`/?ref=${ref}`);
+    await page.waitForTimeout(1000);
+    expect((await visitors(request, `?range=all&ref=${ref}`)).count).toBe(0);
+
+    await page.setExtraHTTPHeaders(OWNER);
+    await page.goto("/stats");
+    await page.getByRole("button", { name: "Count it again" }).click();
+    await expect(page.locator("#owner")).toContainText("even from an ignored network");
+    await page.goto(`/?ref=${ref}`);
+    await expect.poll(async () => (await visitors(request, `?range=all&ref=${ref}`)).count).toBe(1);
+});
+
 test("keeps visits in the database and shows them only with the password", async ({ request, baseURL }) => {
     const anonymous = await request.get("/stats");
     expect(anonymous.status()).toBe(401);

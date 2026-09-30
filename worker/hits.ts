@@ -6,10 +6,14 @@ export const MAX_HIT_BYTES = 1024;
 export const MAX_SECONDS = 3600;
 
 /** What the page may send; everything else about a visit the Worker derives itself. */
-export type Hit =
+export type Hit = (
     | { kind: "view"; visit: string; path: string; referrer: string; ref: string; screen: number | null }
     | { kind: "event"; visit: string; name: string; detail: string }
-    | { kind: "time"; visit: string; seconds: number };
+    | { kind: "time"; visit: string; seconds: number }
+) & {
+    /** Sent by a browser whose owner chose on /stats to be counted: it passes IGNORE_NETWORKS. */
+    force: boolean;
+};
 
 /** Where a request came from, as Cloudflare resolves its address. The address is not kept. */
 export interface Place {
@@ -102,7 +106,8 @@ const matches = (value: unknown, pattern: RegExp): value is string => typeof val
 export function parseHit(payload: unknown): Hit | null {
     if (typeof payload !== "object" || payload === null) return null;
     const hit = payload as Record<string, unknown>;
-    if (!matches(hit.visit, VISIT)) return null;
+    const force = hit.force ?? false;
+    if (!matches(hit.visit, VISIT) || typeof force !== "boolean") return null;
     const visit = hit.visit;
     if (hit.kind === "view") {
         const ref = hit.ref ?? "";
@@ -110,17 +115,17 @@ export function parseHit(payload: unknown): Hit | null {
         const validScreen = screen === null || (Number.isInteger(screen) && (screen as number) > 0 && (screen as number) <= MAX_SCREEN);
         if (!matches(hit.path, PATH) || !matches(ref, REF) || !validScreen) return null;
         const referrer = typeof hit.referrer === "string" ? hit.referrer : "";
-        return { kind: "view", visit, path: hit.path, referrer, ref, screen: screen as number | null };
+        return { kind: "view", visit, path: hit.path, referrer, ref, screen: screen as number | null, force };
     }
     if (hit.kind === "event") {
         const detail = hit.detail ?? "";
         if (!matches(hit.name, NAME) || !matches(detail, DETAIL)) return null;
-        return { kind: "event", visit, name: hit.name, detail };
+        return { kind: "event", visit, name: hit.name, detail, force };
     }
     if (hit.kind === "time") {
         const seconds = hit.seconds;
         if (typeof seconds !== "number" || !Number.isInteger(seconds) || seconds < 0) return null;
-        return { kind: "time", visit, seconds };
+        return { kind: "time", visit, seconds, force };
     }
     return null;
 }
@@ -168,7 +173,6 @@ export async function handleHit(request: Request, deps: HitDeps): Promise<Respon
     if (!fromThisSite(request.headers.get("Origin"), new URL(request.url).host)) return empty(403);
     if (isBot(request.headers.get("User-Agent") ?? "")) return empty(204);
     const ip = request.headers.get("CF-Connecting-IP") ?? "";
-    if (ip && inNetworks(ip, deps.ignoredNetworks)) return empty(204);
     if (ip && !(await deps.rateLimit(`hit:${ip}`))) return empty(204);
 
     const raw = await readLimited(request, MAX_HIT_BYTES);
@@ -181,6 +185,7 @@ export async function handleHit(request: Request, deps: HitDeps): Promise<Respon
     }
     const hit = parseHit(payload);
     if (!hit) return empty(400);
+    if (ip && !hit.force && inNetworks(ip, deps.ignoredNetworks)) return empty(204);
     try {
         await record(hit, request, ip, deps);
     } catch (error) {

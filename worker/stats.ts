@@ -470,7 +470,9 @@ const OWNER_SCRIPT = `<script>
             return;
         }
         const skipped = flag === "t";
-        note.textContent = skipped ? "This browser is not counted on naidenko.dev. " : "This browser is counted on naidenko.dev. ";
+        note.textContent = skipped
+            ? "This browser is not counted on naidenko.dev. "
+            : "This browser is counted on naidenko.dev, even from an ignored network. ";
         const button = document.createElement("button");
         button.type = "button";
         button.textContent = skipped ? "Count it again" : "Stop counting it";
