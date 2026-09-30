@@ -407,7 +407,7 @@ a { color: #f4f4f5; }
 .trend.good { color: #4ade80; }
 .trend.bad { color: #f87171; }
 .trend.flat { color: #8b8b95; }
-.grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; }
+.grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); align-items: start; gap: 16px; }
 .grid > section { border: 1px solid #8b8b9526; background: #16181c66; border-radius: 12px; padding: 14px 16px; scroll-margin-top: 16px; }
 .grid > section:target { border-color: #8b8b9599; }
 .wide { grid-column: 1 / -1; }
