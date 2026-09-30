@@ -1,7 +1,7 @@
 import { postToSlack } from "./alert";
 import { handleContact } from "./contact";
 import { handleHit, placeOf, recordEvent, recordTime, recordVisit } from "./hits";
-import { handleHome } from "./home";
+import { handleHome, tagPage } from "./home";
 import { forgetVisitors, retentionCutoff } from "./retention";
 import { handleStats, loadStats } from "./stats";
 import { verifyTurnstile } from "./turnstile";
@@ -46,7 +46,8 @@ export default {
         if (pathname === "/") {
             return handleHome(request, {
                 page: () => env.ASSETS.fetch(request),
-                fetchAsset: path => env.ASSETS.fetch(new URL(path, request.url))
+                fetchAsset: path => env.ASSETS.fetch(new URL(path, request.url)),
+                tag: tagPage
             });
         }
         return env.ASSETS.fetch(request);

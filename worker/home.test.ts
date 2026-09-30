@@ -1,6 +1,33 @@
 import { describe, expect, it, vi } from "vitest";
 
-import { HOME_LINKS, handleHome, wantsMarkdown } from "./home";
+import { HOME_LINKS, handleHome, sharedRef, taggedUrl, wantsMarkdown } from "./home";
+
+const LINKEDIN_BOT = "LinkedInBot/1.0 (compatible; Mozilla/5.0; Apache-HttpClient +http://www.linkedin.com)";
+const CHROME = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36";
+
+function visit(url: string, userAgent: string) {
+    return new Request(url, { headers: { "User-Agent": userAgent, "Accept": "text/html" } });
+}
+
+describe("sharedRef", () => {
+    it("gives LinkedIn's crawler the link's tag, lowercased as the counter keeps it", () => {
+        expect(sharedRef(visit("https://naidenko.dev/?ref=linkedin", LINKEDIN_BOT))).toBe("linkedin");
+        expect(sharedRef(visit("https://naidenko.dev/?ref=LinkedIn", LINKEDIN_BOT))).toBe("linkedin");
+    });
+
+    it("gives nothing to browsers, to an untagged link, or to a tag the counter would refuse", () => {
+        expect(sharedRef(visit("https://naidenko.dev/?ref=linkedin", CHROME))).toBeNull();
+        expect(sharedRef(visit("https://naidenko.dev/", LINKEDIN_BOT))).toBeNull();
+        expect(sharedRef(visit("https://naidenko.dev/?ref=", LINKEDIN_BOT))).toBeNull();
+        expect(sharedRef(visit("https://naidenko.dev/?ref=%3Cscript%3E", LINKEDIN_BOT))).toBeNull();
+    });
+});
+
+describe("taggedUrl", () => {
+    it("adds the tag to the page's canonical address", () => {
+        expect(taggedUrl("https://naidenko.dev", "linkedin")).toBe("https://naidenko.dev/?ref=linkedin");
+    });
+});
 
 describe("wantsMarkdown", () => {
     it("answers agents that ask for Markdown first or equally", () => {
@@ -30,7 +57,7 @@ function get(accept?: string, method = "GET") {
 describe("handleHome", () => {
     it("serves the page's Markdown to an agent, with its token estimate", async () => {
         const fetchAsset = vi.fn(async (_path: string) => markdown());
-        const res = await handleHome(get("text/markdown"), { page: async () => html(), fetchAsset });
+        const res = await handleHome(get("text/markdown"), { page: async () => html(), fetchAsset, tag: page => page });
         expect(fetchAsset).toHaveBeenCalledWith("/index.md");
         expect(res.status).toBe(200);
         expect(res.headers.get("Content-Type")).toBe("text/markdown; charset=utf-8");
@@ -41,7 +68,7 @@ describe("handleHome", () => {
     });
 
     it("serves browsers the HTML page unchanged, plus the Link and Vary headers", async () => {
-        const res = await handleHome(get("text/html"), { page: async () => html(), fetchAsset: async () => markdown() });
+        const res = await handleHome(get("text/html"), { page: async () => html(), fetchAsset: async () => markdown(), tag: page => page });
         expect(res.headers.get("Content-Type")).toBe("text/html");
         expect(res.headers.get("X-Frame-Options")).toBe("DENY");
         expect(res.headers.get("Link")).toBe(HOME_LINKS);
@@ -49,8 +76,35 @@ describe("handleHome", () => {
         expect(await res.text()).toContain("<h1>");
     });
 
+    it("tags the canonical address for LinkedIn's crawler, which would otherwise drop ?ref=", async () => {
+        const tag = vi.fn((_page: Response, ref: string) => new Response(`tagged ${ref}`, { headers: { "Content-Type": "text/html" } }));
+        const res = await handleHome(visit("https://naidenko.dev/?ref=linkedin", LINKEDIN_BOT), {
+            page: async () => html(),
+            fetchAsset: async () => markdown(),
+            tag
+        });
+        expect(tag).toHaveBeenCalledWith(expect.any(Response), "linkedin");
+        expect(await res.text()).toBe("tagged linkedin");
+        expect(res.headers.get("Link")).toBe(HOME_LINKS);
+    });
+
+    it("leaves the canonical address alone for a browser that followed the same link", async () => {
+        const tag = vi.fn((page: Response) => page);
+        const res = await handleHome(visit("https://naidenko.dev/?ref=linkedin", CHROME), {
+            page: async () => html(),
+            fetchAsset: async () => markdown(),
+            tag
+        });
+        expect(tag).not.toHaveBeenCalled();
+        expect(await res.text()).toContain("<h1>");
+    });
+
     it("answers HEAD for Markdown without a body", async () => {
-        const res = await handleHome(get("text/markdown", "HEAD"), { page: async () => html(), fetchAsset: async () => markdown() });
+        const res = await handleHome(get("text/markdown", "HEAD"), {
+            page: async () => html(),
+            fetchAsset: async () => markdown(),
+            tag: page => page
+        });
         expect(res.headers.get("Content-Type")).toBe("text/markdown; charset=utf-8");
         expect(await res.text()).toBe("");
     });

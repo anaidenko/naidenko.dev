@@ -1,3 +1,5 @@
+import { REF } from "./hits";
+
 /** RFC 8288 Link header on the home page: the Markdown version, and llms.txt for agents. */
 export const HOME_LINKS = '</index.md>; rel="alternate"; type="text/markdown", </llms.txt>; rel="describedby"; type="text/plain"';
 
@@ -19,10 +21,41 @@ export function wantsMarkdown(accept: string | null): boolean {
     return markdown > 0 && markdown >= quality(accept, "text/html");
 }
 
+/**
+ * The tag LinkedIn's crawler should keep, such as "linkedin" in /?ref=linkedin, or null. LinkedIn
+ * replaces a shared link with the page's canonical address, which drops ?ref=; search engines
+ * still see a single canonical page.
+ */
+export function sharedRef(request: Request): string | null {
+    if (!/linkedinbot/i.test(request.headers.get("User-Agent") ?? "")) return null;
+    const ref = (new URL(request.url).searchParams.get("ref") ?? "").toLowerCase();
+    return ref && REF.test(ref) ? ref : null;
+}
+
+/** The canonical address with the link's tag, as LinkedIn should link to it. */
+export function taggedUrl(canonical: string, ref: string): string {
+    const url = new URL(canonical);
+    url.searchParams.set("ref", ref);
+    return url.href;
+}
+
+/** The page with its canonical link and og:url carrying the link's tag. */
+export function tagPage(page: Response, ref: string): Response {
+    const tag = (attribute: string) => ({
+        element(element: Element) {
+            const value = element.getAttribute(attribute);
+            if (value) element.setAttribute(attribute, taggedUrl(value, ref));
+        }
+    });
+    return new HTMLRewriter().on('link[rel="canonical"]', tag("href")).on('meta[property="og:url"]', tag("content")).transform(page);
+}
+
 export interface HomeDeps {
     /** The HTML page, exactly as the assets would serve it. */
     page(): Promise<Response>;
     fetchAsset(path: string): Promise<Response>;
+    /** The page with the link's tag in its canonical address (tagPage; HTMLRewriter exists only in the Worker). */
+    tag(page: Response, ref: string): Response;
 }
 
 /** Serves "/" as HTML to browsers and as Markdown to agents that ask for it (Accept: text/markdown). */
@@ -40,7 +73,8 @@ export async function handleHome(request: Request, deps: HomeDeps): Promise<Resp
             }
         });
     }
-    const page = await deps.page();
+    const ref = sharedRef(request);
+    const page = ref ? deps.tag(await deps.page(), ref) : await deps.page();
     const headers = new Headers(page.headers);
     headers.set("Link", HOME_LINKS);
     headers.append("Vary", "Accept");
