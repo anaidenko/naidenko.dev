@@ -164,12 +164,19 @@ test("keeps visits in the database and shows them only with the password", async
     expect(anonymous.status()).toBe(401);
     expect(anonymous.headers()["www-authenticate"]).toContain("Basic");
 
-    const ref = `e2e-${Date.now()}`;
+    // Random as well as timed: the desktop and mobile projects run this test at the same moment.
+    const ref = `e2e-${Date.now()}-${Math.floor(Math.random() * 1e6)}`;
     const visit = crypto.randomUUID();
+    const address = randomAddress();
+    // The same person came earlier that day without the tag; the tagged visit still counts them.
+    const untagged = { kind: "view", visit: crypto.randomUUID(), path: "/", referrer: "", ref: "", screen: 1440 };
+    expect((await sendHit(request, baseURL!, untagged, address)).status()).toBe(204);
     const view = { kind: "view", visit, path: "/", referrer: "https://www.linkedin.com", ref, screen: 1440 };
-    expect((await sendHit(request, baseURL!, view)).status()).toBe(204);
-    expect((await sendHit(request, baseURL!, { kind: "event", visit, name: "section_view", detail: "experience" })).status()).toBe(204);
-    expect((await sendHit(request, baseURL!, { kind: "time", visit, seconds: 95 })).status()).toBe(204);
+    expect((await sendHit(request, baseURL!, view, address)).status()).toBe(204);
+    expect((await sendHit(request, baseURL!, { kind: "event", visit, name: "section_view", detail: "experience" }, address)).status()).toBe(
+        204
+    );
+    expect((await sendHit(request, baseURL!, { kind: "time", visit, seconds: 95 }, address)).status()).toBe(204);
 
     const owner = await request.get(`/stats?range=all&ref=${ref}`, { headers: OWNER });
     expect(owner.status()).toBe(200);

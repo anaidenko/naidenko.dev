@@ -1,5 +1,6 @@
 import { sections as pageSections } from "../src/content/sections";
 
+import { REF } from "./hits";
 import { countryName, languageName } from "./names";
 
 export interface Row {
@@ -102,12 +103,13 @@ export function filterOf(url: URL, now: Date): Filter {
         from: daysBack(DEFAULT_DAYS),
         to: today,
         country: /^([A-Z]{2}|T1)$/.test(country) ? country : "",
-        ref: /^[a-z0-9._-]{1,40}$/.test(ref) ? ref : ""
+        ref: REF.test(ref) ? ref : ""
     };
     const from = params.get("from");
     const to = params.get("to");
     const range = params.get("range");
-    if (isDay(from) && isDay(to)) [filter.from, filter.to] = from <= to ? [from, to] : [to, from];
+    // The form sends an empty `from` for all time.
+    if (isDay(to) && (from === "" || isDay(from))) [filter.from, filter.to] = from <= to ? [from, to] : [to, from];
     else if (range === "all") filter.from = "";
     else if (PRESETS.some(([days]) => days === range)) filter.from = daysBack(Number(range));
     return filter;
@@ -384,10 +386,13 @@ export async function handleStats(request: Request, deps: StatsDeps): Promise<Re
 /** The visits the filter selects, as `f`, for every query below; ?1 to ?4 are the filter. */
 const FILTERED = `WITH f AS (SELECT * FROM visits WHERE day >= ?1 AND day <= ?2 AND (?3 = '' OR country = ?3) AND (?4 = '' OR ref = ?4))`;
 /**
- * People in a breakdown: one per visitor per day. A visit whose hash was erased (after 13 months)
- * counts on its own.
+ * People: one per visitor per day, counted within the filter. A visit without a hash (erased after
+ * 13 months, or never keyed) falls back to `first_today`, which was fixed when it was stored.
  */
-const PEOPLE = `COUNT(DISTINCT day || '|' || COALESCE(visitor, id))`;
+const PEOPLE = `(COUNT(DISTINCT CASE WHEN visitor IS NOT NULL THEN day || '|' || visitor END)
+    + COALESCE(SUM(CASE WHEN visitor IS NULL THEN first_today END), 0))`;
+const RETURNING = `(COUNT(DISTINCT CASE WHEN visitor IS NOT NULL AND returned = 1 THEN day || '|' || visitor END)
+    + COALESCE(SUM(CASE WHEN visitor IS NULL THEN first_today * returned END), 0))`;
 const EVENT_LABEL = `e.name || CASE WHEN e.detail != '' THEN ' · ' || e.detail ELSE '' END`;
 
 /** One round trip for every table on the page. */
@@ -399,7 +404,7 @@ export async function loadStats(db: D1Database, filter: Filter): Promise<StatsDa
         );
     const results = await db.batch<Record<string, unknown>>([
         filtered(
-            `SELECT COUNT(*) AS views, COALESCE(SUM(first_today), 0) AS visitors, COALESCE(SUM(first_today * returned), 0) AS returners,
+            `SELECT COUNT(*) AS views, ${PEOPLE} AS visitors, ${RETURNING} AS returners,
                 AVG(seconds) AS avgSeconds,
                 COALESCE(SUM(CASE WHEN COALESCE(seconds, 0) < 10
                     AND NOT EXISTS (SELECT 1 FROM events e WHERE e.visit = f.id AND e.name != 'section_view')
@@ -407,9 +412,9 @@ export async function loadStats(db: D1Database, filter: Filter): Promise<StatsDa
                 (SELECT COUNT(*) FROM events e WHERE e.name = 'generate_lead' AND e.visit IN (SELECT id FROM f)) AS leads
              FROM f`
         ),
-        filtered(`SELECT day AS label, SUM(first_today) AS visitors, COUNT(*) AS views FROM f GROUP BY day ORDER BY day DESC LIMIT 366`),
+        filtered(`SELECT day AS label, ${PEOPLE} AS visitors, COUNT(*) AS views FROM f GROUP BY day ORDER BY day DESC LIMIT 366`),
         filtered(
-            `SELECT substr(day, 1, 7) AS label, SUM(first_today) AS visitors, COUNT(*) AS views FROM f GROUP BY label ORDER BY label DESC LIMIT 120`
+            `SELECT substr(day, 1, 7) AS label, ${PEOPLE} AS visitors, COUNT(*) AS views FROM f GROUP BY label ORDER BY label DESC LIMIT 120`
         ),
         breakdown("ref", 30),
         breakdown("referrer", 30),

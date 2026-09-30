@@ -39,7 +39,7 @@ export function goatcounterPath(event: string, detail: string): string {
 /** The tag of a link Andrii placed, such as "linkedin" in ?ref=linkedin. */
 export function refOf(search: string): string {
     const params = new URLSearchParams(search);
-    const tag = params.get("ref") ?? params.get("utm_source") ?? "";
+    const tag = params.get("ref") || params.get("utm_source") || "";
     return tag
         .toLowerCase()
         .replace(/[^a-z0-9._-]/g, "")

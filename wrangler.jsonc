@@ -20,7 +20,7 @@
         // Page views and clicks: generous for a person, a ceiling for a script.
         { "name": "HIT_RATE_LIMIT", "namespace_id": "1002", "simple": { "limit": 60, "period": 60 } }
     ],
-    // The visit counter: one row per day and combination, kept for good (worker/migrations).
+    // The visit counter: one row per visit and per click or section reached (worker/migrations).
     "d1_databases": [
         {
             "binding": "STATS_DB",

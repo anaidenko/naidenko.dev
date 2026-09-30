@@ -64,7 +64,8 @@ const VISIT = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
 const PATH = /^\/[\w/.-]{0,63}$/;
 const NAME = /^[\w.-]{1,64}$/;
 const DETAIL = /^[\w.-]{0,64}$/;
-const REF = /^[a-z0-9._-]{0,40}$/;
+/** A link tag, as the page sends it and /stats filters by it. */
+export const REF = /^[a-z0-9._-]{0,40}$/;
 const MAX_SCREEN = 20_000;
 
 /** The referring site's host, or "" for none, the site itself, or anything that is not a URL. */

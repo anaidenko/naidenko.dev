@@ -73,6 +73,7 @@ describe("refOf", () => {
         expect(refOf("?ref=LinkedIn")).toBe("linkedin");
         expect(refOf("?utm_source=newsletter")).toBe("newsletter");
         expect(refOf("?utm_source=a&ref=b")).toBe("b");
+        expect(refOf("?ref=&utm_source=newsletter")).toBe("newsletter");
         expect(refOf("")).toBe("");
     });
 

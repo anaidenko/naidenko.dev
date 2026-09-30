@@ -96,6 +96,10 @@ describe("filterOf", () => {
         expect(filter("?range=all")).toMatchObject({ from: "", to: "2026-09-24" });
     });
 
+    it("keeps all time when the form is sent with an empty start", () => {
+        expect(filter("?from=&to=2026-09-24&country=US")).toEqual({ from: "", to: "2026-09-24", country: "US", ref: "" });
+    });
+
     it("takes a date range, in either order", () => {
         expect(filter("?from=2026-09-01&to=2026-09-10")).toMatchObject({ from: "2026-09-01", to: "2026-09-10" });
         expect(filter("?from=2026-09-10&to=2026-09-01")).toMatchObject({ from: "2026-09-01", to: "2026-09-10" });
