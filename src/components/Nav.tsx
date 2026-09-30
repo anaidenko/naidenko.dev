@@ -14,6 +14,8 @@ export function Nav() {
                         <li key={id}>
                             <a
                                 href={`#${id}`}
+                                data-track="nav_click"
+                                data-track-section={id}
                                 aria-current={isActive ? "true" : undefined}
                                 className="group flex items-center py-2.5 short:py-2"
                             >

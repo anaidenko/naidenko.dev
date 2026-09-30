@@ -1,22 +1,26 @@
 "use client";
 
-import Script from "next/script";
 import { useEffect } from "react";
 
-import { GOATCOUNTER_URL, eventFor, track, trackView } from "@/lib/analytics";
+import { GOATCOUNTER_URL, eventFor, isExcluded, loadGoatCounter, startVisit, track } from "@/lib/analytics";
 
 export function Analytics() {
     useEffect(() => {
-        trackView();
+        if (isExcluded(window)) return;
+        const stop = startVisit(window);
         // Capture phase, so a click is recorded before a link takes the visitor away.
         const onClick = (event: MouseEvent) => {
             const found = eventFor(event.target);
             if (found) track(found.name, found.params);
         };
         document.addEventListener("click", onClick, true);
-        return () => document.removeEventListener("click", onClick, true);
+        const goatcounter = GOATCOUNTER_URL ? loadGoatCounter(document, GOATCOUNTER_URL) : null;
+        return () => {
+            stop();
+            document.removeEventListener("click", onClick, true);
+            goatcounter?.remove();
+        };
     }, []);
 
-    if (!GOATCOUNTER_URL) return null;
-    return <Script data-goatcounter={GOATCOUNTER_URL} src="https://gc.zgo.at/count.js" strategy="afterInteractive" />;
+    return null;
 }
