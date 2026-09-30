@@ -91,7 +91,8 @@ const DATA: StatsData = {
     options: { countries: ["KR", "US"], refs: ["acme", "linkedin"] }
 };
 
-const DEFAULT: Filter = { from: "2026-09-18", to: "2026-09-24", country: "", ref: "" };
+const DEFAULT: Filter = { from: "2026-08-26", to: "2026-09-24", country: "", ref: "" };
+const WEEK: Filter = { ...DEFAULT, from: "2026-09-18" };
 
 function get(query = "", auth?: string) {
     return new Request(`https://naidenko.dev/stats${query}`, { headers: auth ? { Authorization: auth } : {} });
@@ -118,7 +119,7 @@ const between = (html: string, from: string, to: string) => {
 };
 
 describe("filterOf", () => {
-    it("shows the last 7 days of every country and tag by default", () => {
+    it("shows the last 30 days of every country and tag by default", () => {
         expect(filter("")).toEqual(DEFAULT);
     });
 
@@ -154,7 +155,7 @@ describe("filterOf", () => {
 
 describe("previousOf", () => {
     it("is the same number of days just before the range, with the same country and tag", () => {
-        expect(previousOf({ ...DEFAULT, country: "US", ref: "cv" })).toEqual({
+        expect(previousOf({ ...WEEK, country: "US", ref: "cv" })).toEqual({
             from: "2026-09-11",
             to: "2026-09-17",
             country: "US",
@@ -233,10 +234,10 @@ describe("niceCeiling", () => {
 
 describe("activePreset", () => {
     it("names the preset a filter matches, or none for a custom range", () => {
-        expect(activePreset(DEFAULT, NOW)).toBe("7");
+        expect(activePreset(DEFAULT, NOW)).toBe("30");
         expect(activePreset({ ...DEFAULT, from: "2026-09-24" }, NOW)).toBe("today");
         expect(activePreset({ ...DEFAULT, from: "2026-09-23", to: "2026-09-23" }, NOW)).toBe("yesterday");
-        expect(activePreset({ ...DEFAULT, from: "2026-08-26" }, NOW)).toBe("30");
+        expect(activePreset(WEEK, NOW)).toBe("7");
         expect(activePreset({ ...DEFAULT, from: "" }, NOW)).toBe("all");
         expect(activePreset({ ...DEFAULT, from: "2026-09-01", to: "2026-09-10" }, NOW)).toBe("");
     });
@@ -248,7 +249,7 @@ describe("the redesigned page", () => {
             { label: "2026-09-24", visitors: 7, views: 9 },
             { label: "2026-09-22", visitors: 14, views: 20 }
         ];
-        const html = renderStats({ ...DATA, days }, DEFAULT, NOW);
+        const html = renderStats({ ...DATA, days }, WEEK, NOW);
         const chart = between(html, '<figure class="chart"', "</figure>");
         expect(chart).toContain('aria-label="Visitors per day, 2026-09-18 to 2026-09-24: 21 in total, most on 2026-09-22 (14)"');
         expect(chart.match(/class="col"/g)).toHaveLength(7);
@@ -281,8 +282,8 @@ describe("the redesigned page", () => {
 
     it("shows the periods as buttons, the chosen one marked", () => {
         const html = renderStats(DATA, DEFAULT, NOW);
-        expect(html).toContain('<a class="pill" href="?range=7" aria-current="page">7 days</a>');
-        expect(html).toContain('<a class="pill" href="?range=30">30 days</a>');
+        expect(html).toContain('<a class="pill" href="?range=30" aria-current="page">30 days</a>');
+        expect(html).toContain('<a class="pill" href="?range=7">7 days</a>');
         expect(renderStats(DATA, { ...DEFAULT, from: "2026-09-01", to: "2026-09-10" }, NOW)).not.toMatch(
             /<a class="pill"[^>]*aria-current/
         );
@@ -320,7 +321,7 @@ describe("renderStats", () => {
     });
 
     it("compares each total with the previous period", () => {
-        const html = renderStats(DATA, DEFAULT, NOW);
+        const html = renderStats(DATA, WEEK, NOW);
         expect(html).toContain(
             '<small class="trend good" title="2026-09-11 to 2026-09-17: 25"><span aria-hidden="true">▲</span> +24%</small>'
         );
@@ -346,7 +347,7 @@ describe("renderStats", () => {
 
     it("links to GoatCounter for the same period, when it is configured", () => {
         const goatcounter = "https://naidenko.goatcounter.com/";
-        expect(renderStats(DATA, DEFAULT, NOW, goatcounter)).toContain(
+        expect(renderStats(DATA, WEEK, NOW, goatcounter)).toContain(
             'href="https://naidenko.goatcounter.com/?period-start=2026-09-18&amp;period-end=2026-09-24"'
         );
         expect(renderStats(DATA, { ...DEFAULT, from: "" }, NOW, goatcounter)).toContain('href="https://naidenko.goatcounter.com/"');

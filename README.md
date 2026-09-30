@@ -122,7 +122,7 @@ browser, system and language, and a keyed hash of the network and browser; it st
 address. A daily cron erases the hashes older than 13 months, and the rest is kept.
 
 - **Link tags:** `https://naidenko.dev/?ref=linkedin` (or `utm_source=`) shows under Link tags on
-  `/stats`, which filters by tag, country and dates (the last 7 days by default) and compares each
+  `/stats`, which filters by tag, country and dates (the last 30 days by default) and compares each
   total with the period of the same length just before. A bounce is a visit that left within 10 s.
 - **Not counted:** a load with `?preview=1`; a browser that has opened `/stats` (it sets
   GoatCounter's `skipgc` flag, which both counters honour, and has a button to undo it); addresses

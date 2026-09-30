@@ -99,7 +99,7 @@ export interface StatsDeps {
 }
 
 const DAY_MS = 86_400_000;
-const DEFAULT_DAYS = 7;
+const DEFAULT_DAYS = 30;
 const PRESETS: [string, string][] = [
     ["today", "Today"],
     ["yesterday", "Yesterday"],
