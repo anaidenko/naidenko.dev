@@ -2,6 +2,7 @@ import { postToSlack } from "./alert";
 import { handleContact } from "./contact";
 import { handleHit, placeOf, recordEvent, recordTime, recordVisit } from "./hits";
 import { handleHome } from "./home";
+import { forgetVisitors, retentionCutoff } from "./retention";
 import { handleStats, loadStats } from "./stats";
 import { verifyTurnstile } from "./turnstile";
 
@@ -48,5 +49,9 @@ export default {
             });
         }
         return env.ASSETS.fetch(request);
+    },
+
+    async scheduled(controller, env, ctx) {
+        ctx.waitUntil(forgetVisitors(env.STATS_DB, retentionCutoff(new Date(controller.scheduledTime))));
     }
 } satisfies ExportedHandler<Env>;

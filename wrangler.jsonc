@@ -30,5 +30,7 @@
         }
     ],
     "vars": { "CONTACT_FROM": "form@naidenko.dev" },
+    // Daily, at a quiet hour: erases visitor hashes older than 13 months (worker/retention.ts).
+    "triggers": { "crons": ["17 3 * * *"] },
     "observability": { "enabled": true }
 }
