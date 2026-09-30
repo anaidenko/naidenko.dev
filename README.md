@@ -13,8 +13,8 @@ work, his open-source Claude Code plugins and a contact form.
   `POST /api/contact`, checks Cloudflare Turnstile and mails the message with the Email
   Service binding
 - **Two cookieless counters, so no consent banner:** GoatCounter for its dashboard, and the
-  site's own counter (`POST /api/hit` into Cloudflare D1) with a password-protected `/stats`
-  page
+  site's own counter (`POST /api/hit` into Cloudflare D1: each visit, its clicks and its visible
+  time) with a password-protected `/stats` page
 - **Vitest** for the Worker and the helpers; **Playwright** and **axe** for end-to-end and
   accessibility tests
 - **Prettier** (4 spaces) and **ESLint**; **GitHub Actions** runs every check
@@ -52,6 +52,8 @@ Turnstile's test keys, and GoatCounter is stubbed.
 | `CONTACT_TO` | Worker secret | The inbox that receives the form: a verified Email Routing destination. |
 | `SLACK_WEBHOOK_URL` | Worker secret | A Slack incoming webhook: a copy of every message, and alerts when something fails. |
 | `STATS_PASSWORD` | Worker secret | The password for `/stats`. Without it the page does not exist. |
+| `VISITOR_KEY` | Worker secret | The key of the visitor hash, which tells a returning visitor from a new one: a long random string (`openssl rand -hex 32`). Changing it makes every visitor new. |
+| `IGNORE_NETWORKS` | Worker secret (optional) | CIDR ranges or addresses, comma-separated, whose visits are not counted: the owner's own network. A secret, so no address reaches the public repository. |
 | `STATS_DB` | `wrangler.jsonc` | The D1 database `naidenko-stats`, created with `wrangler d1 create`. Its schema is in `worker/migrations/`. |
 | `CONTACT_FROM` | `wrangler.jsonc` | The sender address, on the site's domain. |
 
@@ -80,6 +82,8 @@ cost.
    pnpm exec wrangler secret put CONTACT_TO
    pnpm exec wrangler secret put SLACK_WEBHOOK_URL
    pnpm exec wrangler secret put STATS_PASSWORD
+   pnpm exec wrangler secret put VISITOR_KEY
+   pnpm exec wrangler secret put IGNORE_NETWORKS   # optional
    ```
 6. **Build settings:** create `.env.production.local` with the Turnstile site key and the
    GoatCounter endpoint.
@@ -87,7 +91,7 @@ cost.
    - refuses to run without the site key and the GoatCounter endpoint;
    - rebuilds;
    - checks that `out/` carries none of the test values from `e2e/e2e.env`;
-   - checks that the four Worker secrets exist;
+   - checks that the five required Worker secrets exist;
    - applies new D1 migrations;
    - deploys.
 
@@ -109,6 +113,20 @@ A visitor's bad or expired token raises no alert. When Slack cannot be reached, 
 the Worker's logs instead. Stream the live logs with `pnpm exec wrangler tail naidenko-dev`. Past
 logs are in the dashboard under the Worker's Logs, because Wrangler's login cannot query them.
 
+## Visits
+
+The page sends `/api/hit` its view, each section once as it scrolls into view, every tracked click
+and the time it was visible. The Worker adds the place and network Cloudflare resolves, the
+browser, system and language, and a keyed hash of the network and browser; it stores no IP
+address. A daily cron erases the hashes older than 13 months, and the rest is kept.
+
+- **Link tags:** `https://naidenko.dev/?ref=linkedin` (or `utm_source=`) shows under Link tags on
+  `/stats`, which filters by tag, country and dates.
+- **Not counted:** a load with `?preview=1`; a browser that has opened `/stats` (it sets
+  GoatCounter's `skipgc` flag, which both counters honour, and has a button to undo it); addresses
+  in `IGNORE_NETWORKS`; bots, automated browsers, frames and prerendering, as GoatCounter's
+  count.js skips them.
+
 ## Analytics events
 
 Every event goes to both counters. GoatCounter names it `<event>-<values of its parameters>`,
@@ -127,6 +145,8 @@ such as `hire_me_toptal-badge`; `/stats` lists it as `hire_me_toptal · badge`.
 | `copy_install` | The install-command copy button | — |
 | `generate_lead` | The form was sent | `form` |
 | `form_error` | The form could not be sent | `form`, `reason` (`rate_limit` when limited) |
+| `nav_click` | A link in the in-page menu (wide screens) | `section` |
+| `section_view` | A section scrolled into view, once per visit (`/stats` only) | the section's id |
 
 To track a new link or button, give it `data-track="<event>"` and any
 `data-track-<param>="<value>"`.
@@ -139,7 +159,7 @@ To track a new link or button, give it `data-track="<event>"` and any
 | `src/components/` | One component per block of the page |
 | `src/app/` | The pages, the link-preview image, `robots.txt` and `sitemap.xml` |
 | `src/lib/` | Form validation shared with the Worker; the Turnstile client; analytics |
-| `worker/` | The Worker: the contact endpoint and Turnstile verification |
+| `worker/` | The Worker: the contact endpoint, Turnstile verification, the visit counter and `/stats` |
 | `e2e/` | Playwright tests, accessibility checks, review screenshots |
 | `assets/` | Fonts and the photo for the generated images |
 | `scripts/` | The deploy guard and the env-file runner |
