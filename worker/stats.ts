@@ -39,17 +39,25 @@ export interface RecentVisit {
     clicks: string | null;
 }
 
+/** The figures in the tiles, for one period. */
+export interface Totals {
+    visitors: number;
+    views: number;
+    /** Views of the home page, the only page with sections. */
+    homeViews: number;
+    returning: number;
+    avgSeconds: number | null;
+    /** Visits that reported their time and left within BOUNCE_SECONDS. */
+    bounces: number;
+    /** Visits that reported their time: the bounce rate's base. */
+    timed: number;
+    leads: number;
+}
+
 export interface StatsData {
-    totals: {
-        visitors: number;
-        views: number;
-        /** Views of the home page, the only page with sections. */
-        homeViews: number;
-        returning: number;
-        avgSeconds: number | null;
-        bounces: number;
-        leads: number;
-    };
+    totals: Totals;
+    /** The same figures for the period just before, or null for all time. */
+    previous: Totals | null;
     days: Period[];
     months: Period[];
     pages: Row[];
@@ -86,11 +94,15 @@ export interface StatsDeps {
     password: string;
     load(filter: Filter): Promise<StatsData>;
     now(): Date;
+    /** GoatCounter's dashboard, linked for comparison; empty for no link. */
+    goatcounter: string;
 }
 
 const DAY_MS = 86_400_000;
-const DEFAULT_DAYS = 30;
+const DEFAULT_DAYS = 7;
 const PRESETS: [string, string][] = [
+    ["today", "Today"],
+    ["yesterday", "Yesterday"],
     ["7", "7 days"],
     ["30", "30 days"],
     ["90", "90 days"],
@@ -122,8 +134,44 @@ export function filterOf(url: URL, now: Date): Filter {
     // The form sends an empty `from` for all time.
     if (isDay(to) && (from === "" || isDay(from))) [filter.from, filter.to] = from <= to ? [from, to] : [to, from];
     else if (range === "all") filter.from = "";
-    else if (PRESETS.some(([days]) => days === range)) filter.from = daysBack(Number(range));
+    else if (range === "today") filter.from = today;
+    else if (range === "yesterday") filter.from = filter.to = daysBack(2);
+    else if (range && /^\d+$/.test(range) && PRESETS.some(([key]) => key === range)) filter.from = daysBack(Number(range));
     return filter;
+}
+
+const dayOf = (time: number) => new Date(time).toISOString().slice(0, 10);
+
+/** The period of the same length just before the filter's, with the same country and tag. */
+export function previousOf(filter: Filter): Filter | null {
+    if (!filter.from) return null;
+    const start = Date.parse(`${filter.from}T00:00:00Z`);
+    const days = Math.round((Date.parse(`${filter.to}T00:00:00Z`) - start) / DAY_MS) + 1;
+    return { ...filter, from: dayOf(start - days * DAY_MS), to: dayOf(start - DAY_MS) };
+}
+
+export interface Trend {
+    arrow: "▲" | "▼" | "";
+    text: string;
+    tone: "good" | "bad" | "flat";
+}
+
+/**
+ * How a figure moved since the previous period: in per cent, or in points for a rate (given as a
+ * fraction). Green is better: growth, or a fall for a figure where lower is better.
+ */
+export function trend(current: number | null, previous: number | null, { rate = false, lowerIsBetter = false } = {}): Trend | null {
+    if (current === null || previous === null) return null;
+    const diff = current - previous;
+    const direction = Math.sign(diff);
+    const size = rate ? Math.round(Math.abs(diff) * 100) : previous === 0 ? null : Math.round((Math.abs(diff) / previous) * 100);
+    if (direction === 0 || size === 0) return { arrow: "", text: rate ? "0 pts" : "0%", tone: "flat" };
+    const sign = direction > 0 ? "+" : "−";
+    return {
+        arrow: direction > 0 ? "▲" : "▼",
+        text: size === null ? "new" : `${sign}${size}${rate ? " pts" : "%"}`,
+        tone: direction > 0 !== lowerIsBetter ? "good" : "bad"
+    };
 }
 
 function escapeHtml(text: string): string {
@@ -174,6 +222,13 @@ function inPageOrder(rows: Row[]): Row[] {
         .map(row => ({ ...row, label: pageSections.find(section => section.id === row.label)?.label ?? row.label }));
 }
 
+const anchorOf = (title: string) =>
+    title
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, "-")
+        .replace(/^-|-$/g, "");
+const heading = (title: string) => `<h2><a href="#${anchorOf(title)}">${escapeHtml(title)}</a></h2>`;
+
 /** A table of one label and one or more figures per line; the labels are escaped here. */
 function table(title: string, headers: string[], rows: [string, ...string[]][]): string {
     const head = headers.length ? `<tr>${headers.map(header => `<th>${header}</th>`).join("")}</tr>` : "";
@@ -182,7 +237,7 @@ function table(title: string, headers: string[], rows: [string, ...string[]][]):
               .map(([label, ...figures]) => `<tr><td>${escapeHtml(label)}</td>${figures.map(figure => `<td>${figure}</td>`).join("")}</tr>`)
               .join("")
         : `<tr><td colspan="${Math.max(headers.length, 2)}" class="none">Nothing yet</td></tr>`;
-    return `<section><h2>${title}</h2><table>${head}${body}</table></section>`;
+    return `<section id="${anchorOf(title)}">${heading(title)}<table>${head}${body}</table></section>`;
 }
 
 const counts = (rows: Row[], label: (row: Row) => string = row => row.label): [string, string][] =>
@@ -209,7 +264,7 @@ function recentTable(visits: RecentVisit[]): string {
     const body = rows.length
         ? rows.map(cells => `<tr>${cells.map(cell => `<td>${cell}</td>`).join("")}</tr>`).join("")
         : `<tr><td colspan="${headers.length}" class="none">Nothing yet</td></tr>`;
-    return `<section class="wide"><h2>Latest visits</h2><div class="scroll"><table class="recent">${head}${body}</table></div></section>`;
+    return `<section id="latest-visits" class="wide">${heading("Latest visits")}<div class="scroll"><table class="recent">${head}${body}</table></div></section>`;
 }
 
 function filterForm(filter: Filter, options: StatsData["options"]): string {
@@ -217,7 +272,9 @@ function filterForm(filter: Filter, options: StatsData["options"]): string {
         `<option value="${escapeHtml(value)}"${value === selected ? " selected" : ""}>${escapeHtml(label)}</option>`;
     const countries = [
         option("", "All countries", filter.country),
-        ...options.countries.map(code => option(code, countryName(code), filter.country))
+        ...[...options.countries]
+            .sort((a, b) => countryName(a).localeCompare(countryName(b), "en"))
+            .map(code => option(code, countryName(code), filter.country))
     ];
     const refs = [option("", "All link tags", filter.ref), ...options.refs.map(ref => option(ref, ref, filter.ref))];
     const presets = PRESETS.map(([range, label]) => {
@@ -270,17 +327,50 @@ const OWNER_SCRIPT = `<script>
 })();
 </script>`;
 
-export function renderStats(data: StatsData, filter: Filter, now: Date): string {
-    const { totals } = data;
-    const tiles = [
-        ["Visitors", String(totals.visitors)],
-        ["Page views", String(totals.views)],
-        ["Returning visitors", String(totals.returning)],
-        ["Average time on page", duration(totals.avgSeconds)],
-        ["Bounce rate", percent(totals.bounces, totals.views)],
-        ["Messages sent", String(totals.leads)]
-    ]
-        .map(([label, value]) => `<div class="tile"><b>${value}</b><span>${label}</span></div>`)
+const bounceRate = (totals: Totals) => (totals.timed > 0 ? totals.bounces / totals.timed : null);
+
+/** GoatCounter's dashboard for the same days; its own URL takes period-start and period-end. */
+function goatcounterLink(dashboard: string, filter: Filter): string {
+    if (!dashboard) return "";
+    const url = new URL(dashboard);
+    if (filter.from) {
+        url.searchParams.set("period-start", filter.from);
+        url.searchParams.set("period-end", filter.to);
+    }
+    return `<a class="quiet" href="${escapeHtml(url.toString())}" target="_blank" rel="noopener noreferrer" title="The same site in GoatCounter, whose days follow its own time zone">Compare with GoatCounter ↗</a>`;
+}
+
+export function renderStats(data: StatsData, filter: Filter, now: Date, goatcounter = ""): string {
+    const { totals, previous } = data;
+    const before = previousOf(filter);
+    const period = before && previous ? `${before.from} to ${before.to}` : "";
+    const figures: [string, string, Trend | null, string][] = [
+        ["Visitors", String(totals.visitors), trend(totals.visitors, previous?.visitors ?? null), String(previous?.visitors)],
+        ["Page views", String(totals.views), trend(totals.views, previous?.views ?? null), String(previous?.views)],
+        ["Returning visitors", String(totals.returning), trend(totals.returning, previous?.returning ?? null), String(previous?.returning)],
+        [
+            "Average time on page",
+            duration(totals.avgSeconds),
+            trend(totals.avgSeconds, previous?.avgSeconds ?? null),
+            duration(previous?.avgSeconds ?? null)
+        ],
+        [
+            "Bounce rate",
+            percent(totals.bounces, totals.timed),
+            trend(bounceRate(totals), previous ? bounceRate(previous) : null, { rate: true, lowerIsBetter: true }),
+            previous ? percent(previous.bounces, previous.timed) : ""
+        ],
+        ["Messages sent", String(totals.leads), trend(totals.leads, previous?.leads ?? null), String(previous?.leads)]
+    ];
+    const tiles = figures
+        .map(([label, value, change, earlier]) => {
+            const arrow = change?.arrow ? `<span aria-hidden="true">${change.arrow}</span> ` : "";
+            const badge =
+                change && period
+                    ? `<small class="trend ${change.tone}" title="${escapeHtml(`${period}: ${earlier}`)}">${arrow}${change.text}</small>`
+                    : "";
+            return `<div class="tile"><b>${value}</b><span>${label}</span>${badge}</div>`;
+        })
         .join("");
     const periods = (rows: Period[]): [string, string, string][] => rows.map(row => [row.label, String(row.visitors), String(row.views)]);
     const range = filter.from ? `${filter.from} to ${filter.to}` : `All time to ${filter.to}`;
@@ -295,8 +385,13 @@ export function renderStats(data: StatsData, filter: Filter, now: Date): string 
 :root { color-scheme: dark; }
 body { margin: 0; padding: 32px 16px 64px; background: #0b0c0e; color: #a1a1aa; font: 15px/1.5 ui-sans-serif, system-ui, sans-serif; }
 main { max-width: 1100px; margin: 0 auto; }
-h1 { color: #f4f4f5; font-size: 22px; margin: 0 0 4px; }
+h1 { color: #f4f4f5; font-size: 22px; margin: 0; }
 h2 { color: #f4f4f5; font-size: 14px; margin: 0 0 8px; }
+h2 a { color: inherit; text-decoration: none; }
+h2 a:hover, h2 a:focus-visible { text-decoration: underline; }
+.top { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 4px 16px; margin-bottom: 4px; }
+.quiet { color: #8b8b95; font-size: 13px; text-decoration: none; }
+.quiet:hover, .quiet:focus-visible { color: #f4f4f5; text-decoration: underline; }
 .note { color: #8b8b95; margin: 0 0 12px; font-size: 13px; }
 button { font: inherit; font-size: 13px; color: #f4f4f5; background: #16181c; border: 1px solid #8b8b9555; border-radius: 8px; padding: 2px 10px; cursor: pointer; }
 .filter { display: flex; flex-wrap: wrap; gap: 8px 16px; align-items: end; margin: 16px 0 24px; font-size: 13px; }
@@ -308,7 +403,13 @@ a { color: #f4f4f5; }
 .tile { border: 1px solid #8b8b9526; background: #16181c99; border-radius: 12px; padding: 14px 16px; }
 .tile b { display: block; color: #f4f4f5; font-size: 26px; }
 .tile span { color: #8b8b95; font-size: 13px; }
-.grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 28px 24px; }
+.trend { display: block; margin-top: 4px; font-size: 12px; font-variant-numeric: tabular-nums; }
+.trend.good { color: #4ade80; }
+.trend.bad { color: #f87171; }
+.trend.flat { color: #8b8b95; }
+.grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; }
+.grid > section { border: 1px solid #8b8b9526; background: #16181c66; border-radius: 12px; padding: 14px 16px; scroll-margin-top: 16px; }
+.grid > section:target { border-color: #8b8b9599; }
 .wide { grid-column: 1 / -1; }
 .scroll { overflow-x: auto; }
 table { width: 100%; border-collapse: collapse; }
@@ -322,13 +423,13 @@ td:not(:first-child), th:not(:first-child) { text-align: right; color: #f4f4f5; 
 </head>
 <body>
 <main>
-<h1>naidenko.dev</h1>
+<header class="top"><h1>naidenko.dev stats</h1>${goatcounterLink(goatcounter, filter)}</header>
 <p class="note">Counted by the site's own Worker: no cookies, no IP addresses. Days and times are UTC. A visitor is one network and browser on one day, so people behind one office address count as one, and a phone that changes networks as several. Generated ${now.toISOString().slice(0, 16).replace("T", " ")} UTC.</p>
 <p class="note" id="owner"></p>
 ${filterForm(filter, data.options)}
 <p class="note">Showing ${escapeHtml(range)}${filter.country ? `, ${escapeHtml(countryName(filter.country))}` : ""}${filter.ref ? `, ?ref=${escapeHtml(filter.ref)}` : ""}.</p>
 <div class="tiles">${tiles}</div>
-<p class="note">A bounce is a visit under ${BOUNCE_SECONDS} s with no click. The average time counts only visits that reported it; a phone can close a page before it does.</p>
+<p class="note">${period ? `Arrows compare with ${escapeHtml(period)}. ` : ""}A bounce is a visit that left within ${BOUNCE_SECONDS} s. The bounce rate and the average time count only visits that reported their time; a phone can close a page before it does.</p>
 <div class="grid">
 ${table("By day", ["Day", "Visitors", "Views"], periods(data.days))}
 ${table("By month", ["Month", "Visitors", "Views"], periods(data.months))}
@@ -392,7 +493,7 @@ export async function handleStats(request: Request, deps: StatsDeps): Promise<Re
     const now = deps.now();
     const filter = filterOf(new URL(request.url), now);
     const data = await deps.load(filter);
-    return new Response(renderStats(data, filter, now), {
+    return new Response(renderStats(data, filter, now, deps.goatcounter), {
         headers: { "Content-Type": "text/html; charset=utf-8", "Cache-Control": "no-store", "X-Robots-Tag": "noindex" }
     });
 }
@@ -407,27 +508,30 @@ const PEOPLE = `(COUNT(DISTINCT CASE WHEN visitor IS NOT NULL THEN day || '|' ||
     + COALESCE(SUM(CASE WHEN visitor IS NULL THEN first_today END), 0))`;
 const RETURNING = `(COUNT(DISTINCT CASE WHEN visitor IS NOT NULL AND returned = 1 THEN day || '|' || visitor END)
     + COALESCE(SUM(CASE WHEN visitor IS NULL THEN first_today * returned END), 0))`;
-/** A visit shorter than this with no click is a bounce, as in GA4. Sections are not counted: a tall
- * screen shows two of them before anyone scrolls. */
+/** A visit that left within this many seconds is a bounce (Andrii, 2026-09-30). */
 const BOUNCE_SECONDS = 10;
+const TOTALS = `SELECT COUNT(*) AS views, COALESCE(SUM(path = '/'), 0) AS homeViews, ${PEOPLE} AS visitors, ${RETURNING} AS returners,
+        AVG(seconds) AS avgSeconds, COALESCE(SUM(seconds < ${BOUNCE_SECONDS}), 0) AS bounces, COUNT(seconds) AS timed,
+        (SELECT COUNT(*) FROM events e WHERE e.name = 'generate_lead' AND e.visit IN (SELECT id FROM f)) AS leads
+    FROM f`;
+
+function totalsOf(result: D1Result<Record<string, unknown>>): Totals {
+    const { returners, ...rest } = result.results[0] as Omit<Totals, "returning"> & { returners: number };
+    return { ...rest, returning: returners };
+}
 const EVENT_LABEL = `e.name || CASE WHEN e.detail != '' THEN ' · ' || e.detail ELSE '' END`;
 
 /** One round trip for every table on the page. */
 export async function loadStats(db: D1Database, filter: Filter): Promise<StatsData> {
-    const filtered = (sql: string) => db.prepare(`${FILTERED} ${sql}`).bind(filter.from, filter.to, filter.country, filter.ref);
+    const select = (range: Filter, sql: string) => db.prepare(`${FILTERED} ${sql}`).bind(range.from, range.to, range.country, range.ref);
+    const filtered = (sql: string) => select(filter, sql);
+    const before = previousOf(filter);
     const breakdown = (column: string, limit: number) =>
         filtered(
             `SELECT ${column} AS label, ${PEOPLE} AS n FROM f WHERE ${column} != '' GROUP BY ${column} ORDER BY n DESC, label LIMIT ${limit}`
         );
     const results = await db.batch<Record<string, unknown>>([
-        filtered(
-            `SELECT COUNT(*) AS views, COALESCE(SUM(path = '/'), 0) AS homeViews, ${PEOPLE} AS visitors, ${RETURNING} AS returners,
-                AVG(seconds) AS avgSeconds,
-                COALESCE(SUM(CASE WHEN COALESCE(seconds, 0) < ${BOUNCE_SECONDS}
-                    AND NOT EXISTS (SELECT 1 FROM events e WHERE e.visit = f.id AND e.name != 'section_view') THEN 1 ELSE 0 END), 0) AS bounces,
-                (SELECT COUNT(*) FROM events e WHERE e.name = 'generate_lead' AND e.visit IN (SELECT id FROM f)) AS leads
-             FROM f`
-        ),
+        filtered(TOTALS),
         filtered(`SELECT day AS label, ${PEOPLE} AS visitors, COUNT(*) AS views FROM f GROUP BY day ORDER BY day DESC LIMIT 366`),
         filtered(
             `SELECT substr(day, 1, 7) AS label, ${PEOPLE} AS visitors, COUNT(*) AS views FROM f GROUP BY label ORDER BY label DESC LIMIT 120`
@@ -478,31 +582,16 @@ export async function loadStats(db: D1Database, filter: Filter): Promise<StatsDa
              FROM f ORDER BY f.at DESC LIMIT 50`
         ),
         db.prepare(`SELECT DISTINCT country AS label FROM visits WHERE country != '' ORDER BY country`),
-        db.prepare(`SELECT DISTINCT ref AS label FROM visits WHERE ref != '' ORDER BY ref`)
+        db.prepare(`SELECT DISTINCT ref AS label FROM visits WHERE ref != '' ORDER BY ref`),
+        ...(before ? [select(before, TOTALS)] : [])
     ]);
     const [totals, days, months, pages, refs, referrers, countries, regions, cities, networks, devices, browsers, systems, languages] =
         results;
-    const [screens, sections, nav, durations, events, recent, countryOptions, refOptions] = results.slice(14);
+    const [screens, sections, nav, durations, events, recent, countryOptions, refOptions, previous] = results.slice(14);
     const rows = <T>(result: D1Result<Record<string, unknown>>) => result.results as T[];
-    const first = totals.results[0] as {
-        views: number;
-        homeViews: number;
-        visitors: number;
-        returners: number;
-        avgSeconds: number | null;
-        bounces: number;
-        leads: number;
-    };
     return {
-        totals: {
-            visitors: first.visitors,
-            views: first.views,
-            homeViews: first.homeViews,
-            returning: first.returners,
-            avgSeconds: first.avgSeconds,
-            bounces: first.bounces,
-            leads: first.leads
-        },
+        totals: totalsOf(totals),
+        previous: previous ? totalsOf(previous) : null,
         days: rows<Period>(days),
         months: rows<Period>(months),
         pages: rows<Row>(pages),

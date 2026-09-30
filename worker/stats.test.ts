@@ -1,11 +1,12 @@
 import { describe, expect, it, vi } from "vitest";
 
-import { type Filter, type StatsData, type StatsDeps, filterOf, handleStats, renderStats } from "./stats";
+import { type Filter, type StatsData, type StatsDeps, filterOf, handleStats, previousOf, renderStats, trend } from "./stats";
 
 const NOW = new Date("2026-09-24T12:00:00Z");
 
 const EMPTY: StatsData = {
-    totals: { visitors: 0, views: 0, homeViews: 0, returning: 0, avgSeconds: null, bounces: 0, leads: 0 },
+    totals: { visitors: 0, views: 0, homeViews: 0, returning: 0, avgSeconds: null, bounces: 0, timed: 0, leads: 0 },
+    previous: null,
     days: [],
     months: [],
     pages: [],
@@ -30,7 +31,8 @@ const EMPTY: StatsData = {
 
 const DATA: StatsData = {
     ...EMPTY,
-    totals: { visitors: 31, views: 40, homeViews: 40, returning: 4, avgSeconds: 185, bounces: 10, leads: 3 },
+    totals: { visitors: 31, views: 40, homeViews: 40, returning: 4, avgSeconds: 185, bounces: 10, timed: 40, leads: 3 },
+    previous: { visitors: 25, views: 40, homeViews: 40, returning: 4, avgSeconds: 200, bounces: 4, timed: 20, leads: 0 },
     days: [{ label: "2026-09-24", visitors: 7, views: 9 }],
     months: [{ label: "2026-09", visitors: 31, views: 40 }],
     pages: [
@@ -77,7 +79,7 @@ const DATA: StatsData = {
     options: { countries: ["KR", "US"], refs: ["acme", "linkedin"] }
 };
 
-const DEFAULT: Filter = { from: "2026-08-26", to: "2026-09-24", country: "", ref: "" };
+const DEFAULT: Filter = { from: "2026-09-18", to: "2026-09-24", country: "", ref: "" };
 
 function get(query = "", auth?: string) {
     return new Request(`https://naidenko.dev/stats${query}`, { headers: auth ? { Authorization: auth } : {} });
@@ -86,18 +88,27 @@ function get(query = "", auth?: string) {
 const basic = (password: string) => `Basic ${btoa(`andrii:${password}`)}`;
 
 function setup(overrides: Partial<StatsDeps> = {}): StatsDeps {
-    return { password: "s3cret", load: vi.fn(async () => DATA), now: () => NOW, ...overrides };
+    return {
+        password: "s3cret",
+        load: vi.fn(async () => DATA),
+        now: () => NOW,
+        goatcounter: "https://naidenko.goatcounter.com/",
+        ...overrides
+    };
 }
 
 const filter = (query: string) => filterOf(new URL(`https://naidenko.dev/stats${query}`), NOW);
 
 describe("filterOf", () => {
-    it("shows the last 30 days of every country and tag by default", () => {
+    it("shows the last 7 days of every country and tag by default", () => {
         expect(filter("")).toEqual(DEFAULT);
     });
 
     it("takes a preset range, or all time", () => {
+        expect(filter("?range=today")).toMatchObject({ from: "2026-09-24", to: "2026-09-24" });
+        expect(filter("?range=yesterday")).toMatchObject({ from: "2026-09-23", to: "2026-09-23" });
         expect(filter("?range=7")).toMatchObject({ from: "2026-09-18", to: "2026-09-24" });
+        expect(filter("?range=30")).toMatchObject({ from: "2026-08-26", to: "2026-09-24" });
         expect(filter("?range=365")).toMatchObject({ from: "2025-09-25", to: "2026-09-24" });
         expect(filter("?range=all")).toMatchObject({ from: "", to: "2026-09-24" });
     });
@@ -123,7 +134,89 @@ describe("filterOf", () => {
     });
 });
 
+describe("previousOf", () => {
+    it("is the same number of days just before the range, with the same country and tag", () => {
+        expect(previousOf({ ...DEFAULT, country: "US", ref: "cv" })).toEqual({
+            from: "2026-09-11",
+            to: "2026-09-17",
+            country: "US",
+            ref: "cv"
+        });
+        expect(previousOf({ ...DEFAULT, from: "2026-09-24", to: "2026-09-24" })).toMatchObject({ from: "2026-09-23", to: "2026-09-23" });
+        expect(previousOf({ ...DEFAULT, from: "2026-09-01", to: "2026-09-10" })).toMatchObject({ from: "2026-08-22", to: "2026-08-31" });
+    });
+
+    it("does not exist for all time", () => {
+        expect(previousOf({ ...DEFAULT, from: "" })).toBeNull();
+    });
+});
+
+describe("trend", () => {
+    it("shows the change in per cent, green when it grows", () => {
+        expect(trend(12, 10)).toEqual({ arrow: "▲", text: "+20%", tone: "good" });
+        expect(trend(8, 10)).toEqual({ arrow: "▼", text: "−20%", tone: "bad" });
+        expect(trend(10, 10)).toEqual({ arrow: "", text: "0%", tone: "flat" });
+    });
+
+    it("marks growth from nothing as new, and nothing to nothing as flat", () => {
+        expect(trend(5, 0)).toEqual({ arrow: "▲", text: "new", tone: "good" });
+        expect(trend(0, 0)).toEqual({ arrow: "", text: "0%", tone: "flat" });
+    });
+
+    it("shows a rate's change in points, and red when a worse rate grows", () => {
+        expect(trend(0.3, 0.25, { rate: true, lowerIsBetter: true })).toEqual({ arrow: "▲", text: "+5 pts", tone: "bad" });
+        expect(trend(0.2, 0.25, { rate: true, lowerIsBetter: true })).toEqual({ arrow: "▼", text: "−5 pts", tone: "good" });
+    });
+
+    it("shows nothing without a previous value", () => {
+        expect(trend(5, null)).toBeNull();
+        expect(trend(null, 5)).toBeNull();
+    });
+});
+
 describe("renderStats", () => {
+    it("says it is the stats page", () => {
+        expect(renderStats(DATA, DEFAULT, NOW)).toContain("<h1>naidenko.dev stats</h1>");
+    });
+
+    it("compares each total with the previous period", () => {
+        const html = renderStats(DATA, DEFAULT, NOW);
+        expect(html).toContain(
+            '<small class="trend good" title="2026-09-11 to 2026-09-17: 25"><span aria-hidden="true">▲</span> +24%</small>'
+        );
+        expect(html).toContain('class="trend bad" title="2026-09-11 to 2026-09-17: 3 min 20 s"');
+        expect(html).toContain('class="trend bad" title="2026-09-11 to 2026-09-17: 20%"><span aria-hidden="true">▲</span> +5 pts');
+        expect(html).toContain("Arrows compare with 2026-09-11 to 2026-09-17.");
+        expect(renderStats({ ...DATA, previous: null }, { ...DEFAULT, from: "" }, NOW)).not.toContain('class="trend');
+    });
+
+    it("offers today and yesterday first, and names the countries in alphabetical order", () => {
+        const html = renderStats({ ...DATA, options: { countries: ["US", "KR", "DE"], refs: [] } }, DEFAULT, NOW);
+        expect(html.indexOf(">Today<")).toBeLessThan(html.indexOf(">Yesterday<"));
+        expect(html.indexOf(">Yesterday<")).toBeLessThan(html.indexOf(">7 days<"));
+        expect(html.indexOf(">Germany<")).toBeLessThan(html.indexOf(">South Korea<"));
+        expect(html.indexOf(">South Korea<")).toBeLessThan(html.indexOf(">United States<"));
+    });
+
+    it("gives every table an anchor to link to", () => {
+        const html = renderStats(DATA, DEFAULT, NOW);
+        expect(html).toContain('<section id="latest-visits" class="wide"><h2><a href="#latest-visits">Latest visits</a></h2>');
+        expect(html).toContain('<section id="link-tags-ref"><h2><a href="#link-tags-ref">Link tags (?ref=)</a></h2>');
+    });
+
+    it("links to GoatCounter for the same period, when it is configured", () => {
+        const goatcounter = "https://naidenko.goatcounter.com/";
+        expect(renderStats(DATA, DEFAULT, NOW, goatcounter)).toContain(
+            'href="https://naidenko.goatcounter.com/?period-start=2026-09-18&amp;period-end=2026-09-24"'
+        );
+        expect(renderStats(DATA, { ...DEFAULT, from: "" }, NOW, goatcounter)).toContain('href="https://naidenko.goatcounter.com/"');
+        expect(renderStats(DATA, DEFAULT, NOW)).not.toContain("goatcounter.com");
+    });
+
+    it("defines a bounce as leaving within 10 seconds", () => {
+        expect(renderStats(DATA, DEFAULT, NOW)).toContain("A bounce is a visit that left within 10 s.");
+    });
+
     it("shows the totals, with the average time and the bounce rate", () => {
         const html = renderStats(DATA, DEFAULT, NOW);
         for (const part of ["31", "40", "3 min 5 s", "25%", "Messages sent"]) expect(html).toContain(part);
@@ -148,6 +241,7 @@ describe("renderStats", () => {
         expect(html).toContain('<option value="US" selected>United States</option>');
         expect(html).toContain('<option value="acme" selected>acme</option>');
         expect(html).toContain('href="?range=7&amp;country=US&amp;ref=acme"');
+        expect(html).toContain('href="?range=today&amp;country=US&amp;ref=acme"');
     });
 
     it("lists the sections reached in the page's order, with their share of page views", () => {
@@ -170,7 +264,7 @@ describe("renderStats", () => {
             NOW
         );
         expect(html.slice(html.indexOf("Sections reached"), html.indexOf("Menu clicks"))).toContain("20 · 100%");
-        expect(html.slice(html.indexOf("<h2>Pages"), html.indexOf("Link tags"))).toContain("/privacy");
+        expect(html.slice(html.indexOf('id="pages"'), html.indexOf('id="link-tags-ref"'))).toContain("/privacy");
         expect(html.slice(html.indexOf("Latest visits"))).toContain("/privacy");
     });
 
@@ -215,6 +309,8 @@ describe("handleStats", () => {
         expect(res.headers.get("Cache-Control")).toBe("no-store");
         expect(res.headers.get("X-Robots-Tag")).toBe("noindex");
         expect(deps.load).toHaveBeenCalledWith({ from: "2026-09-18", to: "2026-09-24", country: "KR", ref: "" });
-        expect(await res.text()).toContain("South Korea");
+        const html = await res.text();
+        expect(html).toContain("South Korea");
+        expect(html).toContain("https://naidenko.goatcounter.com/?period-start=2026-09-18");
     });
 });

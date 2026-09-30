@@ -29,7 +29,8 @@
             "migrations_dir": "worker/migrations"
         }
     ],
-    "vars": { "CONTACT_FROM": "form@naidenko.dev" },
+    // GOATCOUNTER_DASHBOARD: linked from /stats to compare the two counters.
+    "vars": { "CONTACT_FROM": "form@naidenko.dev", "GOATCOUNTER_DASHBOARD": "https://naidenko.goatcounter.com/" },
     // Daily, at a quiet hour: erases visitor hashes older than 13 months (worker/retention.ts).
     "triggers": { "crons": ["17 3 * * *"] },
     "observability": { "enabled": true }

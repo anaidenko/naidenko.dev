@@ -39,7 +39,8 @@ export default {
             return handleStats(request, {
                 password: env.STATS_PASSWORD ?? "",
                 load: filter => loadStats(env.STATS_DB, filter),
-                now: () => new Date()
+                now: () => new Date(),
+                goatcounter: env.GOATCOUNTER_DASHBOARD ?? ""
             });
         }
         if (pathname === "/") {

@@ -215,7 +215,7 @@ test("keeps a section that reaches the counter before its visit does", async ({ 
     expect(between(html, "Sections reached", "Menu clicks")).toContain("Services");
 });
 
-test("counts a short visit without a click as a bounce, however many sections were on screen", async ({ request, baseURL }) => {
+test("counts a visit that leaves within 10 seconds as a bounce, whatever it clicked or saw", async ({ request, baseURL }) => {
     const ref = uniqueRef();
     const visit = crypto.randomUUID();
     const address = randomAddress();
@@ -224,6 +224,7 @@ test("counts a short visit without a click as a bounce, however many sections we
     );
     for (const detail of ["about", "experience"])
         expect((await sendHit(request, baseURL!, { kind: "event", visit, name: "section_view", detail }, address)).status()).toBe(204);
+    expect((await sendHit(request, baseURL!, { kind: "event", visit, name: "contact_click", detail: "" }, address)).status()).toBe(204);
     expect((await sendHit(request, baseURL!, { kind: "time", visit, seconds: 5 }, address)).status()).toBe(204);
     const { html } = await visitors(request, `?range=all&ref=${ref}`);
     expect(/<b>([^<]+)<\/b><span>Bounce rate/.exec(html)?.[1]).toBe("100%");

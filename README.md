@@ -56,6 +56,7 @@ Turnstile's test keys, and GoatCounter is stubbed.
 | `IGNORE_NETWORKS` | Worker secret (optional) | CIDR ranges or addresses, comma-separated, whose visits are not counted: the owner's own network. A secret, so no address reaches the public repository. |
 | `STATS_DB` | `wrangler.jsonc` | The D1 database `naidenko-stats`, created with `wrangler d1 create`. Its schema is in `worker/migrations/`. |
 | `CONTACT_FROM` | `wrangler.jsonc` | The sender address, on the site's domain. |
+| `GOATCOUNTER_DASHBOARD` | `wrangler.jsonc` | GoatCounter's dashboard, linked from `/stats` for the same dates. Empty means no link. |
 
 `.env.example` lists the build settings. Locally, the Worker reads `.dev.vars`. Neither
 `.env*.local` nor `.dev.vars` is committed.
@@ -121,7 +122,8 @@ browser, system and language, and a keyed hash of the network and browser; it st
 address. A daily cron erases the hashes older than 13 months, and the rest is kept.
 
 - **Link tags:** `https://naidenko.dev/?ref=linkedin` (or `utm_source=`) shows under Link tags on
-  `/stats`, which filters by tag, country and dates.
+  `/stats`, which filters by tag, country and dates (the last 7 days by default) and compares each
+  total with the period of the same length just before. A bounce is a visit that left within 10 s.
 - **Not counted:** a load with `?preview=1`; a browser that has opened `/stats` (it sets
   GoatCounter's `skipgc` flag, which both counters honour, and has a button to undo it); addresses
   in `IGNORE_NETWORKS`; bots, automated browsers, frames and prerendering, as GoatCounter's
