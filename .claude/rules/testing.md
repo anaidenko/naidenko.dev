@@ -16,6 +16,9 @@ paths:
   keys) and runs against `wrangler dev` on port 8788, the real Worker with the static assets.
   Locally, a server already running on 8788 is reused. After editing `worker/`, restart it:
   its hot reload dropped the rate-limit bindings on 2026-09-24, and `/api/hit` answered 500.
+  One spec: `pnpm test:e2e e2e/analytics.spec.ts -g "<title>"` (it still builds first); calling
+  `scripts/with-env.mjs … next build` outside a pnpm script fails with ENOENT, since `next` is
+  on the PATH only inside one.
 - **Projects:** `desktop` (1440×900) and `mobile` (Pixel 7). When a test skips one, give the
   reason.
 - **Analytics:** `e2e/analytics.spec.ts` stubs GoatCounter's count.js and watches the page's

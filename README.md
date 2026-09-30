@@ -97,8 +97,8 @@ cost.
    - deploys.
 
    The daily cron needs the account's `workers.dev` subdomain: open Workers & Pages in the
-   dashboard once, or the deploy stops at "Cron schedules" (error 10063), and
-   `pnpm exec wrangler triggers deploy` attaches it afterwards.
+   dashboard once. Without it the deploy exits with an error at "Cron schedules" (10063) after
+   the new code is already live; `pnpm exec wrangler triggers deploy` attaches the cron later.
 
    Never run `wrangler deploy` directly: it uploads whatever is in `out/`, which after
    `pnpm test:e2e` is a test build. The route in `wrangler.jsonc` attaches the domain, and the

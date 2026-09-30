@@ -14,7 +14,9 @@ which also answers the contact form. Setup, commands, configuration and deploy: 
 ## Code
 
 - **Prettier owns formatting:** 4 spaces, double quotes, sorted imports, sorted Tailwind
-  classes. A hook formats every file Claude edits; run `pnpm format` after bulk changes.
+  classes. A hook formats every file Claude edits; run `pnpm format` after bulk changes. The
+  hook reflows lines, so re-read the file before a scripted replacement, or anchor it on a name
+  (a test's title) rather than on a whole line.
 - **Default to no comment.** A comment earns its place only by carrying what the code cannot: a
   platform constraint, a rejected alternative and why, or a magic value's source. Never narrate
   the change (`// was X`, `// fixed Y`).
@@ -61,6 +63,9 @@ which also answers the contact form. Setup, commands, configuration and deploy: 
   background and leave it running.
 - **Ask first** for anything that leaves this machine or is hard to undo: `git push`,
   `pnpm run deploy`, `wrangler secret`, `rm -rf`, `git reset --hard`, force-push.
+- **A migration that drops data:** export the table (`wrangler d1 export --remote --table`)
+  right before the deploy that runs it, not when planning: on 2026-09-30 a morning copy had
+  already missed a view.
 - **No secrets in git.** `.dev.vars` and `.env*.local` are ignored. Production values are
   Wrangler secrets and build settings.
 
