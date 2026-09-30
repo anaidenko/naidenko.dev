@@ -19,8 +19,10 @@ type Hit =
     | { kind: "event"; visit: string; name: string; detail: string }
     | { kind: "time"; visit: string; seconds: number };
 
-/** The visit this page load is counted as, or null when it is not counted. */
+/** The visit this page is counted as, or null when it is not counted. */
 let visit: string | null = null;
+/** Whether a visit already started in this tab: a later one is a move within the site. */
+let landed = false;
 
 /** An event's parameters as one short detail, such as "badge" or "contact-rate_limit". */
 export function detailOf(params: Record<string, string>): string {
@@ -104,19 +106,22 @@ function send(hit: Hit): void {
 }
 
 /**
- * Counts this page load: the view now, each section once as it scrolls into view, and the visible
- * time whenever the page is hidden or left. Returns what stops it.
+ * Counts a page: the view now, each section once as it scrolls into view, and the visible time
+ * whenever the page is hidden or left. A move to another page within the site is a new visit, with
+ * no referrer or tag of its own. Returns what ends the visit, reporting its time.
  */
 export function startVisit(win: Window): () => void {
     const id = win.crypto.randomUUID();
     visit = id;
     const doc = win.document;
+    const internal = landed;
+    landed = true;
     send({
         kind: "view",
         visit: id,
         path: win.location.pathname,
-        referrer: originOf(doc.referrer),
-        ref: refOf(win.location.search),
+        referrer: internal ? "" : originOf(doc.referrer),
+        ref: internal ? "" : refOf(win.location.search),
         screen: win.screen.width || null
     });
 
@@ -149,6 +154,8 @@ export function startVisit(win: Window): () => void {
     doc.querySelectorAll("main section[id]").forEach(section => observer.observe(section));
 
     return () => {
+        clock.hide();
+        report();
         observer.disconnect();
         doc.removeEventListener("visibilitychange", onVisibility);
         win.removeEventListener("pagehide", onPageHide);

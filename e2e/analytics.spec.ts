@@ -53,6 +53,12 @@ function sendHit(request: APIRequestContext, baseURL: string, hit: Record<string
     });
 }
 
+/** A link tag no other run or project uses: the desktop and mobile projects run at the same time. */
+const uniqueRef = () => `e2e-${Date.now()}-${Math.floor(Math.random() * 1e6)}`;
+
+/** The part of a page between two headings. */
+const between = (html: string, from: string, to: string) => html.slice(html.indexOf(from), html.indexOf(to));
+
 /** The "Visitors" tile on /stats for a query. */
 async function visitors(request: APIRequestContext, query: string) {
     const html = await (await request.get(`/stats${query}`, { headers: OWNER })).text();
@@ -186,17 +192,58 @@ test("keeps visits in the database and shows them only with the password", async
     for (const part of ["linkedin.com", "1 min 35 s", "English", "1024–1919 px (laptops)", `?ref=${ref}`]) expect(html).toContain(part);
 });
 
-test("counts neither an ignored network nor a click without its visit", async ({ request, baseURL }) => {
-    const ref = `e2e-ignored-${Date.now()}`;
+test("counts nothing from an ignored network", async ({ request, baseURL }) => {
+    const ref = uniqueRef();
     const visit = crypto.randomUUID();
     expect(
         (await sendHit(request, baseURL!, { kind: "view", visit, path: "/", referrer: "", ref, screen: 390 }, IGNORED_ADDRESS)).status()
     ).toBe(204);
     expect((await visitors(request, `?range=all&ref=${ref}`)).count).toBe(0);
+});
 
-    const probe = `orphan_${Date.now()}`;
-    expect((await sendHit(request, baseURL!, { kind: "event", visit: crypto.randomUUID(), name: probe, detail: "" })).status()).toBe(204);
-    expect((await visitors(request, "?range=all")).html).not.toContain(probe);
+test("keeps a section that reaches the counter before its visit does", async ({ request, baseURL }) => {
+    const ref = uniqueRef();
+    const visit = crypto.randomUUID();
+    const address = randomAddress();
+    expect((await sendHit(request, baseURL!, { kind: "event", visit, name: "section_view", detail: "services" }, address)).status()).toBe(
+        204
+    );
+    expect((await sendHit(request, baseURL!, { kind: "view", visit, path: "/", referrer: "", ref, screen: 1440 }, address)).status()).toBe(
+        204
+    );
+    const { html } = await visitors(request, `?range=all&ref=${ref}`);
+    expect(between(html, "Sections reached", "Menu clicks")).toContain("Services");
+});
+
+test("counts a short visit without a click as a bounce, however many sections were on screen", async ({ request, baseURL }) => {
+    const ref = uniqueRef();
+    const visit = crypto.randomUUID();
+    const address = randomAddress();
+    expect((await sendHit(request, baseURL!, { kind: "view", visit, path: "/", referrer: "", ref, screen: 2560 }, address)).status()).toBe(
+        204
+    );
+    for (const detail of ["about", "experience"])
+        expect((await sendHit(request, baseURL!, { kind: "event", visit, name: "section_view", detail }, address)).status()).toBe(204);
+    expect((await sendHit(request, baseURL!, { kind: "time", visit, seconds: 5 }, address)).status()).toBe(204);
+    const { html } = await visitors(request, `?range=all&ref=${ref}`);
+    expect(/<b>([^<]+)<\/b><span>Bounce rate/.exec(html)?.[1]).toBe("100%");
+});
+
+test("counts a move to another page as a new visit, and ends the first one with its time", async ({ page }) => {
+    await asPerson(page);
+    await stubGoatCounter(page);
+    const hits = ownCounter(page);
+    await page.goto("/?ref=e2e", { referer: "https://www.linkedin.com/" });
+    await expect
+        .poll(() => hits)
+        .toContainEqual(expect.objectContaining({ kind: "view", path: "/", ref: "e2e", referrer: "https://www.linkedin.com" }));
+    await page.locator("footer").getByRole("link", { name: "Privacy" }).click();
+    await expect(page).toHaveURL(/\/privacy$/);
+    await expect.poll(() => hits).toContainEqual(expect.objectContaining({ kind: "view", path: "/privacy", ref: "", referrer: "" }));
+    const [home, privacy] = hits.filter(hit => hit.kind === "view");
+    expect(privacy.visit).not.toBe(home.visit);
+    expect(hits).toContainEqual(expect.objectContaining({ kind: "time", visit: home.visit }));
+    await expect.poll(() => goatcounterPaths(page)).toContain("/privacy");
 });
 
 test("drops hits over the limit without an error in the visitor's console", async ({ page }) => {
