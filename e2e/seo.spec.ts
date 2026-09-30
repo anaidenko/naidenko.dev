@@ -63,6 +63,21 @@ test("describes the page for search engines and link previews", async ({ page, r
     expect(imageResponse.headers()["content-type"]).toBe("image/png");
 });
 
+test("keeps a link's ?ref= in the canonical address LinkedIn's crawler reads, and only there", async ({ request }) => {
+    const canonical = (html: string) => [
+        html.match(/<link rel="canonical" href="([^"]*)"/)?.[1],
+        html.match(/<meta property="og:url" content="([^"]*)"/)?.[1]
+    ];
+    const linkedin = await request.get("/?ref=linkedin", {
+        headers: { "User-Agent": "LinkedInBot/1.0 (compatible; Mozilla/5.0; Apache-HttpClient +http://www.linkedin.com)" }
+    });
+    expect(linkedin.status()).toBe(200);
+    expect(canonical(await linkedin.text())).toEqual([`${SITE}/?ref=linkedin`, `${SITE}/?ref=linkedin`]);
+
+    const browser = await request.get("/?ref=linkedin");
+    expect(canonical(await browser.text())).toEqual([SITE, SITE]);
+});
+
 test("publishes structured data about the person", async ({ page }) => {
     await page.goto("/");
     const graph = JSON.parse((await page.locator('script[type="application/ld+json"]').textContent()) ?? "{}");
