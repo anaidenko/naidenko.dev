@@ -6,3 +6,8 @@ CONTACT_TO=inbox@example.net
 SLACK_WEBHOOK_URL=
 # The password for /stats. A local test value; production uses the Wrangler secret.
 STATS_PASSWORD=test-password
+# The key of the visitor hash. A local test value; production uses a random Wrangler secret.
+VISITOR_KEY=local-test-key
+# Networks whose visits are not counted: CIDR ranges or addresses, comma-separated. The e2e tests
+# use this documentation range; production lists the owner's own network.
+IGNORE_NETWORKS=203.0.113.0/24

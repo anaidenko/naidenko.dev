@@ -6,4 +6,6 @@ interface Env {
     CONTACT_TO: string;
     SLACK_WEBHOOK_URL: string;
     STATS_PASSWORD: string;
+    VISITOR_KEY: string;
+    IGNORE_NETWORKS: string;
 }
