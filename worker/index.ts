@@ -1,7 +1,8 @@
 import { postToSlack } from "./alert";
 import { handleContact } from "./contact";
-import { handleHit, recordHit } from "./hits";
+import { handleHit, placeOf, recordEvent, recordTime, recordVisit } from "./hits";
 import { handleHome } from "./home";
+import { forgetVisitors, retentionCutoff } from "./retention";
 import { handleStats, loadStats } from "./stats";
 import { verifyTurnstile } from "./turnstile";
 
@@ -25,16 +26,21 @@ export default {
         if (pathname === "/api/hit") {
             return handleHit(request, {
                 rateLimit: async key => (await env.HIT_RATE_LIMIT.limit({ key })).success,
-                record: row => recordHit(env.STATS_DB, row),
+                recordVisit: row => recordVisit(env.STATS_DB, row),
+                recordEvent: row => recordEvent(env.STATS_DB, row),
+                recordTime: (visit, seconds) => recordTime(env.STATS_DB, visit, seconds),
                 now: () => new Date(),
-                country: typeof request.cf?.country === "string" ? request.cf.country : ""
+                place: placeOf(request.cf),
+                ignoredNetworks: env.IGNORE_NETWORKS ?? "",
+                visitorKey: env.VISITOR_KEY ?? ""
             });
         }
         if (pathname === "/stats") {
             return handleStats(request, {
                 password: env.STATS_PASSWORD ?? "",
-                load: (since30, since7) => loadStats(env.STATS_DB, since30, since7),
-                now: () => new Date()
+                load: filter => loadStats(env.STATS_DB, filter),
+                now: () => new Date(),
+                goatcounter: env.GOATCOUNTER_DASHBOARD ?? ""
             });
         }
         if (pathname === "/") {
@@ -44,5 +50,9 @@ export default {
             });
         }
         return env.ASSETS.fetch(request);
+    },
+
+    async scheduled(controller, env, ctx) {
+        ctx.waitUntil(forgetVisitors(env.STATS_DB, retentionCutoff(new Date(controller.scheduledTime))));
     }
 } satisfies ExportedHandler<Env>;

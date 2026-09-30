@@ -1,13 +1,29 @@
 "use client";
 
-import Script from "next/script";
-import { useEffect } from "react";
+import { usePathname } from "next/navigation";
+import { useEffect, useRef } from "react";
 
-import { GOATCOUNTER_URL, eventFor, track, trackView } from "@/lib/analytics";
+import { GOATCOUNTER_URL, eventFor, isExcluded, loadGoatCounter, startVisit, track } from "@/lib/analytics";
 
 export function Analytics() {
+    const pathname = usePathname();
+    const goatcounterLoaded = useRef(false);
+
+    // A move between pages keeps this layout mounted, so each page is started (and the last one
+    // ended) here rather than on load. GoatCounter's script counts only the page it loads on.
     useEffect(() => {
-        trackView();
+        if (isExcluded(window)) return;
+        const end = startVisit(window);
+        if (!GOATCOUNTER_URL) return end;
+        if (goatcounterLoaded.current) window.goatcounter?.count?.({ path: pathname });
+        else {
+            loadGoatCounter(document, GOATCOUNTER_URL);
+            goatcounterLoaded.current = true;
+        }
+        return end;
+    }, [pathname]);
+
+    useEffect(() => {
         // Capture phase, so a click is recorded before a link takes the visitor away.
         const onClick = (event: MouseEvent) => {
             const found = eventFor(event.target);
@@ -17,6 +33,5 @@ export function Analytics() {
         return () => document.removeEventListener("click", onClick, true);
     }, []);
 
-    if (!GOATCOUNTER_URL) return null;
-    return <Script data-goatcounter={GOATCOUNTER_URL} src="https://gc.zgo.at/count.js" strategy="afterInteractive" />;
+    return null;
 }

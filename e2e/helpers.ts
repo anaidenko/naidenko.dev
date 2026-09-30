@@ -10,3 +10,11 @@ export async function asNewVisitor(page: Page) {
     await page.route("**/api/contact", route => route.continue({ headers: { ...route.request().headers(), "cf-connecting-ip": address } }));
     return address;
 }
+
+/**
+ * Makes the test browser count as a person. Playwright sets navigator.webdriver, and both counters
+ * skip automated browsers, so without this no visit is counted.
+ */
+export async function asPerson(page: Page) {
+    await page.addInitScript(() => Object.defineProperty(Navigator.prototype, "webdriver", { get: () => false }));
+}

@@ -41,9 +41,12 @@ export const privacy = {
             title: "Visit counts, without cookies",
             paragraphs: [
                 "The site sets no cookies and stores nothing in your browser.",
-                "Its own counter, which runs on Cloudflare, adds one to daily totals: the page, the site you came from, your country, and whether you use a phone, a tablet or a computer. It counts clicks on buttons and links the same way, such as “Contact me” or the Toptal badge. It keeps no IP address and nothing that tells one visitor from another, so the totals are kept without a time limit.",
-                "GoatCounter (goatcounter.com, run from Ireland) counts the same page views and clicks for a dashboard. It stores only daily totals by page, referring site, browser, operating system, country, language and screen width, and it does not store your IP address. Its free plan keeps these totals for six months.",
-                "The legal basis is my legitimate interest in knowing how the site is used (GDPR Article 6(1)(f)), limited to counts that do not identify you."
+                "Its own counter, which runs on Cloudflare, records each visit: the time, the page, the site you came from or the tag in the link you followed (such as ?ref=linkedin), which sections of the page you scrolled to, how long the page was open in front of you, and the buttons and links you clicked, such as “Contact me” or the Toptal badge. From your browser it records its name, your operating system, whether you use a phone, a tablet or a computer, your preferred language and your screen width.",
+                // 13 months: VISITOR_MONTHS in worker/retention.ts (2026-09-30).
+                "From your IP address, Cloudflare estimates your country, region and city, with that city’s coordinates, and names your network, such as your internet provider. The counter never stores the IP address itself. To tell a returning visitor from a new one, it stores a code computed with a secret key from your network address, browser and operating system; the code does not contain the address. The code is erased after 13 months; the rest of the record is kept without a time limit.",
+                // The retention is GoatCounter's own setting (0, "never delete"), seen by Andrii on 2026-09-30.
+                "GoatCounter (goatcounter.com, run from Ireland) counts the same page views and clicks for a dashboard. It stores only daily totals by page, referring site or campaign, browser, operating system, country (and, in the United States, Russia and China, region), language and screen width, and it does not store your IP address. It is set to keep these totals without a time limit.",
+                "The legal basis is my legitimate interest in knowing how the site is used and which links bring visitors (GDPR Article 6(1)(f)). You can object to it at {email}."
             ]
         },
         {
