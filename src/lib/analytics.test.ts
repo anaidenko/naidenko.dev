@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { chosenToCount, createVisibleClock, detailOf, goatcounterPath, isExcluded, originOf, refOf } from "./analytics";
+import { chosenToCount, createVisibleClock, detailOf, goatcounterPath, isExcluded, originOf, refOf, withRef } from "./analytics";
 
 describe("detailOf", () => {
     it("joins the parameters' values in order", () => {
@@ -85,6 +85,17 @@ describe("chosenToCount", () => {
             }
         });
         expect(chosenToCount(refusing)).toBe(false);
+    });
+});
+
+describe("withRef", () => {
+    it("adds this page's tag to a link, keeping its query and its fragment", () => {
+        expect(withRef("/audit/sample", "?ref=LinkedIn")).toBe("/audit/sample?ref=linkedin");
+        expect(withRef("/audit#order", "?utm_source=x")).toBe("/audit?ref=x#order");
+        expect(withRef("/audit?ref=old&a=1", "?ref=new")).toBe("/audit?ref=new&a=1");
+    });
+    it("leaves the link alone without a tag", () => {
+        expect(withRef("/audit", "")).toBe("/audit");
     });
 });
 

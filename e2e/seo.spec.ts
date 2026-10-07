@@ -142,3 +142,11 @@ test("gives the sample report its own title and canonical address, and the audit
     await expect(page.locator('link[rel="canonical"]')).toHaveAttribute("href", `${SITE}/audit/sample`);
     await expect(page.locator('meta[property="og:image"]')).toHaveAttribute("content", /\/audit\/og\.png\?v=[0-9a-f]{8}$/);
 });
+
+test("keeps each audit page's description short enough for a search result", async ({ page }) => {
+    for (const path of ["/audit", "/audit/sample"]) {
+        await page.goto(path);
+        const description = (await page.locator('meta[name="description"]').getAttribute("content")) ?? "";
+        expect(description.length, path).toBeLessThanOrEqual(160);
+    }
+});

@@ -40,12 +40,17 @@ const BAR = `html{background:#f4f4f5;color-scheme:light}
 .sample-bar a.secondary{border:1px solid var(--line);background:#fff;color:var(--ink)}
 @media print{.sample-bar{display:none}}`;
 
+// Tailwind's preflight resets what the report leaves to the browser (heading weight, list
+// markers, margins); reverting it under the report, with no specificity, lets the report's own
+// rules win as in the exported file.
+const REVERT = ":where(main.doc, main.doc *){all:revert}";
+
 const report = sampleReport();
 
 export default function SampleReport() {
     return (
         <>
-            <style dangerouslySetInnerHTML={{ __html: `${report.style}\n${BAR}` }} />
+            <style dangerouslySetInnerHTML={{ __html: `${REVERT}\n${report.style}\n${BAR}` }} />
             <SampleBar />
             <main id="content" className="doc" dangerouslySetInnerHTML={{ __html: report.main }} />
             <ReportScript code={report.script} />

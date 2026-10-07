@@ -78,7 +78,7 @@ export default function Audit() {
                         href={sample.href}
                         data-track="sample_report_click"
                         data-track-placement="hero"
-                        className="rounded-md bg-accent px-5 py-2.5 font-semibold text-canvas transition hover:bg-ink-strong motion-reduce:transition-none"
+                        className="rounded-md bg-accent px-5 py-2.5 font-semibold text-canvas transition hover:bg-ink-strong focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent motion-reduce:transition-none"
                     >
                         {hero.sample}
                     </RefLink>
@@ -86,7 +86,7 @@ export default function Audit() {
                         note="order"
                         data-track="audit_order"
                         data-track-placement="hero"
-                        className="rounded-md border border-ink-faint/40 px-5 py-2.5 font-semibold text-ink-strong transition hover:border-accent hover:text-accent motion-reduce:transition-none"
+                        className="rounded-md border border-ink-faint/40 px-5 py-2.5 font-semibold text-ink-strong transition hover:border-accent hover:text-accent focus-visible:border-accent focus-visible:text-accent focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent motion-reduce:transition-none"
                     >
                         {hero.order}
                     </OrderLink>
@@ -100,6 +100,7 @@ export default function Audit() {
                                 href={sample.href}
                                 data-track="sample_report_click"
                                 data-track-placement="screenshot"
+                                aria-label={sample.link}
                                 className="block"
                             >
                                 {picture}

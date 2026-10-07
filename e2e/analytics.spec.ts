@@ -344,3 +344,26 @@ test("records the audit hero's order and sample clicks, and the sample report's 
     await download;
     await expect.poll(() => hits).toContainEqual(expect.objectContaining({ kind: "event", name: "sample_pdf" }));
 });
+
+test("keeps each page's sections apart in /stats: the home page's reach, and how far the sample report was read", async ({
+    request,
+    baseURL
+}) => {
+    const ref = uniqueRef();
+    const address = randomAddress();
+    const home = crypto.randomUUID();
+    const sample = crypto.randomUUID();
+    const hit = (body: Record<string, unknown>) => sendHit(request, baseURL!, body, address);
+    expect((await hit({ kind: "view", visit: home, path: "/", referrer: "", ref, screen: 1440 })).status()).toBe(204);
+    expect((await hit({ kind: "event", visit: home, name: "section_view", detail: "about" })).status()).toBe(204);
+    expect((await hit({ kind: "view", visit: sample, path: "/audit/sample", referrer: "", ref, screen: 1440 })).status()).toBe(204);
+    for (const detail of ["summary", "findings"])
+        expect((await hit({ kind: "event", visit: sample, name: "section_view", detail })).status()).toBe(204);
+    const { html } = await visitors(request, `?range=all&ref=${ref}`);
+    const reached = between(html, "Sections reached", "Sample report read");
+    expect(reached).toContain("About");
+    expect(reached).not.toContain("summary");
+    const read = between(html, "Sample report read", "Menu clicks");
+    expect(read).toContain("Summary");
+    expect(read).toContain("1 · 100%");
+});

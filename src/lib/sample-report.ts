@@ -21,7 +21,21 @@ function one(html: string, pattern: RegExp, what: string): string {
  * <script>); anything else stops the build rather than shipping a broken page.
  */
 export function splitReport(html: string): ReportParts {
+    for (const [tag, what] of [
+        [/<style\b/gi, "<style>"],
+        [/<script\b/gi, "<script>"],
+        [/<main\b/gi, "<main>"]
+    ] as const)
+        if ((html.match(tag) ?? []).length !== 1) throw new Error(`Expected one ${what} in the report: has Auditdesk's renderer changed?`);
     const main = one(html, /<main class="doc">([\s\S]*?)<\/main>/g, '<main class="doc">');
+    const body = /<body>([\s\S]*)<\/body>/.exec(html)?.[1] ?? "";
+    if (
+        body
+            .replace(/<main class="doc">[\s\S]*?<\/main>/, "")
+            .replace(/<script>[\s\S]*?<\/script>/, "")
+            .trim()
+    )
+        throw new Error("The report has markup outside its <main> and <script>: has Auditdesk's renderer changed?");
     return {
         style: one(html, /<style>([\s\S]*?)<\/style>/g, "<style>"),
         main: main.replace('<form class="filters"', '<form class="filters" data-track="sample_filter"'),

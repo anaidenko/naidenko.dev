@@ -7,7 +7,7 @@ export const audit = {
     path: "/audit",
     title: "Code audits",
     description:
-        "An independent audit of your codebase before a launch, a fundraise or a handover: scanners, AI agents and my review of every finding, in a report your founders and engineers can act on.",
+        "An independent audit of your codebase: scanners, AI agents and my review of every finding, in a report your founders and engineers can act on.",
     og: "Scanners, an AI agent per aspect, and my review of every finding.",
     hero: {
         lead: "Know what to fix in your codebase, and what can wait.",
@@ -16,9 +16,9 @@ export const audit = {
         order: "Order an audit",
         shot: {
             src: "/audit/report-finding.png",
-            alt: "A finding in the report: its recommendation in view, and its details, evidence with line numbers and references a click away",
-            width: 910,
-            height: 1134
+            alt: "F-031 in the sample report, a critical finding: its recommendation in view, then its details and the evidence with line numbers",
+            width: 822,
+            height: 900
         }
     },
     sample: {
@@ -103,5 +103,16 @@ export const samplePage = {
         "The full report from a code audit of OWASP Juice Shop with Auditdesk: findings ranked by severity, each with its evidence, its fix and its references.",
     note: "A sample: the full report from an audit of OWASP Juice Shop v20.2.0, an online shop built to be insecure on purpose, so its count of findings is not a typical client's.",
     about: "How the audit works",
-    pdf: "Download PDF"
+    pdf: "Download PDF",
+    /** The report's sections, in its order, for /stats: the ids Auditdesk's renderReport gives them. */
+    sections: [
+        { id: "summary", label: "Summary" },
+        { id: "since", label: "Since the last audit" },
+        { id: "scope", label: "Scope and method" },
+        { id: "findings", label: "Findings" },
+        { id: "ai-built", label: "Signs of AI-generated code" },
+        { id: "questions", label: "Open questions" },
+        { id: "technical", label: "Technical details" },
+        { id: "disclaimer", label: "Disclaimer" }
+    ]
 };

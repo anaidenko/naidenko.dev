@@ -22,6 +22,9 @@ describe("splitReport", () => {
         expect(() => splitReport(report("<script>x()</script>"))).toThrow(/one <script>/);
         expect(() => splitReport(report().replace("<style>", "<style>a{}</style><style>"))).toThrow(/one <style>/);
         expect(() => splitReport(report().replace('<main class="doc">', "<main>"))).toThrow(/<main class="doc">/);
+        expect(() => splitReport(report('<script type="module">x()</script>'))).toThrow(/script/);
+        expect(() => splitReport(report().replace("</style>", '</style><style media="print">a{}</style>'))).toThrow(/style/);
+        expect(() => splitReport(report("<p>outside</p>"))).toThrow(/outside/);
     });
 });
 
@@ -31,5 +34,6 @@ describe("sampleReport", () => {
         expect(main).toContain("OWASP Juice Shop");
         expect(main).toContain('name="sev"');
         expect(script).toContain("beforeprint");
+        expect(main).toContain('data-track="sample_filter"');
     });
 });

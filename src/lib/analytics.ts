@@ -50,6 +50,15 @@ export function refOf(search: string): string {
         .slice(0, 40);
 }
 
+/** A link within the site carrying this page's tag, so a full page load keeps it. */
+export function withRef(href: string, search: string): string {
+    const tag = refOf(search);
+    if (!tag) return href;
+    const url = new URL(href, "https://site.invalid");
+    url.searchParams.set("ref", tag);
+    return `${url.pathname}${url.search}${url.hash}`;
+}
+
 /** The referring site's origin: the counter keeps only its host, and a full address can be long. */
 export function originOf(referrer: string): string {
     try {

@@ -2,7 +2,7 @@
 
 import { type AnchorHTMLAttributes, useEffect, useRef } from "react";
 
-import { refOf } from "@/lib/analytics";
+import { withRef } from "@/lib/analytics";
 
 /**
  * A plain link (a full page load, so the next page counts its own visit) that carries this page's
@@ -11,8 +11,8 @@ import { refOf } from "@/lib/analytics";
 export function RefLink({ href, ...props }: AnchorHTMLAttributes<HTMLAnchorElement> & { href: string }) {
     const link = useRef<HTMLAnchorElement>(null);
     useEffect(() => {
-        const tag = refOf(window.location.search);
-        if (tag && link.current) link.current.href = `${href}${href.includes("?") ? "&" : "?"}ref=${encodeURIComponent(tag)}`;
+        const target = withRef(href, window.location.search);
+        if (target !== href && link.current) link.current.setAttribute("href", target);
     }, [href]);
     return <a ref={link} href={href} {...props} />;
 }
