@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 
+import { WithEmail } from "@/components/WithEmail";
 import { privacy } from "@/content/privacy";
 import { site } from "@/content/site";
 
@@ -16,21 +17,6 @@ export const metadata: Metadata = {
         description: privacy.description
     }
 };
-
-/** Renders "{email}" in the copy as a link to the contact address. */
-function WithEmail({ text }: { text: string }) {
-    const [before, after] = text.split("{email}");
-    if (after === undefined) return <>{text}</>;
-    return (
-        <>
-            {before}
-            <a className="font-medium text-ink-strong underline underline-offset-4 hover:text-accent" href={`mailto:${site.email}`}>
-                {site.email}
-            </a>
-            {after}
-        </>
-    );
-}
 
 export default function Privacy() {
     return (
