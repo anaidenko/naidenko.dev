@@ -205,7 +205,7 @@ test("the audit page opens its order note without JavaScript, Toptal first", asy
     await expect(page.getByRole("heading", { level: 1, name: "Code audits" })).toBeVisible();
     const toptal = page.getByText("If we met through Toptal, the audit goes through Toptal.");
     await expect(toptal).toBeHidden();
-    await page.getByText("Order an audit").click();
+    await page.locator("details#order summary").click();
     await expect(toptal).toBeVisible();
     await expect(page.getByText("Online payment is coming soon", { exact: false })).toBeVisible();
     const lines = await page.locator("details p").allTextContents();
@@ -236,15 +236,97 @@ test("links the Auditdesk project to the audit page in the same tab", async ({ p
     await expect(page).toHaveURL(/\/audit$/);
 });
 
-test("the audit page shows the three screenshots with visible captions, each linked at full size", async ({ page }) => {
+test("the audit page shows the three screenshots with visible captions: the report's opens the sample, the others full size", async ({
+    page
+}) => {
     await page.goto("/audit");
     const figures = page.locator("main figure");
     await expect(figures).toHaveCount(3);
-    for (const figure of await figures.all()) {
+    await expect(figures.first().getByRole("link")).toHaveAttribute("href", "/audit/sample");
+    for (const figure of (await figures.all()).slice(1)) {
         const alt = (await figure.locator("img").getAttribute("alt")) ?? "";
         expect(alt.length).toBeGreaterThan(20);
         await expect(figure.locator("figcaption")).toBeVisible();
         expect(((await figure.locator("figcaption").textContent()) ?? "").length).toBeGreaterThan(20);
         await expect(figure.getByRole("link")).toHaveAttribute("href", /^\/audit\/[a-z-]+\.png$/);
     }
+});
+
+test("the audit page opens with the sample report and the order button on the first screen", async ({ page }) => {
+    await page.goto("/audit");
+    const hero = page.locator("main header");
+    await expect(hero.getByRole("link", { name: "See a sample report" })).toHaveAttribute("href", "/audit/sample");
+    await expect(hero.getByRole("link", { name: "Order an audit" })).toHaveAttribute("href", "#order");
+    const height = page.viewportSize()!.height;
+    for (const name of ["See a sample report", "Order an audit"]) {
+        const box = await hero.getByRole("link", { name }).boundingBox();
+        expect(box!.y + box!.height, name).toBeLessThanOrEqual(height);
+    }
+});
+
+test("the hero's order button opens the order note", async ({ page }) => {
+    await page.goto("/audit");
+    await page.locator("main header").getByRole("link", { name: "Order an audit" }).click();
+    await expect(page.locator("details#order")).toHaveAttribute("open", "");
+    await expect(page.getByText("If we met through Toptal, the audit goes through Toptal.")).toBeInViewport();
+});
+
+test("the audit page links the sample report in HTML and PDF", async ({ page }) => {
+    await page.goto("/audit");
+    const sample = page.locator("section#sample");
+    await expect(sample.getByRole("link", { name: "Open the sample report" })).toHaveAttribute("href", "/audit/sample");
+    await expect(sample.getByRole("link", { name: "Download it as a PDF" })).toHaveAttribute("href", "/audit/sample-report.pdf");
+    const pdf = await page.request.get("/audit/sample-report.pdf");
+    expect([pdf.status(), pdf.headers()["content-type"]]).toEqual([200, "application/pdf"]);
+});
+
+test("carries a link's tag from the audit page to the sample report and back", async ({ page }) => {
+    await page.goto("/audit?ref=e2e-check");
+    await expect(page.locator("section#sample").getByRole("link", { name: "Open the sample report" })).toHaveAttribute(
+        "href",
+        "/audit/sample?ref=e2e-check"
+    );
+    await page.goto("/audit/sample?ref=e2e-check");
+    await expect(page.getByRole("link", { name: "How the audit works" })).toHaveAttribute("href", "/audit?ref=e2e-check");
+    await page.goto("/audit/sample");
+    await expect(page.getByRole("link", { name: "How the audit works" })).toHaveAttribute("href", "/audit");
+    await expect(page.getByRole("link", { name: "Download PDF" })).toHaveAttribute("href", "/audit/sample-report.pdf");
+});
+
+test("the sample report is a page of the site whose filters work, from a direct load and from the audit page", async ({ page }) => {
+    const errors: string[] = [];
+    page.on("console", message => {
+        if (message.type() === "error") errors.push(message.text());
+    });
+    page.on("pageerror", error => errors.push(error.message));
+    for (const open of [
+        () => page.goto("/audit/sample"),
+        async () => {
+            await page.goto("/audit");
+            await page.locator("section#sample").getByRole("link", { name: "Open the sample report" }).click();
+        }
+    ]) {
+        await open();
+        await expect(page).toHaveURL(/\/audit\/sample$/);
+        await expect(page.getByRole("heading", { level: 1, name: "OWASP Juice Shop v20.2.0" })).toBeVisible();
+        await expect(page.getByText("A sample: the full report", { exact: false })).toBeVisible();
+        const total = await page.locator(".finding").count();
+        expect(total).toBeGreaterThan(10);
+        await page.locator("select[name=sev]").selectOption("critical");
+        await expect.poll(() => page.locator(".finding:not(.off)").count()).toBeLessThan(total);
+        await expect(page.locator(".finding:not(.off)").first()).toBeVisible();
+    }
+    expect(errors).toEqual([]);
+});
+
+test("the sample report's HTML is served only as its page", async ({ request }) => {
+    expect((await request.get("/audit/sample-report.html")).status()).toBe(404);
+});
+
+test("the sample report fits a phone's width, on a light page", async ({ page }) => {
+    await page.setViewportSize({ width: 375, height: 800 });
+    await page.goto("/audit/sample");
+    await expect(page.getByRole("heading", { level: 1, name: "OWASP Juice Shop v20.2.0" })).toBeVisible();
+    expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(375);
+    expect(await page.evaluate(() => getComputedStyle(document.documentElement).backgroundColor)).toBe("rgb(244, 244, 245)");
 });

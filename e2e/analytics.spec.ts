@@ -293,11 +293,11 @@ test("records an order click on the audit page, from the mouse and the keyboard"
     await stubGoatCounter(page);
     const hits = ownCounter(page);
     await page.goto("/audit");
-    await page.getByText("Order an audit").click();
+    await page.locator("details#order summary").click();
     await expect.poll(() => goatcounterPaths(page)).toContain("audit_order");
     expect(hits).toContainEqual(expect.objectContaining({ kind: "event", name: "audit_order", detail: "" }));
-    await page.getByText("Order an audit").click();
-    await page.getByText("Order an audit").focus();
+    await page.locator("details#order summary").click();
+    await page.locator("details#order summary").focus();
     await page.keyboard.press("Enter");
     await expect(page.getByText("If we met through Toptal, the audit goes through Toptal.")).toBeVisible();
     await expect.poll(() => hits.filter(hit => hit.name === "audit_order").length).toBe(3);
@@ -308,9 +308,39 @@ test("records the audit order note's e-mail and contact-form clicks with their p
     await stubGoatCounter(page);
     const hits = ownCounter(page);
     await page.goto("/audit");
-    await page.getByText("Order an audit").click();
+    await page.locator("details#order summary").click();
     await page.locator("details").getByRole("link", { name: "hello@naidenko.dev" }).click();
     await expect.poll(() => hits).toContainEqual(expect.objectContaining({ kind: "event", name: "email_click", detail: "audit" }));
     await page.locator("details").getByRole("link", { name: "Or use the contact form" }).click();
     await expect.poll(() => hits).toContainEqual(expect.objectContaining({ kind: "event", name: "contact_click", detail: "audit" }));
+});
+
+test("counts the sample report's visit with its tag, and the move to the audit page with the same tag", async ({ page }) => {
+    await asPerson(page);
+    await stubGoatCounter(page);
+    const hits = ownCounter(page);
+    await page.goto("/audit/sample?ref=e2e-check");
+    await expect.poll(() => hits).toContainEqual(expect.objectContaining({ kind: "view", path: "/audit/sample", ref: "e2e-check" }));
+    await page.getByRole("link", { name: "How the audit works" }).click();
+    await expect(page).toHaveURL(/\/audit\?ref=e2e-check$/);
+    await expect.poll(() => hits).toContainEqual(expect.objectContaining({ kind: "view", path: "/audit", ref: "e2e-check" }));
+    expect(hits).toContainEqual(expect.objectContaining({ kind: "event", name: "sample_to_audit" }));
+});
+
+test("records the audit hero's order and sample clicks, and the sample report's PDF", async ({ page }) => {
+    await asPerson(page);
+    await stubGoatCounter(page);
+    const hits = ownCounter(page);
+    await page.goto("/audit");
+    await page.locator("main header").getByRole("link", { name: "Order an audit" }).click();
+    await expect.poll(() => hits).toContainEqual(expect.objectContaining({ kind: "event", name: "audit_order", detail: "hero" }));
+    await page.locator("main header").getByRole("link", { name: "See a sample report" }).click();
+    await expect(page).toHaveURL(/\/audit\/sample$/);
+    expect(hits).toContainEqual(expect.objectContaining({ kind: "event", name: "sample_report_click", detail: "hero" }));
+    // The click handler is set when the page has hydrated, which its view hit shows.
+    await expect.poll(() => hits).toContainEqual(expect.objectContaining({ kind: "view", path: "/audit/sample" }));
+    const download = page.waitForEvent("download");
+    await page.getByRole("link", { name: "Download PDF" }).click();
+    await download;
+    await expect.poll(() => hits).toContainEqual(expect.objectContaining({ kind: "event", name: "sample_pdf" }));
 });

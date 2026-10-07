@@ -44,7 +44,8 @@ describe("llmsTxt", () => {
         expect(txt).toMatch(/\n## [^\n]+\n\n- \[/);
     });
 
-    it("lists the code-audit page", () => {
+    it("lists the code-audit page and its sample report", () => {
         expect(llmsTxt()).toContain("(https://naidenko.dev/audit)");
+        expect(llmsTxt()).toContain("(https://naidenko.dev/audit/sample)");
     });
 });

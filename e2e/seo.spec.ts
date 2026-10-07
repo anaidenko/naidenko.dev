@@ -45,6 +45,7 @@ test("serves a sitemap with the home page, the privacy note and the audit page",
     expect(body).toContain(`<loc>${SITE}</loc>`);
     expect(body).toContain(`<loc>${SITE}/privacy</loc>`);
     expect(body).toContain(`<loc>${SITE}/audit</loc>`);
+    expect(body).toContain(`<loc>${SITE}/audit/sample</loc>`);
 });
 
 test("describes the page for search engines and link previews", async ({ page, request }) => {
@@ -133,4 +134,11 @@ test("gives the audit page its own title and preview image, 1200 by 630", async 
     expect(response.headers()["content-type"]).toBe("image/png");
     const png = await response.body();
     expect([png.readUInt32BE(16), png.readUInt32BE(20)]).toEqual([1200, 630]);
+});
+
+test("gives the sample report its own title and canonical address, and the audit page's preview", async ({ page }) => {
+    await page.goto("/audit/sample?ref=e2e");
+    await expect(page).toHaveTitle("Sample code audit report · naidenko.dev");
+    await expect(page.locator('link[rel="canonical"]')).toHaveAttribute("href", `${SITE}/audit/sample`);
+    await expect(page.locator('meta[property="og:image"]')).toHaveAttribute("content", /\/audit\/og\.png\?v=[0-9a-f]{8}$/);
 });
