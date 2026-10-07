@@ -287,3 +287,18 @@ test("drops hits over the limit without an error in the visitor's console", asyn
     await page.waitForTimeout(500);
     expect(errors).toEqual([]);
 });
+
+test("records an order click on the audit page, from the mouse and the keyboard", async ({ page }) => {
+    await asPerson(page);
+    await stubGoatCounter(page);
+    const hits = ownCounter(page);
+    await page.goto("/audit");
+    await page.getByText("Order an audit").click();
+    await expect.poll(() => goatcounterPaths(page)).toContain("audit_order");
+    expect(hits).toContainEqual(expect.objectContaining({ kind: "event", name: "audit_order", detail: "" }));
+    await page.getByText("Order an audit").click();
+    await page.getByText("Order an audit").focus();
+    await page.keyboard.press("Enter");
+    await expect(page.getByText("If we met through Toptal, the audit goes through Toptal.")).toBeVisible();
+    await expect.poll(() => hits.filter(hit => hit.name === "audit_order").length).toBe(3);
+});

@@ -197,3 +197,22 @@ test("quotes three repeat clients by name under the numbers, each with a rating"
         await expect(caption).toContainText(/Hired me (six|three) times on Upwork/);
     }
 });
+
+test("the audit page opens its order note without JavaScript, Toptal first", async ({ browser }) => {
+    const context = await browser.newContext({ javaScriptEnabled: false });
+    const page = await context.newPage();
+    await page.goto("/audit");
+    await expect(page.getByRole("heading", { level: 1, name: "Code audits" })).toBeVisible();
+    await page.getByText("Order an audit").click();
+    await expect(page.getByText("If we met through Toptal, the audit goes through Toptal.")).toBeVisible();
+    await expect(page.getByText("Online payment is coming soon", { exact: false })).toBeVisible();
+    await expect(page.getByRole("link", { name: "hello@naidenko.dev" })).toHaveAttribute("href", "mailto:hello@naidenko.dev");
+    await context.close();
+});
+
+test("the audit page has no horizontal overflow at 320 px", async ({ page }) => {
+    await page.setViewportSize({ width: 320, height: 800 });
+    await page.goto("/audit");
+    await expect(page.getByRole("heading", { level: 1, name: "Code audits" })).toBeVisible();
+    expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(320);
+});

@@ -3,6 +3,7 @@ import { readFileSync } from "node:fs";
 import { readFile } from "node:fs/promises";
 import { join } from "node:path";
 
+import { audit } from "@/content/audit";
 import { site } from "@/content/site";
 
 export const OG_PHOTO = "assets/photo/andrii-naidenko-600.jpg";
@@ -18,6 +19,17 @@ export function ogImageVersion(): string {
     hash.update(JSON.stringify([site.name, site.role, site.tagline, site.meta, site.domain]));
     for (const path of [OG_PHOTO, OG_ROUTE]) hash.update(readFileSync(join(process.cwd(), path)));
     return hash.digest("hex").slice(0, 8);
+}
+
+export const AUDIT_OG_ROUTE = "src/app/audit/og.png/route.tsx";
+
+/** The preview of /audit; its URL carries a hash of what it shows, so a network fetches a changed one. */
+export function auditOgImage() {
+    const hash = createHash("sha256");
+    hash.update(JSON.stringify([audit.title, audit.og, site.name, site.meta, site.domain]));
+    hash.update(readFileSync(join(process.cwd(), AUDIT_OG_ROUTE)));
+    const version = hash.digest("hex").slice(0, 8);
+    return { url: `/audit/og.png?v=${version}`, width: 1200, height: 630, type: "image/png", alt: `${audit.title} by ${site.name}` };
 }
 
 /** Geist for images generated at build time (next/og reads TTF, OTF and WOFF, not WOFF2). */
