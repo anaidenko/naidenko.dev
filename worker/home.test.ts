@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 
-import { HOME_LINKS, handleHome, sharedRef, taggedUrl, wantsMarkdown } from "./home";
+import { HOME_LINKS, handleHome, handlePage, sharedRef, taggedUrl, wantsMarkdown } from "./home";
 
 const LINKEDIN_BOT = "LinkedInBot/1.0 (compatible; Mozilla/5.0; Apache-HttpClient +http://www.linkedin.com)";
 const CHROME = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36";
@@ -107,5 +107,33 @@ describe("handleHome", () => {
         });
         expect(res.headers.get("Content-Type")).toBe("text/markdown; charset=utf-8");
         expect(await res.text()).toBe("");
+    });
+});
+
+describe("handlePage", () => {
+    const png = () => new Response(new Uint8Array([137, 80, 78, 71]), { headers: { "Content-Type": "image/png" } });
+
+    it("tags the canonical address of any HTML page for LinkedIn's crawler", async () => {
+        const tag = vi.fn((_page: Response, ref: string) => new Response(`tagged ${ref}`, { headers: { "Content-Type": "text/html" } }));
+        const res = await handlePage(visit("https://naidenko.dev/audit?ref=linkedin", LINKEDIN_BOT), { page: async () => html(), tag });
+        expect(tag).toHaveBeenCalledWith(expect.any(Response), "linkedin");
+        expect(await res.text()).toBe("tagged linkedin");
+    });
+
+    it("leaves the page alone for a browser that followed the same link", async () => {
+        const tag = vi.fn((page: Response) => page);
+        const res = await handlePage(visit("https://naidenko.dev/audit?ref=linkedin", CHROME), { page: async () => html(), tag });
+        expect(tag).not.toHaveBeenCalled();
+        expect(res.headers.get("X-Frame-Options")).toBe("DENY");
+    });
+
+    it("leaves a file that is not HTML alone, even for LinkedIn's crawler", async () => {
+        const tag = vi.fn((page: Response) => page);
+        const res = await handlePage(visit("https://naidenko.dev/audit/og.png?ref=linkedin", LINKEDIN_BOT), {
+            page: async () => png(),
+            tag
+        });
+        expect(tag).not.toHaveBeenCalled();
+        expect(res.headers.get("Content-Type")).toBe("image/png");
     });
 });

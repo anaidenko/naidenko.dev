@@ -50,12 +50,22 @@ export function tagPage(page: Response, ref: string): Response {
     return new HTMLRewriter().on('link[rel="canonical"]', tag("href")).on('meta[property="og:url"]', tag("content")).transform(page);
 }
 
-export interface HomeDeps {
-    /** The HTML page, exactly as the assets would serve it. */
+export interface PageDeps {
+    /** The response, exactly as the assets would serve it. */
     page(): Promise<Response>;
-    fetchAsset(path: string): Promise<Response>;
     /** The page with the link's tag in its canonical address (tagPage; HTMLRewriter exists only in the Worker). */
     tag(page: Response, ref: string): Response;
+}
+
+export interface HomeDeps extends PageDeps {
+    fetchAsset(path: string): Promise<Response>;
+}
+
+/** Serves a static file, an HTML page with its canonical address tagged for LinkedIn's crawler (sharedRef). */
+export async function handlePage(request: Request, deps: PageDeps): Promise<Response> {
+    const page = await deps.page();
+    const ref = sharedRef(request);
+    return ref && page.headers.get("Content-Type")?.startsWith("text/html") ? deps.tag(page, ref) : page;
 }
 
 /** Serves "/" as HTML to browsers and as Markdown to agents that ask for it (Accept: text/markdown). */
@@ -73,8 +83,7 @@ export async function handleHome(request: Request, deps: HomeDeps): Promise<Resp
             }
         });
     }
-    const ref = sharedRef(request);
-    const page = ref ? deps.tag(await deps.page(), ref) : await deps.page();
+    const page = await handlePage(request, deps);
     const headers = new Headers(page.headers);
     headers.set("Link", HOME_LINKS);
     headers.append("Vary", "Accept");

@@ -9,9 +9,10 @@
         "directory": "./out",
         "binding": "ASSETS",
         "not_found_handling": "404-page",
-        // Only the API, the stats page and "/" (Markdown for agents) run the Worker; every other request
-        // is a free static-asset request.
-        "run_worker_first": ["/api/*", "/stats", "/"]
+        // Every path without a dot runs the Worker: the API, the stats page, and each HTML page, so LinkedIn's
+        // crawler gets the link's ?ref= on any of them ("/" also serves Markdown to agents). A file with an
+        // extension stays a free static-asset request; a negative pattern wins over "/*".
+        "run_worker_first": ["/*", "!/*.*"]
     },
     "send_email": [{ "name": "EMAIL" }],
     // Three messages a minute per visitor address, so nobody can flood the inbox.
