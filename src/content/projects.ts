@@ -10,15 +10,15 @@ export interface Project {
         alt: string;
         width: number;
         height: number;
-        credit: { text: string; url: string };
+        credit?: { text: string; url: string };
     };
 }
 
 /**
  * The engineering system: condensed from the Toptal portfolio project of the same name (public page
  * saved 2026-09-16), names no client. The plugins: from their READMEs and GitHub descriptions, read
- * 2026-09-24; both are MIT. Auditdesk: paste-sheet 12 § 3, checked against its README at 773ac76; its
- * repository is private, so the entry links the audit page.
+ * 2026-09-24; both are MIT. Auditdesk: paste-sheet 12 § 3, checked against its README at 773ac76; the
+ * entry links the audit page, not the repository, and its image is the head of F-031 from the sample report.
  */
 export const projects: readonly Project[] = [
     {
@@ -33,7 +33,13 @@ export const projects: readonly Project[] = [
         url: "/audit",
         description:
             "A local workbench for auditing a client's codebase: scanners first, then a Claude agent per aspect with read-only tools and a checklist, and my review of every finding before a client-ready HTML and PDF report. Every secret gitleaks finds is masked before the model sees it, and the client's code is never run. An eval on OWASP Juice Shop and a fixture with planted defects scores recall and cost by model and effort.",
-        chips: ["Claude Agent SDK", "Next.js", "PostgreSQL", "Semgrep", "Playwright"]
+        chips: ["Claude Agent SDK", "Next.js", "PostgreSQL", "Semgrep", "Playwright"],
+        image: {
+            src: "/projects/auditdesk.png",
+            alt: "F-031 in the sample report: a critical finding with its recommendation in view",
+            width: 822,
+            height: 461
+        }
     },
     {
         name: "claude-video-digest",

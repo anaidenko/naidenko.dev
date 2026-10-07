@@ -237,6 +237,17 @@ test("links the Auditdesk project to the audit page in the same tab", async ({ p
     await expect(page).toHaveURL(/\/audit$/);
 });
 
+test("shows a finding from the sample report beside the Auditdesk project, with no caption", async ({ page }) => {
+    await page.goto("/");
+    const article = page.locator("section#projects article").filter({ has: page.getByRole("heading", { name: "Auditdesk" }) });
+    const image = article.locator("figure img");
+    await expect(image).toHaveAttribute("src", "/projects/auditdesk.png");
+    await expect(image).toHaveAttribute("alt", /F-031/);
+    await image.scrollIntoViewIfNeeded();
+    await expect.poll(() => image.evaluate((img: HTMLImageElement) => img.naturalWidth)).toBeGreaterThan(0);
+    await expect(article.locator("figcaption")).toHaveCount(0);
+});
+
 test("the audit page shows the three screenshots with visible captions: the report's opens the sample, the others full size", async ({
     page
 }) => {

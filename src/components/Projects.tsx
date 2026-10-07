@@ -79,16 +79,18 @@ export function Projects() {
                                         height={project.image.height}
                                         className="rounded border-2 border-ink-faint/20 transition group-hover:border-ink-faint/40"
                                     />
-                                    <figcaption className="relative z-20 mt-1.5 text-[11px] leading-tight text-ink-faint">
-                                        <a
-                                            href={project.image.credit.url}
-                                            target="_blank"
-                                            rel="noopener noreferrer"
-                                            className="hover:text-ink-strong"
-                                        >
-                                            {project.image.credit.text}
-                                        </a>
-                                    </figcaption>
+                                    {project.image.credit ? (
+                                        <figcaption className="relative z-20 mt-1.5 text-[11px] leading-tight text-ink-faint">
+                                            <a
+                                                href={project.image.credit.url}
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                className="hover:text-ink-strong"
+                                            >
+                                                {project.image.credit.text}
+                                            </a>
+                                        </figcaption>
+                                    ) : null}
                                 </figure>
                             ) : null}
                         </article>
