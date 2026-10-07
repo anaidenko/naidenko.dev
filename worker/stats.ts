@@ -1,3 +1,4 @@
+import { samplePage } from "../src/content/audit";
 import { sections as pageSections } from "../src/content/sections";
 
 import { REF } from "./hits";
@@ -43,8 +44,10 @@ export interface RecentVisit {
 export interface Totals {
     visitors: number;
     views: number;
-    /** Views of the home page, the only page with sections. */
+    /** Views of the home page: its sections' reach is measured against them. */
     homeViews: number;
+    /** Views of the sample report: how far it was read is measured against them. */
+    sampleViews: number;
     returning: number;
     avgSeconds: number | null;
     /** Visits that reported their time and left within BOUNCE_SECONDS. */
@@ -72,7 +75,10 @@ export interface StatsData {
     systems: Row[];
     languages: Row[];
     screens: Row[];
+    /** The home page's sections reached. */
     sections: Row[];
+    /** The sample report's sections reached. */
+    sampleSections: Row[];
     nav: Row[];
     durations: Row[];
     events: Row[];
@@ -211,15 +217,20 @@ const placeName = ({ country, region, city }: { country: string; region: string;
     [city, region, countryName(country)].filter(Boolean).join(", ");
 const capitalized = (text: string) => text.charAt(0).toUpperCase() + text.slice(1);
 
+type Sections = readonly { id: string; label: string }[];
+
+/** Each page with sections that /stats follows, by path. */
+const SECTIONS_OF: Record<string, Sections> = { "/": pageSections, [samplePage.path]: samplePage.sections };
+
 /** The sections in the page's order, under the page's own labels; an unknown id goes last. */
-function inPageOrder(rows: Row[]): Row[] {
+function inPageOrder(rows: Row[], order: Sections = pageSections): Row[] {
     const index = (id: string) => {
-        const found = pageSections.findIndex(section => section.id === id);
-        return found < 0 ? pageSections.length : found;
+        const found = order.findIndex(section => section.id === id);
+        return found < 0 ? order.length : found;
     };
     return [...rows]
         .sort((a, b) => index(a.label) - index(b.label))
-        .map(row => ({ ...row, label: pageSections.find(section => section.id === row.label)?.label ?? row.label }));
+        .map(row => ({ ...row, label: order.find(section => section.id === row.label)?.label ?? row.label }));
 }
 
 const anchorOf = (title: string) =>
@@ -362,10 +373,11 @@ function chart(series: Period[], filter: Filter): string {
 
 /** The sections a visit reached, as one dot per section in the page's order. */
 function sectionDots(visit: RecentVisit): string {
-    if (visit.path !== "/") return `<span class="muted">—</span>`;
+    const order = SECTIONS_OF[visit.path];
+    if (!order) return `<span class="muted">${escapeHtml(visit.sections || "—")}</span>`;
     const reached = new Set((visit.sections ?? "").split(", ").filter(Boolean));
-    const names = pageSections.filter(section => reached.has(section.id)).map(section => section.label);
-    const dots = pageSections.map(section => (reached.has(section.id) ? `<i class="on"></i>` : "<i></i>")).join("");
+    const names = order.filter(section => reached.has(section.id)).map(section => section.label);
+    const dots = order.map(section => (reached.has(section.id) ? `<i class="on"></i>` : "<i></i>")).join("");
     return `<span class="dots" title="${escapeHtml(names.join(", ") || "No section reached")}">${dots}</span>`;
 }
 
@@ -542,6 +554,11 @@ export function renderStats(data: StatsData, filter: Filter, now: Date, goatcoun
         value: `${row.n} · ${percent(row.n, totals.homeViews)}`,
         n: row.n
     }));
+    const read = inPageOrder(data.sampleSections, samplePage.sections).map(row => ({
+        label: row.label,
+        value: `${row.n} · ${percent(row.n, totals.sampleViews)}`,
+        n: row.n
+    }));
     const traffic = [
         card(
             `Visitors per ${unit}`,
@@ -576,6 +593,7 @@ export function renderStats(data: StatsData, filter: Filter, now: Date, goatcoun
     ];
     const engagement = [
         card("Sections reached", barTable(reach, totals.homeViews)),
+        card("Sample report read", barTable(read, totals.sampleViews)),
         card("Menu clicks", counted(inPageOrder(data.nav))),
         card("Time on page", counted(data.durations)),
         card("Clicks and messages", counted(data.events))
@@ -740,7 +758,8 @@ const RETURNING = `(COUNT(DISTINCT CASE WHEN visitor IS NOT NULL AND returned = 
     + COALESCE(SUM(CASE WHEN visitor IS NULL THEN first_today * returned END), 0))`;
 /** A visit that left within this many seconds is a bounce (Andrii, 2026-09-30). */
 const BOUNCE_SECONDS = 10;
-const TOTALS = `SELECT COUNT(*) AS views, COALESCE(SUM(path = '/'), 0) AS homeViews, ${PEOPLE} AS visitors, ${RETURNING} AS returners,
+const TOTALS = `SELECT COUNT(*) AS views, COALESCE(SUM(path = '/'), 0) AS homeViews,
+        COALESCE(SUM(path = '${samplePage.path}'), 0) AS sampleViews, ${PEOPLE} AS visitors, ${RETURNING} AS returners,
         AVG(seconds) AS avgSeconds, COALESCE(SUM(seconds < ${BOUNCE_SECONDS}), 0) AS bounces, COUNT(seconds) AS timed,
         (SELECT COUNT(*) FROM events e WHERE e.name = 'generate_lead' AND e.visit IN (SELECT id FROM f)) AS leads
     FROM f`;
@@ -789,7 +808,7 @@ export async function loadStats(db: D1Database, filter: Filter): Promise<StatsDa
         ),
         filtered(
             `SELECT e.detail AS label, COUNT(DISTINCT e.visit) AS n FROM events e JOIN f ON e.visit = f.id
-             WHERE e.name = 'section_view' GROUP BY e.detail ORDER BY n DESC`
+             WHERE e.name = 'section_view' AND f.path = '/' GROUP BY e.detail ORDER BY n DESC`
         ),
         filtered(
             `SELECT e.detail AS label, COUNT(*) AS n FROM events e JOIN f ON e.visit = f.id
@@ -813,11 +832,15 @@ export async function loadStats(db: D1Database, filter: Filter): Promise<StatsDa
         ),
         db.prepare(`SELECT DISTINCT country AS label FROM visits WHERE country != '' ORDER BY country`),
         db.prepare(`SELECT DISTINCT ref AS label FROM visits WHERE ref != '' ORDER BY ref`),
+        filtered(
+            `SELECT e.detail AS label, COUNT(DISTINCT e.visit) AS n FROM events e JOIN f ON e.visit = f.id
+             WHERE e.name = 'section_view' AND f.path = '${samplePage.path}' GROUP BY e.detail ORDER BY n DESC`
+        ),
         ...(before ? [select(before, TOTALS)] : [])
     ]);
     const [totals, days, months, pages, refs, referrers, countries, regions, cities, networks, devices, browsers, systems, languages] =
         results;
-    const [screens, sections, nav, durations, events, recent, countryOptions, refOptions, previous] = results.slice(14);
+    const [screens, sections, nav, durations, events, recent, countryOptions, refOptions, sampleSections, previous] = results.slice(14);
     const rows = <T>(result: D1Result<Record<string, unknown>>) => result.results as T[];
     return {
         totals: totalsOf(totals),
@@ -837,6 +860,7 @@ export async function loadStats(db: D1Database, filter: Filter): Promise<StatsDa
         languages: rows<Row>(languages),
         screens: rows<Row>(screens),
         sections: rows<Row>(sections),
+        sampleSections: rows<Row>(sampleSections),
         nav: rows<Row>(nav),
         durations: rows<Row>(durations),
         events: rows<Row>(events),

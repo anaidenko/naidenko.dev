@@ -38,12 +38,14 @@ test("answers an agent's Accept: text/markdown on the home page, and browsers wi
     expect(browser.headers()["x-content-type-options"]).toBe("nosniff");
 });
 
-test("serves a sitemap with the home page and the privacy note", async ({ request }) => {
+test("serves a sitemap with the home page, the privacy note and the audit page", async ({ request }) => {
     const response = await request.get("/sitemap.xml");
     expect(response.status()).toBe(200);
     const body = await response.text();
     expect(body).toContain(`<loc>${SITE}</loc>`);
     expect(body).toContain(`<loc>${SITE}/privacy</loc>`);
+    expect(body).toContain(`<loc>${SITE}/audit</loc>`);
+    expect(body).toContain(`<loc>${SITE}/audit/sample</loc>`);
 });
 
 test("describes the page for search engines and link previews", async ({ page, request }) => {
@@ -118,4 +120,33 @@ test("serves /favicon.ico for clients that ask for it without reading the page",
     expect(response.headers()["content-type"]).toMatch(/^image\/(x-icon|vnd\.microsoft\.icon)$/);
     await page.goto("/");
     await expect(page.locator('link[rel="icon"][href="/favicon.ico"]')).toHaveAttribute("sizes", "32x32");
+});
+
+test("gives the audit page its own title and preview image, 1200 by 630", async ({ page, request }) => {
+    await page.goto("/audit");
+    await expect(page.locator('meta[property="og:title"]')).toHaveAttribute("content", "Code audits · naidenko.dev");
+    await expect(page.locator('meta[name="twitter:title"]')).toHaveAttribute("content", "Code audits · naidenko.dev");
+    await expect(page.locator('meta[name="twitter:card"]')).toHaveAttribute("content", "summary_large_image");
+    const image = await page.locator('meta[property="og:image"]').getAttribute("content");
+    expect(image).toMatch(/\/audit\/og\.png\?v=[0-9a-f]{8}$/);
+    await expect(page.locator('meta[name="twitter:image"]')).toHaveAttribute("content", image!);
+    const response = await request.get(new URL(image!).pathname);
+    expect(response.headers()["content-type"]).toBe("image/png");
+    const png = await response.body();
+    expect([png.readUInt32BE(16), png.readUInt32BE(20)]).toEqual([1200, 630]);
+});
+
+test("gives the sample report its own title and canonical address, and the audit page's preview", async ({ page }) => {
+    await page.goto("/audit/sample?ref=e2e");
+    await expect(page).toHaveTitle("Sample code audit report · naidenko.dev");
+    await expect(page.locator('link[rel="canonical"]')).toHaveAttribute("href", `${SITE}/audit/sample`);
+    await expect(page.locator('meta[property="og:image"]')).toHaveAttribute("content", /\/audit\/og\.png\?v=[0-9a-f]{8}$/);
+});
+
+test("keeps each audit page's description short enough for a search result", async ({ page }) => {
+    for (const path of ["/audit", "/audit/sample"]) {
+        await page.goto(path);
+        const description = (await page.locator('meta[name="description"]').getAttribute("content")) ?? "";
+        expect(description.length, path).toBeLessThanOrEqual(160);
+    }
 });

@@ -147,14 +147,19 @@ such as `hire_me_toptal-badge`; `/stats` lists it as `hire_me_toptal · badge`.
 
 | Event | When | Parameters |
 |---|---|---|
-| `contact_click` | "Contact me" in the header | — |
+| `contact_click` | "Contact me" in the header, or the contact form link in `/audit`'s order note | `placement` (`audit`) |
 | `hire_me_toptal` | "Hire me" on the Toptal badge | `placement` |
 | `toptal_profile_click` | "View full résumé on Toptal" | `placement` |
 | `profile_click` | GitHub, LinkedIn or Toptal icon | `network` |
 | `email_click` | Any email link | `placement` |
 | `client_site_click` | A client's name in Experience | `company` |
 | `store_click` | App Store or Google Play | `store` |
-| `project_click` | A repository in Projects | `project` |
+| `project_click` | A project's title in Projects | `project` |
+| `audit_order` | "Order an audit" on `/audit`: the order note's summary, or the hero's button | `placement` (`hero`) |
+| `sample_report_click` | A link from `/audit` to the sample report | `placement` (`hero`, `screenshot`, `section`) |
+| `sample_pdf` | The sample report's PDF | `placement` (`audit`, `sample`) |
+| `sample_to_audit` | "How the audit works" on `/audit/sample` | — |
+| `sample_filter` | A click in the sample report's filters | — |
 | `copy_install` | The install-command copy button | — |
 | `generate_lead` | The form was sent | `form` |
 | `form_error` | The form could not be sent | `form`, `reason` (`rate_limit` when limited) |

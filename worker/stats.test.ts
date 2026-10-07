@@ -17,7 +17,7 @@ import {
 const NOW = new Date("2026-09-24T12:00:00Z");
 
 const EMPTY: StatsData = {
-    totals: { visitors: 0, views: 0, homeViews: 0, returning: 0, avgSeconds: null, bounces: 0, timed: 0, leads: 0 },
+    totals: { visitors: 0, views: 0, homeViews: 0, sampleViews: 0, returning: 0, avgSeconds: null, bounces: 0, timed: 0, leads: 0 },
     previous: null,
     days: [],
     months: [],
@@ -33,6 +33,7 @@ const EMPTY: StatsData = {
     systems: [],
     languages: [],
     screens: [],
+    sampleSections: [],
     sections: [],
     nav: [],
     durations: [],
@@ -43,8 +44,8 @@ const EMPTY: StatsData = {
 
 const DATA: StatsData = {
     ...EMPTY,
-    totals: { visitors: 31, views: 40, homeViews: 40, returning: 4, avgSeconds: 185, bounces: 10, timed: 40, leads: 3 },
-    previous: { visitors: 25, views: 40, homeViews: 40, returning: 4, avgSeconds: 200, bounces: 4, timed: 20, leads: 0 },
+    totals: { visitors: 31, views: 40, homeViews: 40, sampleViews: 0, returning: 4, avgSeconds: 185, bounces: 10, timed: 40, leads: 3 },
+    previous: { visitors: 25, views: 40, homeViews: 40, sampleViews: 0, returning: 4, avgSeconds: 200, bounces: 4, timed: 20, leads: 0 },
     days: [{ label: "2026-09-24", visitors: 7, views: 9 }],
     months: [{ label: "2026-09", visitors: 31, views: 40 }],
     pages: [
@@ -65,6 +66,7 @@ const DATA: StatsData = {
     systems: [{ label: "macOS", n: 12 }],
     languages: [{ label: "uk", n: 2 }],
     screens: [{ label: "1920 px and wider", n: 8 }],
+    sampleSections: [],
     sections: [{ label: "experience", n: 20 }],
     nav: [{ label: "projects", n: 4 }],
     durations: [{ label: "1–3 min", n: 11 }],
@@ -406,6 +408,33 @@ describe("renderStats", () => {
         expect(html.slice(html.indexOf("Sections reached"), html.indexOf("Menu clicks"))).toContain("20 · 100%");
         expect(html.slice(html.indexOf('id="pages"'), html.indexOf('id="link-tags-ref"'))).toContain("/privacy");
         expect(html.slice(html.indexOf('id="latest-visits"'))).toContain("/privacy");
+    });
+
+    it("measures how far the sample report was read against its own views, in the report's order", () => {
+        const html = renderStats(
+            {
+                ...DATA,
+                totals: { ...DATA.totals, homeViews: 20, sampleViews: 4 },
+                sampleSections: [
+                    { label: "findings", n: 2 },
+                    { label: "summary", n: 4 }
+                ]
+            },
+            DEFAULT,
+            NOW
+        );
+        const read = html.slice(html.indexOf("Sample report read"), html.indexOf("Menu clicks"));
+        expect(read.indexOf("Summary")).toBeLessThan(read.indexOf("Findings"));
+        expect(read).toContain("4 · 100%");
+        expect(read).toContain("2 · 50%");
+    });
+
+    it("gives the sample report's visits their own dots, and another page's sections by name", () => {
+        const sample = { ...DATA.recent[0], path: "/audit/sample", sections: "summary, scope" };
+        const audit = { ...DATA.recent[0], path: "/audit", sections: "sample, how" };
+        const html = renderStats({ ...DATA, recent: [sample, audit] }, DEFAULT, NOW);
+        expect(html).toContain('<span class="dots" title="Summary, Scope and method"><i class="on"></i><i></i><i class="on"></i>');
+        expect(html).toContain('<span class="muted">sample, how</span>');
     });
 
     it("escapes what visitors and networks control", () => {

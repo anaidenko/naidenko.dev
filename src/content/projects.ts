@@ -17,7 +17,8 @@ export interface Project {
 /**
  * The engineering system: condensed from the Toptal portfolio project of the same name (public page
  * saved 2026-09-16), names no client. The plugins: from their READMEs and GitHub descriptions, read
- * 2026-09-24; both are MIT.
+ * 2026-09-24; both are MIT. Auditdesk: paste-sheet 12 § 3, checked against its README at 773ac76; its
+ * repository is private, so the entry links the audit page.
  */
 export const projects: readonly Project[] = [
     {
@@ -26,6 +27,13 @@ export const projects: readonly Project[] = [
         description:
             "Lets AI coding agents carry a production mobile product safely, rather than just autocompleting code: planning, an independent plan review, implementation in isolated Git worktrees, code review, verification and release. The guardrails are deterministic, not advisory: hooks enforce what documentation alone cannot, each added after a specific failure happened once. Agents check the app on iOS and Android instead of trusting a green build.",
         chips: ["Claude Code", "AI agents", "MCP", "Playwright", "Node.js", "Bash"]
+    },
+    {
+        name: "Auditdesk",
+        url: "/audit",
+        description:
+            "A local workbench for auditing a client's codebase: scanners first, then a Claude agent per aspect with read-only tools and a checklist, and my review of every finding before a client-ready HTML and PDF report. Every secret gitleaks finds is masked before the model sees it, and the client's code is never run. An eval on OWASP Juice Shop and a fixture with planted defects scores recall and cost by model and effort.",
+        chips: ["Claude Agent SDK", "Next.js", "PostgreSQL", "Semgrep", "Playwright"]
     },
     {
         name: "claude-video-digest",
@@ -56,7 +64,8 @@ export const installCommands: readonly string[] = [
     "claude plugin install claude-notify-resume@anaidenko"
 ];
 
-export const projectsIntro = "A system I built for client work, and two open-source tools for Claude Code, MIT-licensed.";
+export const projectsIntro =
+    "A system I built for client work, a code-audit workbench of mine, and two open-source tools for Claude Code, MIT-licensed.";
 
 export const marketplace = {
     lead: "Install both from my plugin marketplace,",
