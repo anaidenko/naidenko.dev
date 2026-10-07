@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Image from "next/image";
 import Link from "next/link";
 
 import { WithEmail } from "@/components/WithEmail";
@@ -46,6 +47,18 @@ export default function Audit() {
                         </div>
                     </section>
                 ))}
+                <div className="space-y-4">
+                    {audit.screenshots.map(shot => (
+                        <Image
+                            key={shot.src}
+                            src={shot.src}
+                            alt={shot.alt}
+                            width={shot.width}
+                            height={shot.height}
+                            className="h-auto w-full rounded border border-ink-faint/20"
+                        />
+                    ))}
+                </div>
                 <details className="rounded border border-ink-faint/20 p-4">
                     <summary data-track="audit_order" className="cursor-pointer font-semibold text-ink-strong hover:text-accent">
                         {audit.order.label}

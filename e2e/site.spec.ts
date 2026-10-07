@@ -225,3 +225,11 @@ test("links the Auditdesk project to the audit page in the same tab", async ({ p
     await link.click();
     await expect(page).toHaveURL(/\/audit$/);
 });
+
+test("the audit page shows the three screenshots with their descriptions", async ({ page }) => {
+    await page.goto("/audit");
+    await expect(page.locator("main img")).toHaveCount(3);
+    for (const alt of await page.locator("main img").evaluateAll(nodes => nodes.map(node => node.getAttribute("alt") ?? ""))) {
+        expect(alt.length).toBeGreaterThan(20);
+    }
+});

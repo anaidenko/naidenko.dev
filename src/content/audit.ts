@@ -35,6 +35,26 @@ export const audit = {
             ]
         }
     ],
+    screenshots: [
+        {
+            src: "/audit/run-form.png",
+            alt: "Starting an audit: the repository, its detected stack, and the aspects to examine",
+            width: 1440,
+            height: 900
+        },
+        {
+            src: "/audit/review.png",
+            alt: "Reviewing findings: each with its evidence and the auditor's decision",
+            width: 1440,
+            height: 900
+        },
+        {
+            src: "/audit/report-finding.png",
+            alt: "A finding in the report: severity, evidence with line numbers, the fix and its references",
+            width: 1440,
+            height: 900
+        }
+    ],
     order: {
         label: "Order an audit",
         toptal: "If we met through Toptal, the audit goes through Toptal.",
