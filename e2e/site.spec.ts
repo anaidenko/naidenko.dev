@@ -216,3 +216,12 @@ test("the audit page has no horizontal overflow at 320 px", async ({ page }) => 
     await expect(page.getByRole("heading", { level: 1, name: "Code audits" })).toBeVisible();
     expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(320);
 });
+
+test("links the Auditdesk project to the audit page in the same tab", async ({ page }) => {
+    await page.goto("/");
+    const link = page.locator("section#projects").getByRole("link", { name: "Auditdesk" });
+    await expect(link).toHaveAttribute("href", "/audit");
+    await expect(link).not.toHaveAttribute("target", "_blank");
+    await link.click();
+    await expect(page).toHaveURL(/\/audit$/);
+});

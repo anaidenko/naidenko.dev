@@ -26,6 +26,10 @@ describe("pageMarkdown", () => {
         expect(md).toContain("(https://www.toptal.com/developers/resume/andrii-naidenko#qjl3b7)");
     });
 
+    it("links a project on the site by its full address", () => {
+        expect(md).toContain("### [Auditdesk](https://naidenko.dev/audit)");
+    });
+
     it("is plain Markdown, with no HTML and no empty values", () => {
         expect(md).not.toMatch(/<\/?[a-z][^>]*>/i);
         expect(md).not.toMatch(/undefined|null|\[object/);
@@ -38,5 +42,9 @@ describe("llmsTxt", () => {
         expect(txt.startsWith("# Andrii Naidenko\n\n> ")).toBe(true);
         expect(txt).toContain("(https://naidenko.dev/index.md)");
         expect(txt).toMatch(/\n## [^\n]+\n\n- \[/);
+    });
+
+    it("lists the code-audit page", () => {
+        expect(llmsTxt()).toContain("(https://naidenko.dev/audit)");
     });
 });

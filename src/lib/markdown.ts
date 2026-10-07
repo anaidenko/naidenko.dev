@@ -58,7 +58,7 @@ export function pageMarkdown(): string {
         projectsIntro,
         "",
         ...projects.flatMap(project => [
-            `### ${project.url ? link(project.name, project.url) : project.name}`,
+            `### ${project.url ? link(project.name, project.url.startsWith("/") ? `${site.url}${project.url}` : project.url) : project.name}`,
             "",
             ...(project.note ? [`${project.note}.`, ""] : []),
             project.description,
@@ -99,6 +99,7 @@ export function llmsTxt(): string {
         "",
         `- ${link("The whole page in Markdown", `${site.url}/index.md`)}: about, experience, client reviews, projects, services and contact`,
         `- ${link("Privacy note", `${site.url}/privacy`)}: what the contact form and the visit counters collect`,
+        `- ${link("Code audits", `${site.url}/audit`)}: how I audit a codebase, what happens to the code, and how to order one`,
         "",
         "## Profiles",
         "",
