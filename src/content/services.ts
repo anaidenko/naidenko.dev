@@ -2,7 +2,7 @@
 export const services: readonly { title: string; text: string; proof: string }[] = [
     {
         title: "Mobile apps with Ionic and Capacitor",
-        text: "iOS and Android from one TypeScript codebase: offline mode, GPS and geofencing, push notifications, native plugins in Swift and Java, and every store release, including moving Cordova apps to Capacitor.",
+        text: "iOS and Android from one TypeScript codebase: offline mode, GPS and geofencing, push notifications, native plugins in Swift and Java, and every store release, including moving Cordova apps to Capacitor and builds from Ionic Appflow to fastlane.",
         proof: "Buddy Punch"
     },
     {

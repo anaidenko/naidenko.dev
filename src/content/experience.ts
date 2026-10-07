@@ -13,8 +13,8 @@ export interface ExperienceEntry {
 
 /**
  * Condensed from the live Toptal entries: talent view saved 2026-09-23 (Buddy Punch, Brokerloop,
- * RentWise) and the public page saved 2026-09-16 (USC ICT). Buddy Punch's last sentence follows
- * the Toptal accomplishment written on 2026-10-07.
+ * RentWise) and the public page saved 2026-09-16 (USC ICT). Buddy Punch's last sentence condenses
+ * the two Toptal accomplishments of 2026-10-07: the pipeline and the release flow.
  */
 export const experience: readonly ExperienceEntry[] = [
     {
@@ -25,7 +25,7 @@ export const experience: readonly ExperienceEntry[] = [
         // QA build of both platforms: 12–13 min on Appflow (its build logs, 2026-09-24 and
         // 2026-09-29), 5.4–5.9 min on GitHub Actions with warm caches (2026-10-05).
         summary:
-            "Owned the iOS and Android app end to end as its sole developer for seven years: architecture, features, native integrations and every store release. Built Offline Mode, the product’s most requested feature of 2025, and the GPS layer the product sells on, and carried the app from Cordova to Angular 21, Ionic 8 and Capacitor 8. Replaced Ionic Appflow with fastlane on GitHub Actions: one command builds, checks and ships the app to testers or the stores, and QA builds take 6 minutes instead of 12.",
+            "Owned the iOS and Android app end to end as its sole developer for seven years: architecture, features, native integrations and every store release. Built Offline Mode, the product’s most requested feature of 2025, and the GPS layer the product sells on, and carried the app from Cordova to Angular 21, Ionic 8 and Capacitor 8. Replaced Ionic Appflow with fastlane on GitHub Actions, cutting QA builds from 12 minutes to 6, and set up the release flow around it, so the stores ship exactly the build QA verified.",
         chips: ["Angular", "Ionic", "Capacitor", "TypeScript", "Swift", "Java", "fastlane", "GitHub Actions"],
         links: [
             {
