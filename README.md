@@ -130,7 +130,8 @@ address. A daily cron erases the hashes older than 13 months, and the rest is ke
   total with the period of the same length just before. A bounce is a visit that left within 10 s.
 - **Tagged links on LinkedIn:** LinkedIn replaces a shared link with the page's canonical address,
   so for its crawler (`LinkedInBot`) the Worker adds the link's `?ref=` to the canonical link and
-  `og:url` on `/`; everyone else sees `https://naidenko.dev`. Check a new link in
+  `og:url` of every HTML page (`run_worker_first` sends every path without a dot to the Worker);
+  everyone else sees the bare address, such as `https://naidenko.dev/audit`. Check a new link in
   [Post Inspector](https://www.linkedin.com/post-inspector/): its Canonical URL must keep `?ref=`.
   LinkedIn caches the card, so a link added before a fix has to be removed and added again.
 - **Not counted:** a load with `?preview=1`; a browser that has opened `/stats` (it sets

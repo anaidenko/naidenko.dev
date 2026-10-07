@@ -1,7 +1,7 @@
 import { postToSlack } from "./alert";
 import { handleContact } from "./contact";
 import { handleHit, placeOf, recordEvent, recordTime, recordVisit } from "./hits";
-import { handleHome, tagPage } from "./home";
+import { handleHome, handlePage, tagPage } from "./home";
 import { forgetVisitors, retentionCutoff } from "./retention";
 import { handleStats, loadStats } from "./stats";
 import { verifyTurnstile } from "./turnstile";
@@ -50,7 +50,7 @@ export default {
                 tag: tagPage
             });
         }
-        return env.ASSETS.fetch(request);
+        return handlePage(request, { page: () => env.ASSETS.fetch(request), tag: tagPage });
     },
 
     async scheduled(controller, env, ctx) {
