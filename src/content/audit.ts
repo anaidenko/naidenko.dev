@@ -1,6 +1,6 @@
 /**
- * The code-audit page. Each sentence is checked against Auditdesk's README and design note at the
- * commit the page is built from (sources per sentence: paste-sheet 13). "{email}" is rendered as
+ * The code-audit page. Each sentence is checked against Auditdesk's README, design note and code at
+ * main 773ac76 (sources per sentence: paste-sheet 13). "{email}" is rendered as
  * a link to the contact address.
  */
 export const audit = {
@@ -15,7 +15,7 @@ export const audit = {
             title: "What you get",
             paragraphs: [
                 "One report for two readers. For founders and leadership: what to fix before sign-off and what can wait. For your engineers: each finding with its evidence by file and line, the fix, and links to the OWASP Top 10, ASVS and CWE.",
-                "An HTML file with filters and search, and a PDF. After your fixes, a re-audit of the new commit re-checks every finding it reported."
+                "An HTML file with filters and search, and a PDF. After your fixes, a re-audit of the new commit re-checks every finding the last report listed."
             ]
         },
         {
@@ -29,7 +29,8 @@ export const audit = {
             title: "Your code",
             paragraphs: [
                 "The audit runs on my machine. Auditdesk never installs, builds or runs your code, and every secret gitleaks finds is masked before the model sees it.",
-                "Two things leave my machine. What the agents read goes to Anthropic, which keeps it for 30 days and does not train on it: a map of your repository, the scanners' findings and the files the agents open. Your dependencies' names and versions go to OSV's vulnerability database.",
+                // Retention and training: code.claude.com/docs/en/data-usage, read 2026-10-07; re-check before release.
+                "Two things leave my machine. What the agents read goes to Anthropic, which keeps it for 30 days and does not train on it: a map of your repository, the brief you give me, the scanners' findings, and the code the agents open or search. Your dependencies' names and versions go to Google's open-source vulnerability services: OSV, and deps.dev for Maven and pip manifests.",
                 "If your policy calls for it, the audit runs on your own Anthropic API key, under your own commercial terms with Anthropic and with every call on your account.",
                 "I delete my copy of your code when the engagement ends."
             ]

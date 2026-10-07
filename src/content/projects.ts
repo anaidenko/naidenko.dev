@@ -32,7 +32,7 @@ export const projects: readonly Project[] = [
         name: "Auditdesk",
         url: "/audit",
         description:
-            "A local workbench for auditing a client's codebase: scanners first, then a Claude agent per aspect with read-only tools and a checklist, and my review of every finding before a client-ready HTML and PDF report. Secrets are masked before the model sees them, and the client's code is never run. An eval on OWASP Juice Shop and a fixture with planted defects scores recall and cost by model and effort.",
+            "A local workbench for auditing a client's codebase: scanners first, then a Claude agent per aspect with read-only tools and a checklist, and my review of every finding before a client-ready HTML and PDF report. Every secret gitleaks finds is masked before the model sees it, and the client's code is never run. An eval on OWASP Juice Shop and a fixture with planted defects scores recall and cost by model and effort.",
         chips: ["Claude Agent SDK", "Next.js", "PostgreSQL", "Semgrep", "Playwright"]
     },
     {

@@ -302,3 +302,15 @@ test("records an order click on the audit page, from the mouse and the keyboard"
     await expect(page.getByText("If we met through Toptal, the audit goes through Toptal.")).toBeVisible();
     await expect.poll(() => hits.filter(hit => hit.name === "audit_order").length).toBe(3);
 });
+
+test("records the audit order note's e-mail and contact-form clicks with their placement", async ({ page }) => {
+    await asPerson(page);
+    await stubGoatCounter(page);
+    const hits = ownCounter(page);
+    await page.goto("/audit");
+    await page.getByText("Order an audit").click();
+    await page.locator("details").getByRole("link", { name: "hello@naidenko.dev" }).click();
+    await expect.poll(() => hits).toContainEqual(expect.objectContaining({ kind: "event", name: "email_click", detail: "audit" }));
+    await page.locator("details").getByRole("link", { name: "Or use the contact form" }).click();
+    await expect.poll(() => hits).toContainEqual(expect.objectContaining({ kind: "event", name: "contact_click", detail: "audit" }));
+});

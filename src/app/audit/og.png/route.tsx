@@ -28,7 +28,7 @@ export async function GET() {
                 {`${site.domain}${audit.path}`}
             </div>
             <div style={{ marginTop: 28, fontSize: 96, fontWeight: 700, letterSpacing: -3, lineHeight: 1 }}>{audit.title}</div>
-            <div style={{ marginTop: 28, fontSize: 36, lineHeight: 1.3, color: "#a1a1aa", maxWidth: 1000 }}>{audit.og}</div>
+            <div style={{ marginTop: 28, fontSize: 32, lineHeight: 1.3, color: "#a1a1aa" }}>{audit.og}</div>
             <div style={{ marginTop: 40, fontSize: 24, color: "#8b8b95" }}>{`${site.name} · ${site.meta}`}</div>
         </div>,
         { ...size, fonts: await geistFonts() }

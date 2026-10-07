@@ -47,16 +47,20 @@ export default function Audit() {
                         </div>
                     </section>
                 ))}
-                <div className="space-y-4">
+                <div className="space-y-8">
                     {audit.screenshots.map(shot => (
-                        <Image
-                            key={shot.src}
-                            src={shot.src}
-                            alt={shot.alt}
-                            width={shot.width}
-                            height={shot.height}
-                            className="h-auto w-full rounded border border-ink-faint/20"
-                        />
+                        <figure key={shot.src}>
+                            <a href={shot.src}>
+                                <Image
+                                    src={shot.src}
+                                    alt={shot.alt}
+                                    width={shot.width}
+                                    height={shot.height}
+                                    className="h-auto w-full rounded border border-ink-faint/20 hover:border-ink-faint/40"
+                                />
+                            </a>
+                            <figcaption className="mt-2 text-sm text-ink-faint">{shot.alt}</figcaption>
+                        </figure>
                     ))}
                 </div>
                 <details className="rounded border border-ink-faint/20 p-4">
@@ -65,10 +69,15 @@ export default function Audit() {
                     </summary>
                     <p className="mt-3">{audit.order.toptal}</p>
                     <p className="mt-2">
-                        <WithEmail text={audit.order.note} />
+                        <WithEmail text={audit.order.note} placement="audit" />
                     </p>
                     <p className="mt-2">
-                        <Link href="/#contact" className="font-medium text-ink-strong underline underline-offset-4 hover:text-accent">
+                        <Link
+                            href="/#contact"
+                            data-track="contact_click"
+                            data-track-placement="audit"
+                            className="font-medium text-ink-strong underline underline-offset-4 hover:text-accent"
+                        >
                             {audit.order.form}
                         </Link>
                     </p>

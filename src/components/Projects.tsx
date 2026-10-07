@@ -6,7 +6,7 @@ import { ui } from "@/content/ui";
 
 import { Chips } from "./Chips";
 import { CopyButton } from "./CopyButton";
-import { ArrowUpRightIcon } from "./Icons";
+import { ArrowRightIcon, ArrowUpRightIcon } from "./Icons";
 import { Section } from "./Section";
 
 function ProjectTitle({ project }: { project: Project }) {
@@ -18,13 +18,14 @@ function ProjectTitle({ project }: { project: Project }) {
                     href={project.url}
                     data-track="project_click"
                     data-track-project={project.name}
-                    className="font-medium hover:text-accent focus-visible:text-accent"
+                    className="group/link font-medium hover:text-accent focus-visible:text-accent"
                 >
                     <span
                         aria-hidden="true"
                         className="absolute -inset-x-4 -inset-y-3 hidden rounded lg:-inset-x-6 lg:-inset-y-4 lg:block"
                     />
                     {project.name}
+                    <ArrowRightIcon className="ml-1 inline-block size-3.5 translate-y-px transition-transform group-hover/link:translate-x-0.5 motion-reduce:transition-none" />
                 </Link>
             </h3>
         );

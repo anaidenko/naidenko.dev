@@ -203,9 +203,14 @@ test("the audit page opens its order note without JavaScript, Toptal first", asy
     const page = await context.newPage();
     await page.goto("/audit");
     await expect(page.getByRole("heading", { level: 1, name: "Code audits" })).toBeVisible();
+    const toptal = page.getByText("If we met through Toptal, the audit goes through Toptal.");
+    await expect(toptal).toBeHidden();
     await page.getByText("Order an audit").click();
-    await expect(page.getByText("If we met through Toptal, the audit goes through Toptal.")).toBeVisible();
+    await expect(toptal).toBeVisible();
     await expect(page.getByText("Online payment is coming soon", { exact: false })).toBeVisible();
+    const lines = await page.locator("details p").allTextContents();
+    expect(lines[0]).toBe("If we met through Toptal, the audit goes through Toptal.");
+    expect(lines[1]).toContain("online payment is coming soon");
     await expect(page.getByRole("link", { name: "hello@naidenko.dev" })).toHaveAttribute("href", "mailto:hello@naidenko.dev");
     await context.close();
 });
@@ -222,14 +227,24 @@ test("links the Auditdesk project to the audit page in the same tab", async ({ p
     const link = page.locator("section#projects").getByRole("link", { name: "Auditdesk" });
     await expect(link).toHaveAttribute("href", "/audit");
     await expect(link).not.toHaveAttribute("target", "_blank");
+    await expect(link.locator("svg")).toHaveCount(1);
+    await expect(page.locator("section#projects").getByRole("link", { name: "claude-video-digest" }).first()).toHaveAttribute(
+        "target",
+        "_blank"
+    );
     await link.click();
     await expect(page).toHaveURL(/\/audit$/);
 });
 
-test("the audit page shows the three screenshots with their descriptions", async ({ page }) => {
+test("the audit page shows the three screenshots with visible captions, each linked at full size", async ({ page }) => {
     await page.goto("/audit");
-    await expect(page.locator("main img")).toHaveCount(3);
-    for (const alt of await page.locator("main img").evaluateAll(nodes => nodes.map(node => node.getAttribute("alt") ?? ""))) {
+    const figures = page.locator("main figure");
+    await expect(figures).toHaveCount(3);
+    for (const figure of await figures.all()) {
+        const alt = (await figure.locator("img").getAttribute("alt")) ?? "";
         expect(alt.length).toBeGreaterThan(20);
+        await expect(figure.locator("figcaption")).toBeVisible();
+        expect(((await figure.locator("figcaption").textContent()) ?? "").length).toBeGreaterThan(20);
+        await expect(figure.getByRole("link")).toHaveAttribute("href", /^\/audit\/[a-z-]+\.png$/);
     }
 });
