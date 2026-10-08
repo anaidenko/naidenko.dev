@@ -3,6 +3,7 @@ import { sections as pageSections } from "../src/content/sections";
 
 import { REF } from "./hits";
 import { countryName, languageName } from "./names";
+import { networkKey } from "./visitor";
 
 export interface Row {
     label: string;
@@ -98,6 +99,8 @@ export interface Filter {
 export interface StatsDeps {
     /** Empty turns the page off. */
     password: string;
+    /** True while the key is under its limit. */
+    rateLimit(key: string): Promise<boolean>;
     load(filter: Filter): Promise<StatsData>;
     now(): Date;
     /** GoatCounter's dashboard, linked for comparison; empty for no link. */
@@ -187,7 +190,9 @@ function escapeHtml(text: string): string {
 function passwordFrom(header: string | null): string | null {
     if (!header?.startsWith("Basic ")) return null;
     try {
-        const decoded = atob(header.slice("Basic ".length));
+        // atob gives one character per byte; the browser sent UTF-8, as the challenge's charset asks.
+        const bytes = Uint8Array.from(atob(header.slice("Basic ".length)), c => c.charCodeAt(0));
+        const decoded = new TextDecoder("utf-8", { fatal: true, ignoreBOM: false }).decode(bytes);
         const colon = decoded.indexOf(":");
         return colon < 0 ? null : decoded.slice(colon + 1);
     } catch {
@@ -731,8 +736,16 @@ ${OWNER_SCRIPT}
 
 export async function handleStats(request: Request, deps: StatsDeps): Promise<Response> {
     if (!deps.password) return new Response("Not found", { status: 404 });
+    const network = networkKey(request.headers.get("CF-Connecting-IP") ?? "");
+    if (!(await deps.rateLimit(`stats:${network}`))) {
+        return new Response("Too many attempts. Try again in a minute.", {
+            status: 429,
+            headers: { "Retry-After": "60", "Cache-Control": "no-store" }
+        });
+    }
     const given = passwordFrom(request.headers.get("Authorization"));
-    if (given === null || !sameText(given, deps.password)) {
+    // NFC on both sides, as RFC 7617 and NIST SP 800-63B-4 expect: "é" can arrive as one code point or two.
+    if (given === null || !sameText(given.normalize("NFC"), deps.password.normalize("NFC"))) {
         return new Response("Password required", {
             status: 401,
             headers: { "WWW-Authenticate": 'Basic realm="naidenko.dev stats", charset="UTF-8"', "Cache-Control": "no-store" }

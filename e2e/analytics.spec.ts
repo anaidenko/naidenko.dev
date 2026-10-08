@@ -5,7 +5,7 @@ import { asNewVisitor, asPerson } from "./helpers";
 const GOATCOUNTER_URL = "https://e2e-test.goatcounter.invalid/count";
 const STATS_PASSWORD = "test-password";
 const BROWSER = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0 Safari/537.36";
-const OWNER = { Authorization: `Basic ${Buffer.from(`andrii:${STATS_PASSWORD}`).toString("base64")}` };
+const basicAuth = (password: string) => `Basic ${Buffer.from(`andrii:${password}`).toString("base64")}`;
 /** In IGNORE_NETWORKS of .dev.vars.example. */
 const IGNORED_ADDRESS = "203.0.113.5";
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
@@ -38,6 +38,10 @@ function ownCounter(page: Page) {
 }
 
 const randomAddress = () => `198.51.100.${Math.floor(Math.random() * 250) + 1}`;
+/** An address in one of 65,536 networks: /stats counts an IPv6 /64 as one address. */
+const uniqueAddress = () => `2001:db8:${crypto.randomUUID().slice(0, 4)}::1`;
+/** The owner's headers, from an address of its own: /stats lets one address try ten passwords a minute. */
+const owner = () => ({ "Authorization": basicAuth(STATS_PASSWORD), "CF-Connecting-IP": uniqueAddress() });
 
 /** Sends a hit the way the page does, from a browser at `address`. */
 function sendHit(request: APIRequestContext, baseURL: string, hit: Record<string, unknown>, address = randomAddress()) {
@@ -61,7 +65,7 @@ const between = (html: string, from: string, to: string) => html.slice(html.inde
 
 /** The "Visitors" tile on /stats for a query. */
 async function visitors(request: APIRequestContext, query: string) {
-    const html = await (await request.get(`/stats${query}`, { headers: OWNER })).text();
+    const html = await (await request.get(`/stats${query}`, { headers: owner() })).text();
     return { html, count: Number(/<b>(\d+)<\/b><span>Visitors</.exec(html)?.[1] ?? Number.NaN) };
 }
 
@@ -149,7 +153,7 @@ test("stops counting the owner's browser once it opens /stats, until the owner u
     await asPerson(page);
     const loads = await stubGoatCounter(page);
     const hits = ownCounter(page);
-    await page.setExtraHTTPHeaders(OWNER);
+    await page.setExtraHTTPHeaders(owner());
     await page.goto("/stats");
     await expect(page.locator("#owner")).toContainText("This browser is not counted");
     expect(await page.evaluate(() => localStorage.getItem("skipgc"))).toBe("t");
@@ -176,7 +180,7 @@ test("counts the owner's browser from an ignored network once it chose to be cou
     await page.waitForTimeout(1000);
     expect((await visitors(request, `?range=all&ref=${ref}`)).count).toBe(0);
 
-    await page.setExtraHTTPHeaders(OWNER);
+    await page.setExtraHTTPHeaders(owner());
     await page.goto("/stats");
     await page.getByRole("button", { name: "Count it again" }).click();
     await expect(page.locator("#owner")).toContainText("even from an ignored network");
@@ -203,12 +207,26 @@ test("keeps visits in the database and shows them only with the password", async
     );
     expect((await sendHit(request, baseURL!, { kind: "time", visit, seconds: 95 }, address)).status()).toBe(204);
 
-    const owner = await request.get(`/stats?range=all&ref=${ref}`, { headers: OWNER });
-    expect(owner.status()).toBe(200);
-    expect(owner.headers()["x-robots-tag"]).toBe("noindex");
-    const html = await owner.text();
+    const shown = await request.get(`/stats?range=all&ref=${ref}`, { headers: owner() });
+    expect(shown.status()).toBe(200);
+    expect(shown.headers()["x-robots-tag"]).toBe("noindex");
+    const html = await shown.text();
     expect((await visitors(request, `?range=all&ref=${ref}`)).count).toBe(1);
     for (const part of ["linkedin.com", "1 min 35 s", "English", "1024–1919 px (laptops)", `?ref=${ref}`]) expect(html).toContain(part);
+});
+
+test("lets one address try the password ten times a minute, then refuses even the right one", async ({ request }) => {
+    // Locally the limiter's minute starts on the clock's minute; a run across one would start counting again.
+    const left = 60_000 - (Date.now() % 60_000);
+    if (left < 5_000) await new Promise(resolve => setTimeout(resolve, left));
+    const address = uniqueAddress();
+    const attempt = (password: string) =>
+        request.get("/stats", { headers: { "Authorization": basicAuth(password), "CF-Connecting-IP": address } });
+    for (let i = 0; i < 10; i++) expect((await attempt("wrong")).status()).toBe(401);
+    const limited = await attempt(STATS_PASSWORD);
+    expect(limited.status()).toBe(429);
+    expect(limited.headers()["retry-after"]).toBe("60");
+    expect((await request.get("/stats", { headers: owner() })).status()).toBe(200);
 });
 
 test("counts nothing from an ignored network", async ({ request, baseURL }) => {

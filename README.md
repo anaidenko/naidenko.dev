@@ -51,7 +51,7 @@ Turnstile's test keys, and GoatCounter is stubbed.
 | `TURNSTILE_SECRET_KEY` | Worker secret | Verifies Turnstile tokens. |
 | `CONTACT_TO` | Worker secret | The inbox that receives the form: a verified Email Routing destination. |
 | `SLACK_WEBHOOK_URL` | Worker secret | A Slack incoming webhook: a copy of every message, and alerts when something fails. |
-| `STATS_PASSWORD` | Worker secret | The password for `/stats`. Without it the page does not exist. |
+| `STATS_PASSWORD` | Worker secret | The password for `/stats`: a long random string used nowhere else (`openssl rand -base64 24`). Without it the page does not exist. An address gets ten tries a minute, and an IPv6 /64 counts as one address. |
 | `VISITOR_KEY` | Worker secret | The key of the visitor hash, which tells a returning visitor from a new one: a long random string (`openssl rand -hex 32`). Changing it makes every visitor new. |
 | `IGNORE_NETWORKS` | Worker secret (optional) | CIDR ranges or addresses, comma-separated, whose visits are not counted: the owner's own network. A secret, so no address reaches the public repository. |
 | `STATS_DB` | `wrangler.jsonc` | The D1 database `naidenko-stats`, created with `wrangler d1 create`. Its schema is in `worker/migrations/`. |
