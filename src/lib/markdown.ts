@@ -100,7 +100,7 @@ export function llmsTxt(): string {
         "",
         "## Pages",
         "",
-        `- ${link("The whole page in Markdown", `${site.url}/index.md`)}: about, experience, client reviews, projects, services and contact`,
+        `- ${link("The whole page in Markdown", `${site.url}/index.md`)}: about, experience, client reviews, projects, services and ${TOPTAL_SITE ? "hiring through Toptal" : "contact"}`,
         `- ${link("Privacy note", `${site.url}/privacy`)}: ${TOPTAL_SITE ? "what the visit counters collect" : "what the contact form and the visit counters collect"}`,
         `- ${link("Code audits", `${site.url}/audit`)}: how I audit a codebase, and what happens to the code`,
         `- ${link("Sample code audit report", `${site.url}/audit/sample`)}: the full report from an audit of OWASP Juice Shop, with every finding's evidence and fix`,

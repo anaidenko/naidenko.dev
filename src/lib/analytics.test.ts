@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import {
+    applySkipToggle,
     chosenToCount,
     createVisibleClock,
     detailOf,
@@ -77,6 +78,53 @@ describe("isExcluded", () => {
             }
         });
         expect(isExcluded(refusing)).toBe(false);
+    });
+});
+
+describe("applySkipToggle", () => {
+    /** A browser at `search` whose storage keeps what is set in it. */
+    function storingAt(search: string) {
+        const stored = new Map<string, string>();
+        const win = browserWindow({
+            location: { search },
+            localStorage: {
+                getItem: (key: string) => stored.get(key) ?? null,
+                setItem: (key: string, value: string) => stored.set(key, value)
+            }
+        });
+        return { win, stored };
+    }
+
+    it("keeps the owner's browser out with ?skipgc=t, and counts it again with ?skipgc=f", () => {
+        const out = storingAt("?skipgc=t");
+        applySkipToggle(out.win);
+        expect(out.stored.get("skipgc")).toBe("t");
+        expect(isExcluded(out.win)).toBe(true);
+
+        const back = storingAt("?skipgc=f");
+        applySkipToggle(back.win);
+        expect(isExcluded(back.win)).toBe(false);
+        expect(chosenToCount(back.win)).toBe(true);
+    });
+
+    it("stores nothing for any other value or none", () => {
+        for (const search of ["", "?skipgc=x", "?ref=toptal"]) {
+            const page = storingAt(search);
+            applySkipToggle(page.win);
+            expect(page.stored.size, search).toBe(0);
+        }
+    });
+
+    it("leaves a browser that refuses storage counted, without an error", () => {
+        const refusing = browserWindow({
+            location: { search: "?skipgc=t" },
+            localStorage: {
+                setItem: () => {
+                    throw new Error("denied");
+                }
+            }
+        });
+        expect(() => applySkipToggle(refusing)).not.toThrow();
     });
 });
 

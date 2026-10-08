@@ -66,5 +66,6 @@ describe("the Toptal build's Markdown and llms.txt", () => {
         );
         expect(pageMarkdown()).toContain("### [Auditdesk](https://toptal.naidenko.dev/audit)");
         expect(llmsTxt()).toContain("(https://toptal.naidenko.dev/privacy): what the visit counters collect");
+        expect(llmsTxt()).toContain("services and hiring through Toptal");
     });
 });

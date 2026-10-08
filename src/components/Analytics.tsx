@@ -3,7 +3,7 @@
 import { usePathname } from "next/navigation";
 import { useEffect, useRef } from "react";
 
-import { GOATCOUNTER_URL, eventFor, isExcluded, loadGoatCounter, startVisit, track } from "@/lib/analytics";
+import { GOATCOUNTER_URL, applySkipToggle, eventFor, isExcluded, loadGoatCounter, startVisit, track } from "@/lib/analytics";
 import { TOPTAL_SITE } from "@/lib/variant";
 
 export function Analytics() {
@@ -13,6 +13,7 @@ export function Analytics() {
     // A move between pages keeps this layout mounted, so each page is started (and the last one
     // ended) here rather than on load. GoatCounter's script counts only the page it loads on.
     useEffect(() => {
+        applySkipToggle(window);
         if (isExcluded(window)) return;
         const end = startVisit(window, TOPTAL_SITE);
         if (!GOATCOUNTER_URL) return end;

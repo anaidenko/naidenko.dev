@@ -20,6 +20,12 @@ describe("toptal-pdf", () => {
         expect(footerOf(html)).toBe("Code audit: OWASP Juice Shop v20.2.0 · 2026-10-07");
     });
 
+    it("unescapes the title once, since the footer is escaped when it is printed", () => {
+        expect(footerOf('<title>Code audit: Tom &amp; Jerry &lt;3</title><p class="colophon"><a href="/">A</a> · 2026-01-02</p>')).toBe(
+            "Code audit: Tom & Jerry <3 · 2026-01-02"
+        );
+    });
+
     it("refuses a report without a title or a dated colophon", () => {
         expect(() => footerOf("<html><body></body></html>")).toThrow(/colophon/);
     });

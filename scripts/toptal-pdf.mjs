@@ -15,16 +15,21 @@ export function onOrigin(html, origin) {
     return html.replaceAll(`"${EXPORTED_ORIGIN}/`, `"${origin}/`).replaceAll(`>${host(EXPORTED_ORIGIN)}/`, `>${host(origin)}/`);
 }
 
-/** Auditdesk's footer, "Code audit: <project> · <date>", from the report's title and its colophon's date. */
+const ENTITIES = { "&amp;": "&", "&lt;": "<", "&gt;": ">", "&quot;": '"', "&#39;": "'" };
+
+const escapeHtml = text =>
+    text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#39;");
+
+/**
+ * Auditdesk's footer, "Code audit: <project> · <date>", from the report's title and its colophon's
+ * date. The title is unescaped here, since renderPdf escapes the footer as Auditdesk does.
+ */
 export function footerOf(html) {
     const title = /<title>([^<]*)<\/title>/.exec(html)?.[1];
     const date = /<p class="colophon">[\s\S]*?(\d{4}-\d{2}-\d{2})<\/p>/.exec(html)?.[1];
     if (!title || !date) throw new Error("The report has no <title> or no dated colophon: has Auditdesk's renderer changed?");
-    return `${title} · ${date}`;
+    return `${title.replace(/&(?:amp|lt|gt|quot|#39);/g, entity => ENTITIES[entity])} · ${date}`;
 }
-
-const escapeHtml = text =>
-    text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#39;");
 
 export async function renderPdf(html, footer) {
     const browser = await chromium.launch();

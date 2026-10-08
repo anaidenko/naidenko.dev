@@ -125,6 +125,18 @@ describe("filterOf", () => {
         expect(filter("")).toEqual(DEFAULT);
     });
 
+    it("offers every Toptal link at once when a toptal tag was seen", () => {
+        const html = renderStats({ ...DATA, options: { countries: [], refs: ["linkedin", "toptal-509168"] } }, DEFAULT, NOW);
+        expect(html).toContain('<option value="toptal*">Every Toptal link (toptal*)</option>');
+        expect(renderStats(DATA, DEFAULT, NOW)).not.toContain("toptal*");
+    });
+
+    it("takes a tag's stem and a star for every tag that starts with it", () => {
+        expect(filter("?ref=toptal*").ref).toBe("toptal*");
+        expect(filter("?ref=Toptal-509168").ref).toBe("toptal-509168");
+        for (const query of ["?ref=*", "?ref=top*al", "?ref=toptal**", "?ref=a%20b*"]) expect(filter(query).ref, query).toBe("");
+    });
+
     it("takes a preset range, or all time", () => {
         expect(filter("?range=today")).toMatchObject({ from: "2026-09-24", to: "2026-09-24" });
         expect(filter("?range=yesterday")).toMatchObject({ from: "2026-09-23", to: "2026-09-23" });

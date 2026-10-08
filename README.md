@@ -62,6 +62,7 @@ Turnstile's test keys, and GoatCounter is stubbed.
 | `CONTACT_FROM` | `wrangler.jsonc` | The sender address, on the site's domain. |
 | `GOATCOUNTER_DASHBOARD` | `wrangler.jsonc` | GoatCounter's dashboard, linked from `/stats` for the same dates. Empty means no link. |
 | `TOPTAL_ORIGIN` | `wrangler.jsonc` | The Toptal build's origin, where a page tagged `?ref=toptal…` moves. Empty turns the move off. |
+| `SITE` | `wrangler.toptal.jsonc` | The Toptal build's service binding to the site's Worker (`naidenko-dev`), which counts its visits. |
 | `NEXT_PUBLIC_SITE_VARIANT` | build: `pnpm build:toptal` | `toptal` builds the Toptal variant into `out-toptal/`. |
 
 `.env.example` lists the build settings. Locally, the Worker reads `.dev.vars`. Neither
@@ -150,9 +151,11 @@ address. A daily cron erases the hashes older than 13 months, and the rest is ke
   contact information". The form, the email and the header's email icon render only in the
   browser, so the static HTML and the Markdown never carry them, and the privacy note names
   `privacy@naidenko.dev` as text, with no link, as the GDPR asks. A page asked for with a tag
-  `?ref=toptal…` (an old application's `toptal-<job id>`, the profile's `toptal`) moves with a 302
-  to the same path and query on the Toptal host (`TOPTAL_ORIGIN`). `/audit` offers no order, and
-  its link home is `nofollow`.
+  `?ref=toptal…` or `utm_source=toptal…` (an old application's `toptal-<job id>`, the profile's
+  `toptal`) moves with a 302 to the same path and query on the Toptal host (`TOPTAL_ORIGIN`).
+  With `TOPTAL_ORIGIN` empty it stays, in the page's own Toptal mode: an inline script marks
+  `<html data-toptal>` before the first paint, and the page shows no form, no email and no
+  "Contact me" (`src/lib/toptal.ts`). `/audit` offers no order, and its link home is `nofollow`.
 - **The Toptal host:** `toptal.naidenko.dev` serves the Toptal build (`pnpm build:toptal`,
   `NEXT_PUBLIC_SITE_VARIANT=toptal`) from a Worker of its own (`worker/toptal-site.ts`,
   `wrangler.toptal.jsonc`): no form, no email, no icon row under the name, no LinkedIn or GitHub
@@ -162,13 +165,18 @@ address. A daily cron erases the hashes older than 13 months, and the rest is ke
   crawlers out. A link there takes a bare tag, such as a job's ID (`/audit?ref=509168`), counted
   as `toptal-509168`; a visit with no tag counts as `toptal`. Its Worker has no database or
   secrets: it hands `/api/hit` to the site's Worker through a service binding, so one D1, one
-  visitor key and one list of ignored networks count both hosts.
+  visitor key and one list of ignored networks count both hosts. On `/stats`, the link tag
+  "Every Toptal link" (`?ref=toptal*`) shows the visits that came through Toptal; a move within a
+  site is a visit with no tag, so it is not among them.
 - **Not counted:** a load with `?preview=1`; a browser that has opened `/stats` (it sets
-  GoatCounter's `skipgc` flag, which both counters honour); addresses in `IGNORE_NETWORKS`; bots,
-  automated browsers, frames and prerendering, as GoatCounter's count.js skips them.
+  GoatCounter's `skipgc` flag, which both counters honour), or any page with `?skipgc=t`, which
+  sets the same flag; addresses in `IGNORE_NETWORKS`; bots, automated browsers, frames and
+  prerendering, as GoatCounter's count.js skips them. The flag belongs to one host, and the Toptal
+  host has no `/stats`: open `https://toptal.naidenko.dev/?skipgc=t` once in each of your
+  browsers there.
 - **Testing from an ignored network:** press "Count it again" on `/stats` in that browser (a
-  private window keeps it until closed). Its hits then carry `force: true` and are counted even
-  from `IGNORE_NETWORKS`.
+  private window keeps it until closed), or open a page with `?skipgc=f`. Its hits then carry
+  `force: true` and are counted even from `IGNORE_NETWORKS`.
 
 ## Analytics events
 

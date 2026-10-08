@@ -115,6 +115,21 @@ export function isExcluded(win: Window): boolean {
 }
 
 /**
+ * ?skipgc=t keeps this browser out of both counters and ?skipgc=f counts it again, even from an
+ * ignored network: what /stats sets on naidenko.dev. The flag belongs to one origin, and the Toptal
+ * build has no /stats, so this is how the owner's browsers stay out of its counts.
+ */
+export function applySkipToggle(win: Window): void {
+    const value = new URLSearchParams(win.location.search).get(SKIP_FLAG);
+    if (value !== "t" && value !== "f") return;
+    try {
+        win.localStorage.setItem(SKIP_FLAG, value);
+    } catch {
+        // A browser that refuses storage cannot carry the flag, so it stays counted.
+    }
+}
+
+/**
  * Whether the owner pressed "Count it again" on /stats in this browser. Its hits then pass the
  * counter's ignored networks, so the owner can test the counter from home.
  */

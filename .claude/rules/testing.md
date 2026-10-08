@@ -26,9 +26,10 @@ paths:
   dev registry names, another checkout's included (2026-10-08: a hit went to a two-day-old
   preview's D1). So the e2e tests check what the page sends, not what lands in the database.
 - **The Worker never sees a test's host:** `wrangler dev` rewrites `request.url` and `Host` to
-  the first route's host, `naidenko.dev` (checked on 2026-10-08). So a host check in `worker/` is
-  unit-tested, and checked with `curl` after the deploy. The Toptal build knows it is one from its
-  build variable, not its host, so its tests run on `127.0.0.1`.
+  its config's first route: `naidenko.dev`, or `toptal.naidenko.dev` on the Toptal build's server
+  (checked on 2026-10-08). So a host check in `worker/` is unit-tested, and checked with `curl`
+  after the deploy. The Toptal build knows it is one from its build variable, not its host, so its
+  tests run on `127.0.0.1`.
 - **Projects:** `desktop` (1440×900) and `mobile` (Pixel 7). When a test skips one, give the
   reason.
 - **Analytics:** `e2e/analytics.spec.ts` stubs GoatCounter's count.js and watches the page's

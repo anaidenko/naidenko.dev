@@ -66,6 +66,20 @@ test.describe("naidenko.dev", () => {
         expect((await request.get("/audit?ref=linkedin", { maxRedirects: 0 })).status()).toBe(200);
     });
 
+    test("with the move turned off, a tagged visit still sees no form, no email and no contact button", async ({ page, request }) => {
+        // As with TOPTAL_ORIGIN empty: the tagged address answers with the page itself.
+        await page.route(
+            url => url.search === "?ref=toptal-e2e",
+            async route => route.fulfill({ response: await request.get("/") })
+        );
+        await page.goto("/?ref=toptal-e2e");
+        await hydrated(page);
+        await expect(page.locator("section#contact form")).toHaveCount(0);
+        await expect(page.locator('a[href^="mailto:"]')).toHaveCount(0);
+        await expect(page.locator('header a[data-track="contact_click"]')).toBeHidden();
+        await expect(page.locator("section#contact")).toContainText("Prefer to hire through Toptal?");
+    });
+
     test("a visitor following an old Toptal link lands on the Toptal build, with no form or email", async ({ page }) => {
         await page.goto("/?ref=toptal-e2e");
         await expect(page).toHaveURL(`${TOPTAL_URL}/?ref=toptal-e2e`);
