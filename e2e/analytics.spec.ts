@@ -38,7 +38,7 @@ function ownCounter(page: Page) {
 }
 
 const randomAddress = () => `198.51.100.${Math.floor(Math.random() * 250) + 1}`;
-/** An address in one of 65,536 networks: /stats counts an IPv6 /64 as one address. */
+/** An address no randomAddress() can be, in one of 65,536 networks: /stats counts an IPv6 /64 as one address. */
 const uniqueAddress = () => `2001:db8:${crypto.randomUUID().slice(0, 4)}::1`;
 /** The owner's headers, from an address of its own: /stats lets one address try ten passwords a minute. */
 const owner = () => ({ "Authorization": basicAuth(STATS_PASSWORD), "CF-Connecting-IP": uniqueAddress() });
@@ -290,7 +290,8 @@ test("drops hits over the limit without an error in the visitor's console", asyn
     page.on("console", message => {
         if (message.type() === "error") errors.push(message.text());
     });
-    const address = randomAddress();
+    // Of its own: the address stays over its limit for the rest of the minute.
+    const address = uniqueAddress();
     await page.route("**/api/hit", route => route.continue({ headers: { ...route.request().headers(), "cf-connecting-ip": address } }));
     await page.goto("/");
     await page.evaluate(async () => {
