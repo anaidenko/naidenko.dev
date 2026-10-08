@@ -1,7 +1,7 @@
 "use client";
 
 import { contact } from "@/content/contact";
-import { site } from "@/content/site";
+import { email } from "@/content/email";
 import { useToptalVisit } from "@/lib/useToptalVisit";
 
 import { ContactForm } from "./ContactForm";
@@ -19,11 +19,11 @@ export function ContactDirect() {
                 {contact.emailPrompt}{" "}
                 <a
                     className="font-medium text-ink-strong underline decoration-ink-faint/50 underline-offset-4 hover:text-accent"
-                    href={`mailto:${site.email}`}
+                    href={`mailto:${email}`}
                     data-track="email_click"
                     data-track-placement="contact"
                 >
-                    {site.email}
+                    {email}
                 </a>
                 .
             </p>
@@ -38,7 +38,7 @@ export function EmailIcon({ className }: { className: string }) {
     return (
         <li>
             <a
-                href={`mailto:${site.email}`}
+                href={`mailto:${email}`}
                 data-track="email_click"
                 data-track-placement="header"
                 aria-label="Email"

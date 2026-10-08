@@ -1,9 +1,10 @@
 # Dependencies
 node_modules/
 
-# Next.js build output (static export goes to out/)
+# Next.js build output (static exports go to out/ and, for the Toptal build, out-toptal/)
 .next/
 out/
+out-toptal/
 
 # TypeScript
 *.tsbuildinfo

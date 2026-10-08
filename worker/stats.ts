@@ -1,5 +1,5 @@
 import { samplePage } from "../src/content/audit";
-import { sections as pageSections } from "../src/content/sections";
+import { menu, sections as pageSections } from "../src/content/sections";
 
 import { REF } from "./hits";
 import { countryName, languageName } from "./names";
@@ -125,6 +125,12 @@ function isDay(value: string | null): value is string {
     return !Number.isNaN(date.getTime()) && date.toISOString().startsWith(value);
 }
 
+/** A tag to filter by, or a stem and "*" for every tag that starts with it: "toptal*" is every Toptal link. */
+function refFilterOf(ref: string): string {
+    const stem = ref.endsWith("*") ? ref.slice(0, -1) : ref;
+    return REF.test(stem) && (stem || !ref) ? ref : "";
+}
+
 export function filterOf(url: URL, now: Date): Filter {
     const params = url.searchParams;
     const today = now.toISOString().slice(0, 10);
@@ -135,7 +141,7 @@ export function filterOf(url: URL, now: Date): Filter {
         from: daysBack(DEFAULT_DAYS),
         to: today,
         country: /^([A-Z]{2}|T1)$/.test(country) ? country : "",
-        ref: REF.test(ref) ? ref : ""
+        ref: refFilterOf(ref)
     };
     const from = params.get("from");
     const to = params.get("to");
@@ -226,6 +232,16 @@ type Sections = readonly { id: string; label: string }[];
 
 /** Each page with sections that /stats follows, by path. */
 const SECTIONS_OF: Record<string, Sections> = { "/": pageSections, [samplePage.path]: samplePage.sections };
+
+/** Both builds' menu entries in the menu's order: naidenko.dev's, then the Toptal build's "Hire". */
+const MENU: Sections = [...menu(false), ...menu(true).filter(entry => !menu(false).some(own => own.id === entry.id))];
+
+/**
+ * The home page's dots: a visit saw one build, whose last section is "contact" on naidenko.dev and
+ * "hire" on the Toptal build, so both light the last dot.
+ */
+const HOME_DOTS: Sections = pageSections.filter(section => section.id !== "hire");
+const DOT_OF: Record<string, string> = { hire: "contact" };
 
 /** The sections in the page's order, under the page's own labels; an unknown id goes last. */
 function inPageOrder(rows: Row[], order: Sections = pageSections): Row[] {
@@ -382,7 +398,8 @@ function sectionDots(visit: RecentVisit): string {
     if (!order) return `<span class="muted">${escapeHtml(visit.sections || "—")}</span>`;
     const reached = new Set((visit.sections ?? "").split(", ").filter(Boolean));
     const names = order.filter(section => reached.has(section.id)).map(section => section.label);
-    const dots = order.map(section => (reached.has(section.id) ? `<i class="on"></i>` : "<i></i>")).join("");
+    const lit = new Set([...reached].map(id => DOT_OF[id] ?? id));
+    const dots = (visit.path === "/" ? HOME_DOTS : order).map(section => (lit.has(section.id) ? `<i class="on"></i>` : "<i></i>")).join("");
     return `<span class="dots" title="${escapeHtml(names.join(", ") || "No section reached")}">${dots}</span>`;
 }
 
@@ -450,7 +467,9 @@ function filterForm(filter: Filter, options: StatsData["options"], now: Date): s
             .sort((a, b) => countryName(a).localeCompare(countryName(b), "en"))
             .map(code => option(code, countryName(code), filter.country))
     ];
-    const refs = [option("", "All link tags", filter.ref), ...options.refs.map(ref => option(ref, ref, filter.ref))];
+    // Every visit through Toptal at once: the Toptal host's toptal-<job id> tags and the profile's toptal.
+    const toptal = options.refs.some(ref => ref.startsWith("toptal")) ? [option("toptal*", "Every Toptal link (toptal*)", filter.ref)] : [];
+    const refs = [option("", "All link tags", filter.ref), ...toptal, ...options.refs.map(ref => option(ref, ref, filter.ref))];
     const current = activePreset(filter, now);
     const presets = PRESETS.map(([range, label]) => {
         const query = new URLSearchParams({ range });
@@ -599,7 +618,7 @@ export function renderStats(data: StatsData, filter: Filter, now: Date, goatcoun
     const engagement = [
         card("Sections reached", barTable(reach, totals.homeViews)),
         card("Sample report read", barTable(read, totals.sampleViews)),
-        card("Menu clicks", counted(inPageOrder(data.nav))),
+        card("Menu clicks", counted(inPageOrder(data.nav, MENU))),
         card("Time on page", counted(data.durations)),
         card("Clicks and messages", counted(data.events))
     ];
@@ -759,8 +778,9 @@ export async function handleStats(request: Request, deps: StatsDeps): Promise<Re
     });
 }
 
-/** The visits the filter selects, as `f`, for every query below; ?1 to ?4 are the filter. */
-const FILTERED = `WITH f AS (SELECT * FROM visits WHERE day >= ?1 AND day <= ?2 AND (?3 = '' OR country = ?3) AND (?4 = '' OR ref = ?4))`;
+/** The visits the filter selects, as `f`, for every query below; ?1 to ?4 are the filter, ?4's "*" a prefix match (refFilterOf). */
+const FILTERED = `WITH f AS (SELECT * FROM visits WHERE day >= ?1 AND day <= ?2 AND (?3 = '' OR country = ?3)
+    AND (?4 = '' OR ref = ?4 OR (substr(?4, -1) = '*' AND substr(ref, 1, length(?4) - 1) = substr(?4, 1, length(?4) - 1))))`;
 /**
  * People: one per visitor per day, counted within the filter. A visit without a hash (erased after
  * 13 months, or never keyed) falls back to `first_today`, which was fixed when it was stored.

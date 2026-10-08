@@ -3,7 +3,7 @@
 import { type FormEvent, useEffect, useRef, useState, useSyncExternalStore } from "react";
 
 import { contact } from "@/content/contact";
-import { site } from "@/content/site";
+import { email } from "@/content/email";
 import { track } from "@/lib/analytics";
 import { CONTACT_LIMITS, type ContactErrors, type ContactField, validateContact } from "@/lib/contact";
 import { createTurnstile } from "@/lib/turnstile-client";
@@ -153,11 +153,11 @@ export function ContactForm() {
                     {status === "limited" ? contact.limited : contact.failed}{" "}
                     <a
                         className="font-medium underline underline-offset-4 hover:text-accent"
-                        href={`mailto:${site.email}`}
+                        href={`mailto:${email}`}
                         data-track="email_click"
                         data-track-placement="form_error"
                     >
-                        {site.email}
+                        {email}
                     </a>{" "}
                     {contact.instead}
                 </p>

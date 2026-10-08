@@ -18,7 +18,7 @@ function ProjectTitle({ project }: { project: Project }) {
                     href={project.url}
                     data-track="project_click"
                     data-track-project={project.name}
-                    className="group/link font-medium hover:text-accent focus-visible:text-accent"
+                    className="group/link font-medium group-target/item:text-accent hover:text-accent focus-visible:text-accent"
                 >
                     <span
                         aria-hidden="true"
@@ -37,7 +37,7 @@ function ProjectTitle({ project }: { project: Project }) {
                 data-track-project={project.name}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="group/link font-medium hover:text-accent focus-visible:text-accent"
+                className="group/link font-medium group-target/item:text-accent hover:text-accent focus-visible:text-accent"
             >
                 <span aria-hidden="true" className="absolute -inset-x-4 -inset-y-3 hidden rounded lg:-inset-x-6 lg:-inset-y-4 lg:block" />
                 {project.name}
@@ -54,12 +54,12 @@ export function Projects() {
             <p className="mb-10">{projectsIntro}</p>
             <ul className="group/list space-y-12">
                 {projects.map(project => (
-                    <li key={project.name}>
+                    <li key={project.name} id={project.id} className="group/item scroll-mt-16 lg:scroll-mt-24">
                         <article className="group relative grid gap-4 transition motion-reduce:transition-none sm:grid-cols-8 sm:gap-6 lg:group-hover/list:opacity-50 lg:hover:opacity-100!">
                             {project.url ? (
                                 <div
                                     aria-hidden="true"
-                                    className="absolute -inset-4 z-0 hidden rounded-xl border-l-2 border-transparent transition motion-reduce:transition-none lg:-inset-x-6 lg:block lg:group-hover:border-accent lg:group-hover:bg-surface/70"
+                                    className="absolute -inset-4 z-0 hidden rounded-xl border-l-2 border-transparent transition motion-reduce:transition-none lg:-inset-x-6 lg:block lg:group-target/item:border-accent lg:group-target/item:bg-surface/70 lg:group-hover:border-accent lg:group-hover:bg-surface/70"
                                 />
                             ) : null}
                             <div className={`z-10 ${project.image ? "sm:order-2 sm:col-span-6" : "sm:col-span-8"}`}>

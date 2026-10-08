@@ -2,8 +2,10 @@
 
 # naidenko.dev
 
-Andrii Naidenko's personal site: a Next.js 16 static export served by one Cloudflare Worker,
-which also answers the contact form. Setup, commands, configuration and deploy: README.md.
+Andrii Naidenko's personal site: a Next.js 16 static export served by a Cloudflare Worker, which
+also answers the contact form, and a second build of it for Toptal's links on
+`toptal.naidenko.dev`, served by a Worker of its own. Setup, commands, configuration and deploy:
+README.md.
 
 ## Response style
 
@@ -21,6 +23,11 @@ which also answers the contact form. Setup, commands, configuration and deploy: 
   platform constraint, a rejected alternative and why, or a magic value's source. Never narrate
   the change (`// was X`, `// fixed Y`).
 - **Copy lives in `src/content/`**, never inline in components.
+- **Two builds:** `TOPTAL_SITE` (`src/lib/variant.ts`) switches content and components, and
+  `next.config.ts` swaps whatever carries the address (`ContactDirect`) for a stub at import time,
+  since a page ships the JavaScript of every client component it imports. A module the Worker
+  imports (`src/content/sections.ts`) takes the build as a parameter: the Worker has no
+  `process.env`.
 - **Next.js 16 differs from older versions.** Read `.claude/rules/nextjs.md` before touching
   `src/app/`.
 
@@ -35,7 +42,9 @@ which also answers the contact form. Setup, commands, configuration and deploy: 
 ## Factual rigor
 
 - Before stating a checkable fact (a version, a limit, whether something exists or passes),
-  verify it in the same turn and show the evidence: the command, the path or the quote.
+  verify it in the same turn and show the evidence: the command, the path or the quote. A claim
+  that something is absent names where it still is: "no address in the static HTML" was true on
+  2026-10-08 while a JS chunk shipped it, and that went unsaid until Andrii asked.
 - If you cannot verify it, say "unverified" and name what would confirm it.
 
 ## Workflow
@@ -63,6 +72,9 @@ which also answers the contact form. Setup, commands, configuration and deploy: 
   background and leave it running.
 - **Ask first** for anything that leaves this machine or is hard to undo: `git push`,
   `pnpm run deploy`, `wrangler secret`, `rm -rf`, `git reset --hard`, force-push.
+- **Deploy only a tree that carries what is live.** `wrangler deployments list` names the live
+  version; a release deployed from a branch your tree lacks (v1.7.1 from `fix/stats-sign-in`,
+  2026-10-08) is merged first, or the deploy removes it.
 - **A migration that drops data:** export the table (`wrangler d1 export --remote --table`)
   right before the deploy that runs it, not when planning: on 2026-09-30 a morning copy had
   already missed a view.

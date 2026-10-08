@@ -307,6 +307,24 @@ test("drops hits over the limit without an error in the visitor's console", asyn
     expect(errors).toEqual([]);
 });
 
+test("filters every Toptal link at once with toptal*", async ({ request, baseURL }) => {
+    const before = (await visitors(request, "?range=all&ref=toptal*")).count;
+    const ref = `toptal-${uniqueRef()}`;
+    await sendHit(request, baseURL!, { kind: "view", visit: crypto.randomUUID(), path: "/audit", referrer: "", ref, screen: 1440 });
+    await expect.poll(async () => (await visitors(request, "?range=all&ref=toptal*")).count).toBeGreaterThan(before);
+    expect((await visitors(request, `?range=all&ref=${ref}`)).count).toBe(1);
+});
+
+test("counts a visit GitHub sent without a tag under the tag github", async ({ page }) => {
+    await asPerson(page);
+    await stubGoatCounter(page);
+    const hits = ownCounter(page);
+    await page.goto("/", { referer: "https://github.com/" });
+    await expect
+        .poll(() => hits)
+        .toContainEqual(expect.objectContaining({ kind: "view", path: "/", ref: "github", referrer: "https://github.com" }));
+});
+
 test("counts the sample report's visit with its tag, and the move to the audit page with the same tag", async ({ page }) => {
     await asPerson(page);
     await stubGoatCounter(page);

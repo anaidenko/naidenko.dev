@@ -1,5 +1,9 @@
+import { TOPTAL_SITE } from "@/lib/variant";
+
 const verified = { lead: "Verified Expert", rest: "in Engineering at Toptal" } as const;
 const location = "Athens, Greece";
+// The Toptal build names only its own host, so nothing on it links to naidenko.dev.
+const domain = TOPTAL_SITE ? "toptal.naidenko.dev" : "naidenko.dev";
 
 export const site = {
     name: "Andrii Naidenko",
@@ -10,9 +14,8 @@ export const site = {
     meta: `${verified.lead} ${verified.rest} · ${location}`,
     description:
         "Full-stack and mobile developer since 2007: iOS and Android apps with Ionic and Capacitor, Node.js back ends, Angular and React front ends.",
-    domain: "naidenko.dev",
-    url: "https://naidenko.dev",
-    email: "hello@naidenko.dev",
+    domain,
+    url: `https://${domain}`,
     photo: { src: "/andrii-naidenko.jpg", alt: "Andrii Naidenko" },
     links: {
         github: "https://github.com/anaidenko",

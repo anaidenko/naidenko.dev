@@ -2,6 +2,8 @@ export const contact = {
     intro: "Have a role or a contract in mind? Send me a message, and I’ll reply by email.",
     emailPrompt: "Prefer email? Write to",
     toptalHeading: "Prefer to hire through Toptal?",
+    /** The Toptal build's heading, with nothing above it to prefer Toptal to. */
+    hireHeading: "Hire me through Toptal",
     toptalText: "I’m a Toptal Verified Expert in Engineering. The badge takes you to my Toptal profile to start there.",
     fields: {
         name: "Name",

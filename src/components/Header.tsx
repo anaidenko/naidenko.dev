@@ -2,6 +2,7 @@ import Image from "next/image";
 
 import { site } from "@/content/site";
 import { ui } from "@/content/ui";
+import { TOPTAL_SITE } from "@/lib/variant";
 
 import { CheckBadgeIcon } from "./Icons";
 import { Nav } from "./Nav";
@@ -38,16 +39,18 @@ export function Header() {
             </p>
             <p className="mt-4 max-w-xs leading-normal">{site.tagline}</p>
             <Nav />
-            <div className="mt-8 flex flex-wrap items-center gap-x-6 gap-y-4 lg:mt-10 lg:short:mt-8">
-                <a
-                    href="#contact"
-                    data-track="contact_click"
-                    className="inline-flex items-center rounded-full border border-accent/60 px-5 py-2 text-sm font-semibold text-accent transition hover:bg-accent hover:text-canvas focus-visible:bg-accent focus-visible:text-canvas toptal:hidden"
-                >
-                    {ui.contactMe}
-                </a>
-                <Socials />
-            </div>
+            {TOPTAL_SITE ? null : (
+                <div className="mt-8 flex flex-wrap items-center gap-x-6 gap-y-4 lg:mt-10 lg:short:mt-8">
+                    <a
+                        href="#contact"
+                        data-track="contact_click"
+                        className="inline-flex items-center rounded-full border border-accent/60 px-5 py-2 text-sm font-semibold text-accent transition hover:bg-accent hover:text-canvas focus-visible:bg-accent focus-visible:text-canvas toptal:hidden"
+                    >
+                        {ui.contactMe}
+                    </a>
+                    <Socials />
+                </div>
+            )}
         </header>
     );
 }
