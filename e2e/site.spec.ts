@@ -1,6 +1,8 @@
 import { expect, test } from "@playwright/test";
 import { readFileSync } from "node:fs";
 
+import { hydrated } from "./helpers";
+
 const SECTIONS = ["about", "experience", "projects", "services", "contact"];
 
 test("renders the name, every section and no console errors", async ({ page }) => {
@@ -256,6 +258,70 @@ test("the audit page shows the three screenshots with visible captions: the repo
         expect(((await figure.locator("figcaption").textContent()) ?? "").length).toBeGreaterThan(20);
         if (index > 0) await expect(figure.getByRole("link")).toHaveAttribute("href", /^\/audit\/[a-z-]+\.png$/);
     }
+});
+
+test("the audit page enlarges a step's screenshot in a dialog, leafs through them, and stays put", async ({ page }) => {
+    await page.goto("/audit");
+    await hydrated(page, "your-code");
+    const links = page.locator("section#how figure a");
+    const dialog = page.getByRole("dialog");
+    const image = dialog.locator("img");
+
+    await links.first().click();
+    await expect(dialog).toBeVisible();
+    await expect(page).toHaveURL(/\/audit$/);
+    await expect(image).toHaveAttribute("src", "/audit/run-form.png");
+    await expect(dialog).toContainText("Starting an audit: the repository");
+    await expect(dialog).toContainText("1 / 2");
+    expect((await image.boundingBox())!.width).toBeGreaterThan((await links.first().locator("img").boundingBox())!.width);
+
+    await page.keyboard.press("ArrowRight");
+    await expect(image).toHaveAttribute("src", "/audit/review.png");
+    await expect(dialog).toContainText("2 / 2");
+    await dialog.getByRole("button", { name: "Next screenshot" }).click();
+    await expect(image).toHaveAttribute("src", "/audit/run-form.png");
+    await page.keyboard.press("ArrowLeft");
+    await expect(image).toHaveAttribute("src", "/audit/review.png");
+    await dialog.getByRole("button", { name: "Previous screenshot" }).click();
+    await expect(image).toHaveAttribute("src", "/audit/run-form.png");
+
+    await page.keyboard.press("Escape");
+    await expect(dialog).toBeHidden();
+    await expect(links.first()).toBeFocused();
+
+    await links.last().click();
+    await expect(image).toHaveAttribute("src", "/audit/review.png");
+    await dialog.getByRole("button", { name: "Close" }).click();
+    await expect(dialog).toBeHidden();
+
+    await links.first().click();
+    await expect(dialog).toBeVisible();
+    await page.mouse.click(4, 4);
+    await expect(dialog).toBeHidden();
+    await expect(page).toHaveURL(/\/audit$/);
+});
+
+test("a swipe leafs through the enlarged screenshots on a phone", async ({ page, isMobile }) => {
+    test.skip(!isMobile, "A swipe is a touch gesture");
+    await page.goto("/audit");
+    await hydrated(page, "your-code");
+    await page.locator("section#how figure a").first().click();
+    const image = page.getByRole("dialog").locator("img");
+    await expect(image).toHaveAttribute("src", "/audit/run-form.png");
+    const cdp = await page.context().newCDPSession(page);
+    const swipe = async (from: number, to: number) => {
+        for (const [type, x] of [
+            ["touchStart", from],
+            ["touchMove", (from + to) / 2],
+            ["touchMove", to]
+        ] as const)
+            await cdp.send("Input.dispatchTouchEvent", { type, touchPoints: [{ x, y: 400 }] });
+        await cdp.send("Input.dispatchTouchEvent", { type: "touchEnd", touchPoints: [] });
+    };
+    await swipe(320, 80);
+    await expect(image).toHaveAttribute("src", "/audit/review.png");
+    await swipe(80, 320);
+    await expect(image).toHaveAttribute("src", "/audit/run-form.png");
 });
 
 test("the audit page opens with the sample report's button on the first screen", async ({ page }) => {
