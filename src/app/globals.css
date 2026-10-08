@@ -20,6 +20,8 @@
 /* Laptop viewports: the sticky header tightens so the photo, navigation and links still fit. */
 @custom-variant short (@media (max-height: 860px));
 @custom-variant shorter (@media (max-height: 720px));
+/* A visit through Toptal, marked on <html> before the first paint (src/lib/toptal.ts). */
+@custom-variant toptal (&:where([data-toptal] *));
 
 @utility display-name {
     font-weight: 700;

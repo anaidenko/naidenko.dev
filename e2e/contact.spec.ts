@@ -84,16 +84,12 @@ test("answers unknown paths with the 404 page", async ({ page }) => {
     await expect(page.getByRole("heading", { level: 1 })).toContainText("doesn’t exist");
 });
 
-test("hides the form without JavaScript, so a message can never leak into a URL", async ({ browser }) => {
+test("ships no form without JavaScript, so a message can never leak into a URL", async ({ browser }) => {
     const context = await browser.newContext({ javaScriptEnabled: false });
     const page = await context.newPage();
     await page.goto("/#contact");
-    await expect(page.locator("section#contact form")).toBeHidden();
-    await expect(page.locator("section#contact").getByRole("link", { name: "hello@naidenko.dev" })).toBeVisible();
-    // Chrome's script-disabled emulation keeps the parser's scripting flag on, so <noscript> content
-    // is not rendered here; check that the page ships the note instead.
-    const html = await (await page.request.get("/")).text();
-    expect(html).toMatch(/<noscript>[^<]*<p[^>]*>The form needs JavaScript/);
+    await expect(page.locator("section#contact form")).toHaveCount(0);
+    await expect(page.locator("section#contact")).toContainText("Prefer to hire through Toptal?");
     await context.close();
 });
 

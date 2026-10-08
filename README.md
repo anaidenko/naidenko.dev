@@ -134,6 +134,14 @@ address. A daily cron erases the hashes older than 13 months, and the rest is ke
   everyone else sees the bare address, such as `https://naidenko.dev/audit`. Check a new link in
   [Post Inspector](https://www.linkedin.com/post-inspector/): its Canonical URL must keep `?ref=`.
   LinkedIn caches the card, so a link added before a fix has to be removed and added again.
+- **Visits through Toptal:** Toptal's profile guidance allows no link to a page "emphasizing your
+  contact information", so a visit tagged `?ref=toptal…` (the profile's `toptal`, an application's
+  `toptal-<job id>`) or made on a `toptal.` host sees no form and no email. An inline script in
+  `<head>` marks `<html data-toptal>` before the first paint, and the `toptal:` variant hides the
+  header's "Contact me"; the form, the email and the header's email icon render only in the
+  browser, for other visits. So the static HTML and the Markdown never carry them (only `/privacy`
+  names the address, as the GDPR asks), and `RefLink` keeps the tag through a move within the
+  site (`src/lib/toptal.ts`). `/audit` offers no order, and its link home is `nofollow`.
 - **Not counted:** a load with `?preview=1`; a browser that has opened `/stats` (it sets
   GoatCounter's `skipgc` flag, which both counters honour); addresses in `IGNORE_NETWORKS`; bots,
   automated browsers, frames and prerendering, as GoatCounter's count.js skips them.
@@ -148,15 +156,14 @@ such as `hire_me_toptal-badge`; `/stats` lists it as `hire_me_toptal · badge`.
 
 | Event | When | Parameters |
 |---|---|---|
-| `contact_click` | "Contact me" in the header, or the contact form link in `/audit`'s order note | `placement` (`audit`) |
+| `contact_click` | "Contact me" in the header | — |
 | `hire_me_toptal` | "Hire me" on the Toptal badge | `placement` |
 | `toptal_profile_click` | "View full résumé on Toptal" | `placement` |
 | `profile_click` | GitHub, LinkedIn or Toptal icon | `network` |
-| `email_click` | Any email link | `placement` |
+| `email_click` | Any email link | `placement` (`header`, `contact`, `form_error`) |
 | `client_site_click` | A client's name in Experience | `company` |
 | `store_click` | App Store or Google Play | `store` |
 | `project_click` | A project's title in Projects | `project` |
-| `audit_order` | "Order an audit" on `/audit`: the order note's summary, or the hero's button | `placement` (`hero`) |
 | `sample_report_click` | A link from `/audit` to the sample report | `placement` (`hero`, `screenshot`, `section`) |
 | `sample_pdf` | The sample report's PDF | `placement` (`audit`, `sample`) |
 | `sample_to_audit` | "How the audit works" on `/audit/sample` | — |

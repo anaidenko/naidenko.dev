@@ -42,7 +42,7 @@ export function Header() {
                 <a
                     href="#contact"
                     data-track="contact_click"
-                    className="inline-flex items-center rounded-full border border-accent/60 px-5 py-2 text-sm font-semibold text-accent transition hover:bg-accent hover:text-canvas focus-visible:bg-accent focus-visible:text-canvas"
+                    className="inline-flex items-center rounded-full border border-accent/60 px-5 py-2 text-sm font-semibold text-accent transition hover:bg-accent hover:text-canvas focus-visible:bg-accent focus-visible:text-canvas toptal:hidden"
                 >
                     {ui.contactMe}
                 </a>

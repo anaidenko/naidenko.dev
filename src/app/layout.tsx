@@ -6,6 +6,7 @@ import { Analytics } from "@/components/Analytics";
 import { Spotlight } from "@/components/Spotlight";
 import { site } from "@/content/site";
 import { ogImageVersion } from "@/lib/og";
+import { TOPTAL_SCRIPT } from "@/lib/toptal";
 
 import "./globals.css";
 
@@ -49,7 +50,11 @@ export const viewport: Viewport = { themeColor: "#0b0c0e", colorScheme: "dark" }
 export default function RootLayout({ children }: Readonly<{ children: ReactNode }>) {
     const fonts = `${geist.variable} ${geistMono.variable}`;
     return (
-        <html lang="en" className={fonts}>
+        // The inline script marks <html> before React hydrates, so the attribute it adds is expected.
+        <html lang="en" className={fonts} suppressHydrationWarning>
+            <head>
+                <script dangerouslySetInnerHTML={{ __html: TOPTAL_SCRIPT }} />
+            </head>
             <body className="bg-canvas font-sans leading-relaxed text-ink antialiased selection:bg-accent selection:text-canvas">
                 <Spotlight />
                 {children}

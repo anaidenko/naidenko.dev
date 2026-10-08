@@ -1,7 +1,6 @@
 /**
  * The code-audit page and the sample report's page. Each sentence is checked against Auditdesk's
- * README, design note and code at main 11eedfe (sources per sentence: paste-sheet 13). "{email}"
- * is rendered as a link to the contact address.
+ * README, design note and code at main 11eedfe (sources per sentence: paste-sheet 13).
  */
 export const audit = {
     path: "/audit",
@@ -13,7 +12,6 @@ export const audit = {
         lead: "Know what to fix in your codebase, and what can wait.",
         text: "An independent audit before a launch, a fundraise or a handover. I run it on Auditdesk, a workbench I built for it: scanners first, then an AI agent per aspect, and my own review of every finding before you see it.",
         sample: "See a sample report",
-        order: "Order an audit",
         shot: {
             src: "/audit/report-finding.png",
             alt: "F-031 in the sample report, a critical finding: its recommendation in view, then its details and the evidence with line numbers",
@@ -86,12 +84,6 @@ export const audit = {
             "If your policy calls for it, the audit runs on your own Anthropic API key, under your own commercial terms with Anthropic and with every call on your account.",
             "I delete my copy of your code when the engagement ends."
         ]
-    },
-    order: {
-        label: "Order an audit",
-        toptal: "If we met through Toptal, the audit goes through Toptal.",
-        note: "Otherwise: online payment is coming soon. Until then, write to me at {email} with a link to your repository or a few lines about your product, and I will reply with a scope and a quote.",
-        form: "Or use the contact form"
     }
 };
 

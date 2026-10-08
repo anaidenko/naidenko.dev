@@ -97,6 +97,11 @@ describe("withRef", () => {
     it("leaves the link alone without a tag", () => {
         expect(withRef("/audit", "")).toBe("/audit");
     });
+    it("falls back to a Toptal visit's tag once the address has lost it", () => {
+        expect(withRef("/", "", "toptal-509168")).toBe("/?ref=toptal-509168");
+        expect(withRef("/", "?ref=toptal-1", "toptal-2")).toBe("/?ref=toptal-1");
+        expect(withRef("/", "", "")).toBe("/");
+    });
 });
 
 describe("refOf", () => {

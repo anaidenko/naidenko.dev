@@ -29,7 +29,6 @@ const structuredData = {
             "description": site.description,
             "url": site.url,
             "image": `${site.url}${site.photo.src}`,
-            "email": `mailto:${site.email}`,
             "address": { "@type": "PostalAddress", "addressLocality": "Athens", "addressCountry": "GR" },
             "knowsAbout": ["Angular", "Ionic", "Capacitor", "iOS", "Android", "Node.js", "TypeScript", "React", "Claude Code"],
             "sameAs": [site.links.github, site.links.linkedin, site.links.toptal]

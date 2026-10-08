@@ -64,7 +64,7 @@ test("is readable without JavaScript", async ({ browser }) => {
     await page.goto("/");
     await expect(page.getByRole("heading", { level: 1, name: "Andrii Naidenko" })).toBeVisible();
     await expect(page.locator("section#experience")).toContainText("Brokerloop");
-    await expect(page.locator('a[href="mailto:hello@naidenko.dev"]').first()).toBeAttached();
+    await expect(page.locator("section#contact")).toContainText("Prefer to hire through Toptal?");
     await context.close();
 });
 
@@ -199,20 +199,14 @@ test("quotes three repeat clients by name under the numbers, each with a rating"
     }
 });
 
-test("the audit page opens its order note without JavaScript, Toptal first", async ({ browser }) => {
+test("the audit page offers no order, form or email, and its home link is nofollow", async ({ browser }) => {
     const context = await browser.newContext({ javaScriptEnabled: false });
     const page = await context.newPage();
     await page.goto("/audit");
     await expect(page.getByRole("heading", { level: 1, name: "Code audits" })).toBeVisible();
-    const toptal = page.getByText("If we met through Toptal, the audit goes through Toptal.");
-    await expect(toptal).toBeHidden();
-    await page.locator("details#order summary").click();
-    await expect(toptal).toBeVisible();
-    await expect(page.getByText("Online payment is coming soon", { exact: false })).toBeVisible();
-    const lines = await page.locator("details p").allTextContents();
-    expect(lines[0]).toBe("If we met through Toptal, the audit goes through Toptal.");
-    expect(lines[1]).toContain("online payment is coming soon");
-    await expect(page.getByRole("link", { name: "hello@naidenko.dev" })).toHaveAttribute("href", "mailto:hello@naidenko.dev");
+    await expect(page.getByText("Order an audit")).toHaveCount(0);
+    await expect(page.locator('a[href^="mailto:"], a[href*="#contact"], form, details#order')).toHaveCount(0);
+    await expect(page.getByRole("link", { name: "← Andrii Naidenko" })).toHaveAttribute("rel", "nofollow");
     await context.close();
 });
 
@@ -264,23 +258,12 @@ test("the audit page shows the three screenshots with visible captions: the repo
     }
 });
 
-test("the audit page opens with the sample report and the order button on the first screen", async ({ page }) => {
+test("the audit page opens with the sample report's button on the first screen", async ({ page }) => {
     await page.goto("/audit");
-    const hero = page.locator("main header");
-    await expect(hero.getByRole("link", { name: "See a sample report" })).toHaveAttribute("href", "/audit/sample");
-    await expect(hero.getByRole("link", { name: "Order an audit" })).toHaveAttribute("href", "#order");
-    const height = page.viewportSize()!.height;
-    for (const name of ["See a sample report", "Order an audit"]) {
-        const box = await hero.getByRole("link", { name }).boundingBox();
-        expect(box!.y + box!.height, name).toBeLessThanOrEqual(height);
-    }
-});
-
-test("the hero's order button opens the order note", async ({ page }) => {
-    await page.goto("/audit");
-    await page.locator("main header").getByRole("link", { name: "Order an audit" }).click();
-    await expect(page.locator("details#order")).toHaveAttribute("open", "");
-    await expect(page.getByText("If we met through Toptal, the audit goes through Toptal.")).toBeInViewport();
+    const button = page.locator("main header").getByRole("link", { name: "See a sample report" });
+    await expect(button).toHaveAttribute("href", "/audit/sample");
+    const box = await button.boundingBox();
+    expect(box!.y + box!.height).toBeLessThanOrEqual(page.viewportSize()!.height);
 });
 
 test("the audit page links the sample report in HTML and PDF", async ({ page }) => {
@@ -352,16 +335,11 @@ test("the hero's picture is a finding of the sample report it opens", async ({ p
     await expect(page.locator(`article#${id}`)).toBeVisible();
 });
 
-test("opens the order note on a fresh load of /audit#order", async ({ page }) => {
-    await page.goto("/audit#order");
-    await expect(page.locator("details#order")).toHaveAttribute("open", "");
-});
-
-test("shows the hero's buttons in focus from the keyboard", async ({ page, isMobile }) => {
+test("shows the hero's button in focus from the keyboard", async ({ page, isMobile }) => {
     test.skip(isMobile, "Keyboard navigation is a desktop concern");
     await page.goto("/audit");
     await page.getByRole("link", { name: "← Andrii Naidenko" }).focus();
-    for (const name of ["See a sample report", "Order an audit"]) {
+    for (const name of ["See a sample report"]) {
         await page.keyboard.press("Tab");
         const button = page.locator("main header").getByRole("link", { name });
         await expect(button).toBeFocused();

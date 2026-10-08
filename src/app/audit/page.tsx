@@ -1,11 +1,8 @@
 import type { Metadata } from "next";
 import Image from "next/image";
-import Link from "next/link";
 import type { ReactNode } from "react";
 
-import { OrderLink } from "@/components/OrderLink";
 import { RefLink } from "@/components/RefLink";
-import { WithEmail } from "@/components/WithEmail";
 import { audit } from "@/content/audit";
 import { site } from "@/content/site";
 import { auditOgImage } from "@/lib/og";
@@ -61,14 +58,15 @@ function Section({ id, title, children }: { id: string; title: string; children:
 }
 
 export default function Audit() {
-    const { hero, sample, steps, coverage, deliverables, yourCode, order } = audit;
+    const { hero, sample, steps, coverage, deliverables, yourCode } = audit;
     return (
         <main id="content" className="mx-auto max-w-4xl px-6 py-16 md:py-24">
             <header>
                 <p>
-                    <Link href="/" className="text-sm font-semibold text-ink-strong hover:text-accent">
+                    {/* nofollow: crawlers that follow a Toptal link here stop short of the contact form. */}
+                    <RefLink href="/" rel="nofollow" className="text-sm font-semibold text-ink-strong hover:text-accent">
                         ← {site.name}
-                    </Link>
+                    </RefLink>
                 </p>
                 <h1 className="mt-8 text-4xl display-name text-ink-strong">{audit.title}</h1>
                 <p className="mt-6 max-w-2xl text-2xl leading-snug text-ink-strong">{hero.lead}</p>
@@ -82,14 +80,6 @@ export default function Audit() {
                     >
                         {hero.sample}
                     </RefLink>
-                    <OrderLink
-                        note="order"
-                        data-track="audit_order"
-                        data-track-placement="hero"
-                        className="rounded-md border border-ink-faint/40 px-5 py-2.5 font-semibold text-ink-strong transition hover:border-accent hover:text-accent focus-visible:border-accent focus-visible:text-accent focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent motion-reduce:transition-none"
-                    >
-                        {hero.order}
-                    </OrderLink>
                 </p>
                 <div className="mt-12">
                     <Screenshot
@@ -171,21 +161,6 @@ export default function Audit() {
                     ))}
                 </div>
             </Section>
-
-            <details id="order" className="mt-20 max-w-2xl scroll-mt-8 rounded-lg border border-ink-faint/30 p-5">
-                <summary data-track="audit_order" className="cursor-pointer text-lg font-semibold text-ink-strong hover:text-accent">
-                    {order.label}
-                </summary>
-                <p className="mt-3">{order.toptal}</p>
-                <p className="mt-2">
-                    <WithEmail text={order.note} placement="audit" />
-                </p>
-                <p className="mt-2">
-                    <Link href="/#contact" data-track="contact_click" data-track-placement="audit" className={LINK}>
-                        {order.form}
-                    </Link>
-                </p>
-            </details>
         </main>
     );
 }

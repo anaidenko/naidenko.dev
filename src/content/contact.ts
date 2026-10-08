@@ -1,6 +1,5 @@
 export const contact = {
     intro: "Have a role or a contract in mind? Send me a message, and I’ll reply by email.",
-    noScript: "The form needs JavaScript. Email works without it:",
     emailPrompt: "Prefer email? Write to",
     toptalHeading: "Prefer to hire through Toptal?",
     toptalText: "I’m a Toptal Verified Expert in Engineering. The badge takes you to my Toptal profile to start there.",

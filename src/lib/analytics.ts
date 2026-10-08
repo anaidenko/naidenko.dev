@@ -50,9 +50,12 @@ export function refOf(search: string): string {
         .slice(0, 40);
 }
 
-/** A link within the site carrying this page's tag, so a full page load keeps it. */
-export function withRef(href: string, search: string): string {
-    const tag = refOf(search);
+/**
+ * A link within the site carrying this page's tag, so a full page load keeps it. The fallback is
+ * the tag of a visit through Toptal after a move within the site dropped it from the address.
+ */
+export function withRef(href: string, search: string, fallback = ""): string {
+    const tag = refOf(search) || fallback;
     if (!tag) return href;
     const url = new URL(href, "https://site.invalid");
     url.searchParams.set("ref", tag);

@@ -12,18 +12,16 @@ describe("pageMarkdown", () => {
         }
     });
 
-    it("keeps the facts a reader checks: roles, reviews, links and the contact address", () => {
-        for (const part of [
-            "Buddy Punch",
-            "Brokerloop",
-            "Earlier experience",
-            "Bruce van Zyl",
-            "claude-video-digest",
-            "hello@naidenko.dev"
-        ]) {
+    it("keeps the facts a reader checks: roles, reviews and links", () => {
+        for (const part of ["Buddy Punch", "Brokerloop", "Earlier experience", "Bruce van Zyl", "claude-video-digest"]) {
             expect(md).toContain(part);
         }
         expect(md).toContain("(https://www.toptal.com/developers/resume/andrii-naidenko#qjl3b7)");
+    });
+
+    it("gives no email address and no form, which an agent sent from Toptal would read", () => {
+        expect(md).not.toContain("@naidenko.dev");
+        expect(md).not.toContain("#contact");
     });
 
     it("links a project on the site by its full address", () => {
@@ -42,6 +40,10 @@ describe("llmsTxt", () => {
         expect(txt.startsWith("# Andrii Naidenko\n\n> ")).toBe(true);
         expect(txt).toContain("(https://naidenko.dev/index.md)");
         expect(txt).toMatch(/\n## [^\n]+\n\n- \[/);
+    });
+
+    it("gives no email address", () => {
+        expect(llmsTxt()).not.toContain("@naidenko.dev");
     });
 
     it("lists the code-audit page and its sample report", () => {
