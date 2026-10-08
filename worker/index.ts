@@ -38,6 +38,7 @@ async function route(request: Request, env: Env): Promise<Response> {
     if (pathname === "/stats") {
         return handleStats(request, {
             password: env.STATS_PASSWORD ?? "",
+            rateLimit: async key => (await env.STATS_RATE_LIMIT.limit({ key })).success,
             load: filter => loadStats(env.STATS_DB, filter),
             now: () => new Date(),
             goatcounter: env.GOATCOUNTER_DASHBOARD ?? ""
