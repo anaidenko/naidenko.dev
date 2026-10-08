@@ -35,7 +35,9 @@ which also answers the contact form. Setup, commands, configuration and deploy: 
 ## Factual rigor
 
 - Before stating a checkable fact (a version, a limit, whether something exists or passes),
-  verify it in the same turn and show the evidence: the command, the path or the quote.
+  verify it in the same turn and show the evidence: the command, the path or the quote. A claim
+  that something is absent names where it still is: "no address in the static HTML" was true on
+  2026-10-08 while a JS chunk shipped it, and that went unsaid until Andrii asked.
 - If you cannot verify it, say "unverified" and name what would confirm it.
 
 ## Workflow
