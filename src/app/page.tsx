@@ -7,6 +7,7 @@ import { Projects } from "@/components/Projects";
 import { Services } from "@/components/Services";
 import { site } from "@/content/site";
 import { ui } from "@/content/ui";
+import { TOPTAL_SITE } from "@/lib/variant";
 
 const structuredData = {
     "@context": "https://schema.org",
@@ -31,7 +32,8 @@ const structuredData = {
             "image": `${site.url}${site.photo.src}`,
             "address": { "@type": "PostalAddress", "addressLocality": "Athens", "addressCountry": "GR" },
             "knowsAbout": ["Angular", "Ionic", "Capacitor", "iOS", "Android", "Node.js", "TypeScript", "React", "Claude Code"],
-            "sameAs": [site.links.github, site.links.linkedin, site.links.toptal]
+            // The Toptal build names no profile a visitor could reach Andrii through but Toptal's.
+            "sameAs": TOPTAL_SITE ? [site.links.toptal] : [site.links.github, site.links.linkedin, site.links.toptal]
         },
         {
             "@type": "WebSite",

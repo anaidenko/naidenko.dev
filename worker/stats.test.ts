@@ -302,6 +302,25 @@ describe("the redesigned page", () => {
         expect(html).toContain("Chrome · macOS");
     });
 
+    it("lights the last dot for the Toptal build's Hire, as for Contact", () => {
+        const visit = { ...DATA.recent[0], path: "/", sections: "about, hire", clicks: "" };
+        expect(renderStats({ ...DATA, recent: [visit] }, DEFAULT, NOW)).toContain(
+            '<span class="dots" title="About, Hire"><i class="on"></i><i></i><i></i><i></i><i class="on"></i></span>'
+        );
+    });
+
+    it("names the menu's entries of both builds in the menu's order", () => {
+        const nav = [
+            { label: "hire", n: 1 },
+            { label: "auditdesk", n: 2 },
+            { label: "about", n: 3 }
+        ];
+        const html = renderStats({ ...DATA, nav }, DEFAULT, NOW);
+        const clicks = html.slice(html.indexOf("Menu clicks"), html.indexOf("Time on page"));
+        expect(clicks.indexOf("About")).toBeLessThan(clicks.indexOf("Code audit"));
+        expect(clicks.indexOf("Code audit")).toBeLessThan(clicks.indexOf("Hire"));
+    });
+
     it("shows the latest 20 visits, and the rest on request", () => {
         const recent = Array.from({ length: 26 }, (_, index) => ({
             ...DATA.recent[0],

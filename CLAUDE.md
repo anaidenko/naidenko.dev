@@ -2,8 +2,10 @@
 
 # naidenko.dev
 
-Andrii Naidenko's personal site: a Next.js 16 static export served by one Cloudflare Worker,
-which also answers the contact form. Setup, commands, configuration and deploy: README.md.
+Andrii Naidenko's personal site: a Next.js 16 static export served by a Cloudflare Worker, which
+also answers the contact form, and a second build of it for Toptal's links on
+`toptal.naidenko.dev`, served by a Worker of its own. Setup, commands, configuration and deploy:
+README.md.
 
 ## Response style
 
@@ -21,6 +23,11 @@ which also answers the contact form. Setup, commands, configuration and deploy: 
   platform constraint, a rejected alternative and why, or a magic value's source. Never narrate
   the change (`// was X`, `// fixed Y`).
 - **Copy lives in `src/content/`**, never inline in components.
+- **Two builds:** `TOPTAL_SITE` (`src/lib/variant.ts`) switches content and components, and
+  `next.config.ts` swaps whatever carries the address (`ContactDirect`) for a stub at import time,
+  since a page ships the JavaScript of every client component it imports. A module the Worker
+  imports (`src/content/sections.ts`) takes the build as a parameter: the Worker has no
+  `process.env`.
 - **Next.js 16 differs from older versions.** Read `.claude/rules/nextjs.md` before touching
   `src/app/`.
 

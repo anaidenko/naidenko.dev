@@ -4,6 +4,7 @@ import { usePathname } from "next/navigation";
 import { useEffect, useRef } from "react";
 
 import { GOATCOUNTER_URL, eventFor, isExcluded, loadGoatCounter, startVisit, track } from "@/lib/analytics";
+import { TOPTAL_SITE } from "@/lib/variant";
 
 export function Analytics() {
     const pathname = usePathname();
@@ -13,7 +14,7 @@ export function Analytics() {
     // ended) here rather than on load. GoatCounter's script counts only the page it loads on.
     useEffect(() => {
         if (isExcluded(window)) return;
-        const end = startVisit(window);
+        const end = startVisit(window, TOPTAL_SITE);
         if (!GOATCOUNTER_URL) return end;
         if (goatcounterLoaded.current) window.goatcounter?.count?.({ path: pathname });
         else {

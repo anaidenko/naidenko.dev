@@ -20,8 +20,8 @@ function fixture(files: Record<string, string>) {
     return root;
 }
 
-function run(root: string) {
-    return spawnSync(process.execPath, [script, join(root, "out"), join(root, "test.env")], { encoding: "utf8" });
+function run(root: string, ...flags: string[]) {
+    return spawnSync(process.execPath, [script, join(root, "out"), join(root, "test.env"), ...flags], { encoding: "utf8" });
 }
 
 describe("check-build", () => {
@@ -43,5 +43,43 @@ describe("check-build", () => {
         const root = mkdtempSync(join(tmpdir(), "check-build-"));
         writeFileSync(join(root, "test.env"), "X=1\n");
         expect(run(root).status).toBe(1);
+    });
+});
+
+describe("check-build --toptal", () => {
+    const clean = {
+        "index.html":
+            '<link rel="canonical" href="https://toptal.naidenko.dev"/><a href="https://github.com/anaidenko/auditdesk">Auditdesk</a>',
+        "privacy.html": "<p>Write to privacy@naidenko.dev.</p>",
+        "privacy/__next.privacy.__PAGE__.txt": "privacy@naidenko.dev",
+        "audit/sample.txt": "\\u003etoptal.naidenko.dev/audit\\u003c",
+        "audit/sample-report.pdf": "/URI (https://toptal.naidenko.dev/audit)"
+    };
+
+    it("passes a Toptal build that leads only to Toptal, the privacy note's address aside", () => {
+        const result = run(fixture(clean), "--toptal");
+        expect(result.stderr).toBe("");
+        expect(result.status).toBe(0);
+    });
+
+    it("fails on every way to reach Andrii outside Toptal, naming the file", () => {
+        for (const [path, contents, what] of [
+            ["_next/static/chunks/a.js", '"hello@naidenko.dev"', "an address"],
+            ["index.html", '<a href="https://naidenko.dev/">', "naidenko.dev"],
+            ["audit/sample.txt", "\\u003enaidenko.dev/audit\\u003c", "naidenko.dev"],
+            ["audit/sample-report.pdf", "/URI (https://naidenko.dev/audit)", "naidenko.dev"],
+            ["index.md", "privacy@naidenko.dev", "an address"],
+            ["index.html", '<a href="mailto:x@example.com">', "mailto:"],
+            ["llms.txt", "(https://www.linkedin.com/in/anaidenko/)", "linkedin.com"],
+            ["index.html", '"sameAs":["https://github.com/anaidenko"]', "the GitHub profile"]
+        ]) {
+            const result = run(fixture({ ...clean, [path]: contents }), "--toptal");
+            expect(result.status, contents).toBe(1);
+            expect(result.stderr, contents).toContain(`${path} leads outside Toptal: ${what}`);
+        }
+    });
+
+    it("leaves naidenko.dev's own build to the test values", () => {
+        expect(run(fixture({ "index.html": '<a href="mailto:hello@naidenko.dev">' })).status).toBe(0);
     });
 });

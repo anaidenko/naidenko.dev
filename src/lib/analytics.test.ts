@@ -9,6 +9,8 @@ import {
     landingRef,
     originOf,
     refOf,
+    referrerTag,
+    toptalRef,
     withRef
 } from "./analytics";
 
@@ -130,11 +132,47 @@ describe("refOf", () => {
 });
 
 describe("landingRef", () => {
-    it("counts a visit to the Toptal host as tagged toptal, unless its link has a tag of its own", () => {
-        expect(landingRef("", "toptal.naidenko.dev")).toBe("toptal");
-        expect(landingRef("?ref=toptal-509168", "toptal.naidenko.dev")).toBe("toptal-509168");
-        expect(landingRef("", "naidenko.dev")).toBe("");
-        expect(landingRef("?ref=linkedin", "naidenko.dev")).toBe("linkedin");
+    it("takes the link's tag, else the tag of the site that referred the visit", () => {
+        expect(landingRef("?ref=linkedin", "", false)).toBe("linkedin");
+        expect(landingRef("", "https://github.com/", false)).toBe("github");
+        expect(landingRef("?ref=x", "https://github.com/", false)).toBe("x");
+        expect(landingRef("", "https://www.linkedin.com/", false)).toBe("");
+        expect(landingRef("", "", false)).toBe("");
+    });
+
+    it("counts every visit to the Toptal build as toptal, and a bare tag such as a job's ID as toptal-<tag>", () => {
+        expect(landingRef("", "", true)).toBe("toptal");
+        expect(landingRef("?ref=509168", "", true)).toBe("toptal-509168");
+        expect(landingRef("?ref=toptal-509168", "", true)).toBe("toptal-509168");
+        expect(landingRef("", "https://github.com/", true)).toBe("toptal");
+    });
+});
+
+describe("toptalRef", () => {
+    it("prefixes a bare tag, keeps a toptal one and names an untagged visit", () => {
+        expect(toptalRef("")).toBe("toptal");
+        expect(toptalRef("509168")).toBe("toptal-509168");
+        expect(toptalRef("toptal-509168")).toBe("toptal-509168");
+        expect(toptalRef("toptal")).toBe("toptal");
+    });
+
+    it("stays within the counter's 40 characters", () => {
+        expect(toptalRef("9".repeat(40))).toBe(`toptal-${"9".repeat(33)}`);
+    });
+});
+
+describe("referrerTag", () => {
+    it("tags a visit GitHub sent, whose profile links the bare address", () => {
+        expect(referrerTag("https://github.com/")).toBe("github");
+        expect(referrerTag("https://github.com/anaidenko")).toBe("github");
+    });
+
+    it("leaves every other referrer, and anything that is not an address, untagged", () => {
+        expect(referrerTag("https://gist.github.com/")).toBe("");
+        expect(referrerTag("https://notgithub.com/")).toBe("");
+        expect(referrerTag("https://www.linkedin.com/")).toBe("");
+        expect(referrerTag("")).toBe("");
+        expect(referrerTag("github.com")).toBe("");
     });
 });
 

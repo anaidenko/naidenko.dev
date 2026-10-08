@@ -54,7 +54,7 @@ export function Projects() {
             <p className="mb-10">{projectsIntro}</p>
             <ul className="group/list space-y-12">
                 {projects.map(project => (
-                    <li key={project.name}>
+                    <li key={project.name} id={project.id} className="scroll-mt-16 lg:scroll-mt-24">
                         <article className="group relative grid gap-4 transition motion-reduce:transition-none sm:grid-cols-8 sm:gap-6 lg:group-hover/list:opacity-50 lg:hover:opacity-100!">
                             {project.url ? (
                                 <div

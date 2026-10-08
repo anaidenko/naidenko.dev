@@ -1,6 +1,8 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 
+import { site } from "@/content/site";
+
 export const SAMPLE_REPORT = "src/content/audit/sample-report.html";
 
 /** The parts of an exported report the sample's page renders: its style, its main markup and its script. */
@@ -43,7 +45,16 @@ export function splitReport(html: string): ReportParts {
     };
 }
 
-/** The exported sample, read at build time. */
+/** Where the sample was exported to link its auditor and method (Auditdesk's AUDITOR_URL, AUDIT_METHOD_URL). */
+export const EXPORTED_ORIGIN = "https://naidenko.dev";
+
+/** The report's links to the site moved to the build's own origin: the Toptal build links nothing on naidenko.dev. */
+export function onOrigin(html: string, origin: string): string {
+    const host = (url: string) => new URL(url).host;
+    return html.replaceAll(`"${EXPORTED_ORIGIN}/`, `"${origin}/`).replaceAll(`>${host(EXPORTED_ORIGIN)}/`, `>${host(origin)}/`);
+}
+
+/** The exported sample, read at build time and linking the build's own host. */
 export function sampleReport(): ReportParts {
-    return splitReport(readFileSync(join(process.cwd(), SAMPLE_REPORT), "utf8"));
+    return splitReport(onOrigin(readFileSync(join(process.cwd(), SAMPLE_REPORT), "utf8"), site.url));
 }

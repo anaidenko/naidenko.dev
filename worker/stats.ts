@@ -1,5 +1,5 @@
 import { samplePage } from "../src/content/audit";
-import { sections as pageSections } from "../src/content/sections";
+import { menu, sections as pageSections } from "../src/content/sections";
 
 import { REF } from "./hits";
 import { countryName, languageName } from "./names";
@@ -222,6 +222,16 @@ type Sections = readonly { id: string; label: string }[];
 /** Each page with sections that /stats follows, by path. */
 const SECTIONS_OF: Record<string, Sections> = { "/": pageSections, [samplePage.path]: samplePage.sections };
 
+/** Both builds' menu entries in the menu's order: naidenko.dev's, then the Toptal build's "Hire". */
+const MENU: Sections = [...menu(false), ...menu(true).filter(entry => !menu(false).some(own => own.id === entry.id))];
+
+/**
+ * The home page's dots: a visit saw one build, whose last section is "contact" on naidenko.dev and
+ * "hire" on the Toptal build, so both light the last dot.
+ */
+const HOME_DOTS: Sections = pageSections.filter(section => section.id !== "hire");
+const DOT_OF: Record<string, string> = { hire: "contact" };
+
 /** The sections in the page's order, under the page's own labels; an unknown id goes last. */
 function inPageOrder(rows: Row[], order: Sections = pageSections): Row[] {
     const index = (id: string) => {
@@ -377,7 +387,8 @@ function sectionDots(visit: RecentVisit): string {
     if (!order) return `<span class="muted">${escapeHtml(visit.sections || "—")}</span>`;
     const reached = new Set((visit.sections ?? "").split(", ").filter(Boolean));
     const names = order.filter(section => reached.has(section.id)).map(section => section.label);
-    const dots = order.map(section => (reached.has(section.id) ? `<i class="on"></i>` : "<i></i>")).join("");
+    const lit = new Set([...reached].map(id => DOT_OF[id] ?? id));
+    const dots = (visit.path === "/" ? HOME_DOTS : order).map(section => (lit.has(section.id) ? `<i class="on"></i>` : "<i></i>")).join("");
     return `<span class="dots" title="${escapeHtml(names.join(", ") || "No section reached")}">${dots}</span>`;
 }
 
@@ -594,7 +605,7 @@ export function renderStats(data: StatsData, filter: Filter, now: Date, goatcoun
     const engagement = [
         card("Sections reached", barTable(reach, totals.homeViews)),
         card("Sample report read", barTable(read, totals.sampleViews)),
-        card("Menu clicks", counted(inPageOrder(data.nav))),
+        card("Menu clicks", counted(inPageOrder(data.nav, MENU))),
         card("Time on page", counted(data.durations)),
         card("Clicks and messages", counted(data.events))
     ];

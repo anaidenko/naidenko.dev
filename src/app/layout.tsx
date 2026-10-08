@@ -6,7 +6,8 @@ import { Analytics } from "@/components/Analytics";
 import { Spotlight } from "@/components/Spotlight";
 import { site } from "@/content/site";
 import { ogImageVersion } from "@/lib/og";
-import { TOPTAL_SCRIPT } from "@/lib/toptal";
+import { toptalScript } from "@/lib/toptal";
+import { TOPTAL_SITE } from "@/lib/variant";
 
 import "./globals.css";
 
@@ -35,6 +36,8 @@ export const metadata: Metadata = {
         images: [ogImage]
     },
     twitter: { card: "summary_large_image", title, description: site.description, images: [ogImage] },
+    // The Toptal build is for Toptal's links, not for search (its Worker also sends X-Robots-Tag).
+    ...(TOPTAL_SITE ? { robots: { index: false } } : {}),
     // The .ico comes first and is sized 32x32, not "any", so browsers that read SVG still pick the SVG.
     icons: {
         icon: [
@@ -53,7 +56,7 @@ export default function RootLayout({ children }: Readonly<{ children: ReactNode 
         // The inline script marks <html> before React hydrates, so the attribute it adds is expected.
         <html lang="en" className={fonts} suppressHydrationWarning>
             <head>
-                <script dangerouslySetInnerHTML={{ __html: TOPTAL_SCRIPT }} />
+                <script dangerouslySetInnerHTML={{ __html: toptalScript(TOPTAL_SITE) }} />
             </head>
             <body className="bg-canvas font-sans leading-relaxed text-ink antialiased selection:bg-accent selection:text-canvas">
                 <Spotlight />

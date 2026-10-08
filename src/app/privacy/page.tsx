@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 
-import { WithEmail } from "@/components/WithEmail";
 import { privacy } from "@/content/privacy";
 import { site } from "@/content/site";
 
@@ -33,9 +32,7 @@ export default function Privacy() {
                         <h2 className="font-medium text-ink-strong">{section.title}</h2>
                         <div className="mt-2 space-y-3">
                             {section.paragraphs.map(paragraph => (
-                                <p key={paragraph.slice(0, 40)}>
-                                    <WithEmail text={paragraph} />
-                                </p>
+                                <p key={paragraph.slice(0, 40)}>{paragraph}</p>
                             ))}
                         </div>
                     </section>

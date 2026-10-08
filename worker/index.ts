@@ -4,7 +4,7 @@ import { handleHit, placeOf, recordEvent, recordTime, recordVisit } from "./hits
 import { handleHome, handlePage, tagPage } from "./home";
 import { forgetVisitors, retentionCutoff } from "./retention";
 import { handleStats, loadStats } from "./stats";
-import { handleToptalHost, isToptalHost } from "./toptal";
+import { toptalRedirect } from "./toptal";
 import { verifyTurnstile } from "./turnstile";
 
 async function route(request: Request, env: Env): Promise<Response> {
@@ -55,11 +55,7 @@ async function route(request: Request, env: Env): Promise<Response> {
 
 export default {
     async fetch(request, env): Promise<Response> {
-        if (!isToptalHost(new URL(request.url).hostname)) return route(request, env);
-        return handleToptalHost(request, {
-            route: () => route(request, env),
-            notFound: () => env.ASSETS.fetch(new URL("/404", request.url))
-        });
+        return toptalRedirect(request, env.TOPTAL_ORIGIN) ?? route(request, env);
     },
 
     async scheduled(controller, env, ctx) {

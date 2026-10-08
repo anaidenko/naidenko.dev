@@ -50,9 +50,28 @@ export function refOf(search: string): string {
         .slice(0, 40);
 }
 
-/** A visit's tag: its link's, or "toptal" on the host made for Toptal's links, which needs none. */
-export function landingRef(search: string, hostname: string): string {
-    return refOf(search) || (hostname.startsWith("toptal.") ? "toptal" : "");
+/**
+ * A tag on the Toptal build as the counter keeps it: "toptal" for a link without one, and a bare
+ * tag, such as a job's ID in an application's link, as "toptal-<tag>".
+ */
+export function toptalRef(tag: string): string {
+    if (!tag) return "toptal";
+    return tag.startsWith("toptal") ? tag : `toptal-${tag}`.slice(0, 40);
+}
+
+/** The tag of a visit a site sent without one: GitHub's profile links the bare address, and GitHub sends its origin. */
+export function referrerTag(referrer: string): string {
+    try {
+        return new URL(referrer).hostname === "github.com" ? "github" : "";
+    } catch {
+        return "";
+    }
+}
+
+/** A visit's tag: its link's, else the referring site's (referrerTag); on the Toptal build, toptalRef's. */
+export function landingRef(search: string, referrer: string, toptalSite: boolean): string {
+    if (toptalSite) return toptalRef(refOf(search));
+    return refOf(search) || referrerTag(referrer);
 }
 
 /**
@@ -141,7 +160,7 @@ function send(hit: Hit): void {
  * whenever the page is hidden or left. A move to another page within the site is a new visit, with
  * no referrer or tag of its own. Returns what ends the visit, reporting its time.
  */
-export function startVisit(win: Window): () => void {
+export function startVisit(win: Window, toptalSite: boolean): () => void {
     const id = win.crypto.randomUUID();
     visit = id;
     force = chosenToCount(win);
@@ -153,7 +172,7 @@ export function startVisit(win: Window): () => void {
         visit: id,
         path: win.location.pathname,
         referrer: internal ? "" : originOf(doc.referrer),
-        ref: internal ? "" : landingRef(win.location.search, win.location.hostname),
+        ref: internal ? "" : landingRef(win.location.search, doc.referrer, toptalSite),
         screen: win.screen.width || null
     });
 

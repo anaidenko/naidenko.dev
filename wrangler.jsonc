@@ -3,11 +3,9 @@
     "name": "naidenko-dev",
     "main": "worker/index.ts",
     "compatibility_date": "2026-09-24",
-    // `wrangler deploy` attaches the domain and Cloudflare issues its certificate.
-    "routes": [
-        { "pattern": "naidenko.dev", "custom_domain": true },
-        { "pattern": "toptal.naidenko.dev", "custom_domain": true }
-    ],
+    // `wrangler deploy` attaches the domain and Cloudflare issues its certificate. toptal.naidenko.dev
+    // belongs to the Toptal build's Worker (wrangler.toptal.jsonc).
+    "routes": [{ "pattern": "naidenko.dev", "custom_domain": true }],
     "assets": {
         "directory": "./out",
         "binding": "ASSETS",
@@ -33,8 +31,13 @@
             "migrations_dir": "worker/migrations"
         }
     ],
-    // GOATCOUNTER_DASHBOARD: linked from /stats to compare the two counters.
-    "vars": { "CONTACT_FROM": "form@naidenko.dev", "GOATCOUNTER_DASHBOARD": "https://naidenko.goatcounter.com/" },
+    // GOATCOUNTER_DASHBOARD: linked from /stats to compare the two counters. TOPTAL_ORIGIN: where a
+    // page tagged ?ref=toptal… moves (worker/toptal.ts); empty turns the move off.
+    "vars": {
+        "CONTACT_FROM": "form@naidenko.dev",
+        "GOATCOUNTER_DASHBOARD": "https://naidenko.goatcounter.com/",
+        "TOPTAL_ORIGIN": "https://toptal.naidenko.dev"
+    },
     // Daily, at a quiet hour: erases visitor hashes older than 13 months (worker/retention.ts).
     "triggers": { "crons": ["17 3 * * *"] },
     "observability": { "enabled": true }

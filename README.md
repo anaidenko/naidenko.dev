@@ -1,7 +1,9 @@
 # naidenko.dev
 
 The personal site of Andrii Naidenko, a full-stack and mobile developer: one page with his
-work, his open-source Claude Code plugins and a contact form.
+work, his open-source Claude Code plugins and a contact form. A second build of it,
+`toptal.naidenko.dev`, is the address for Toptal's links: the same pages with no way to reach him
+but Toptal.
 
 ![The home page on a desktop screen](docs/screenshot.jpg)
 
@@ -9,9 +11,9 @@ work, his open-source Claude Code plugins and a contact form.
 
 - **Next.js 16** (App Router) exported to static HTML, React 19, TypeScript
 - **Tailwind CSS 4**
-- **Cloudflare Workers**: the static export is served as assets; one Worker route,
-  `POST /api/contact`, checks Cloudflare Turnstile and mails the message with the Email
-  Service binding
+- **Cloudflare Workers**: each static export is served as assets by a Worker of its own; the
+  site's Worker answers `POST /api/contact`, which checks Cloudflare Turnstile and mails the
+  message with the Email Service binding
 - **Two cookieless counters, so no consent banner:** GoatCounter for its dashboard, and the
   site's own counter (`POST /api/hit` into Cloudflare D1: each visit, its clicks and its visible
   time) with a password-protected `/stats` page
@@ -25,16 +27,18 @@ work, his open-source Claude Code plugins and a contact form.
 pnpm install
 cp .dev.vars.example .dev.vars   # Cloudflare's public Turnstile test keys
 pnpm build && pnpm preview       # the site plus the Worker on http://127.0.0.1:8788
+pnpm build:toptal && pnpm preview:toptal   # the Toptal build on http://127.0.0.1:8789
 ```
 
 `pnpm dev` runs the Next.js dev server on port 3000 for layout work. The contact form needs
-the Worker, so test it with `pnpm preview`, where the email is only logged.
+the Worker, so test it with `pnpm preview`, where the email is only logged. The Toptal build's
+Worker counts its visits through the site's: run both previews.
 
 ## Test
 
 ```bash
 pnpm test          # unit tests: validation, the Worker, analytics, scripts
-pnpm test:e2e      # builds with e2e/e2e.env, starts wrangler dev, runs Playwright and axe
+pnpm test:e2e      # builds both with e2e/e2e.env, starts both Workers, runs Playwright and axe
 pnpm typecheck && pnpm lint && pnpm format:check
 ```
 
@@ -57,6 +61,8 @@ Turnstile's test keys, and GoatCounter is stubbed.
 | `STATS_DB` | `wrangler.jsonc` | The D1 database `naidenko-stats`, created with `wrangler d1 create`. Its schema is in `worker/migrations/`. |
 | `CONTACT_FROM` | `wrangler.jsonc` | The sender address, on the site's domain. |
 | `GOATCOUNTER_DASHBOARD` | `wrangler.jsonc` | GoatCounter's dashboard, linked from `/stats` for the same dates. Empty means no link. |
+| `TOPTAL_ORIGIN` | `wrangler.jsonc` | The Toptal build's origin, where a page tagged `?ref=toptal…` moves. Empty turns the move off. |
+| `NEXT_PUBLIC_SITE_VARIANT` | build: `pnpm build:toptal` | `toptal` builds the Toptal variant into `out-toptal/`. |
 
 `.env.example` lists the build settings. Locally, the Worker reads `.dev.vars`. Neither
 `.env*.local` nor `.dev.vars` is committed.
@@ -90,20 +96,23 @@ cost.
    GoatCounter endpoint.
 7. **Deploy:** run `pnpm run deploy`. A bare `pnpm deploy` is pnpm's own command. The script:
    - refuses to run without the site key and the GoatCounter endpoint;
-   - rebuilds;
-   - checks that `out/` carries none of the test values from `e2e/e2e.env`;
+   - rebuilds both builds;
+   - checks that neither carries a test value from `e2e/e2e.env`, and that the Toptal build leads
+     only to Toptal: no address but the privacy note's, no `naidenko.dev` outside its own host, no
+     LinkedIn or GitHub profile (`scripts/check-build.mjs --toptal`);
    - checks that the five required Worker secrets exist;
    - applies new D1 migrations;
-   - deploys.
+   - deploys the Toptal build's Worker, then the site's, whose move of tagged pages points at the
+     first.
 
    The daily cron needs the account's `workers.dev` subdomain: open Workers & Pages in the
    dashboard once. Without it the deploy exits with an error at "Cron schedules" (10063) after
    the new code is already live; `pnpm exec wrangler triggers deploy` attaches the cron later.
 
-   Never run `wrangler deploy` directly: it uploads whatever is in `out/`, which after
-   `pnpm test:e2e` is a test build. The routes in `wrangler.jsonc` attach both custom domains,
-   `naidenko.dev` and `toptal.naidenko.dev`, and Cloudflare creates their DNS records and
-   certificates.
+   Never run `wrangler deploy` directly: it uploads whatever is in `out/` or `out-toptal/`,
+   which after `pnpm test:e2e` is a test build. The routes attach the custom domains,
+   `naidenko.dev` (`wrangler.jsonc`) and `toptal.naidenko.dev` (`wrangler.toptal.jsonc`), and
+   Cloudflare creates their DNS records and certificates.
 8. **Search:** add the domain to Google Search Console (DNS verification) and submit
    `/sitemap.xml`.
 
@@ -135,20 +144,25 @@ address. A daily cron erases the hashes older than 13 months, and the rest is ke
   everyone else sees the bare address, such as `https://naidenko.dev/audit`. Check a new link in
   [Post Inspector](https://www.linkedin.com/post-inspector/): its Canonical URL must keep `?ref=`.
   LinkedIn caches the card, so a link added before a fix has to be removed and added again.
+- **Tagged by the referring site:** a visit GitHub sends without a tag counts as `github`, since
+  the profile links the bare address and GitHub sends its origin as the referrer.
 - **Visits through Toptal:** Toptal's profile guidance allows no link to a page "emphasizing your
-  contact information", so a visit tagged `?ref=toptal…` (the profile's `toptal`, an application's
-  `toptal-<job id>`) or made on a `toptal.` host sees no form and no email. An inline script in
-  `<head>` marks `<html data-toptal>` before the first paint, and the `toptal:` variant hides the
-  header's "Contact me"; the form, the email and the header's email icon render only in the
-  browser, for other visits. So the static HTML and the Markdown never carry them (only `/privacy`
-  names the address, as the GDPR asks), and `RefLink` keeps the tag through a move within the
-  site (`src/lib/toptal.ts`). `/audit` offers no order, and its link home is `nofollow`.
-- **The Toptal host:** `toptal.naidenko.dev`, a second custom domain on the same Worker, is the
-  address for Toptal's links. Every visit there is a Toptal visit, tagged `toptal` in the counter
-  when its link has no tag of its own. The Worker sends `X-Robots-Tag: noindex` with every page
-  it serves there and answers `/api/contact` and `/stats` with the 404 page (`worker/toptal.ts`);
-  canonical links still name `naidenko.dev`. Files with an extension come straight from the
-  assets, so they carry no `noindex`.
+  contact information". The form, the email and the header's email icon render only in the
+  browser, so the static HTML and the Markdown never carry them, and the privacy note names
+  `privacy@naidenko.dev` as text, with no link, as the GDPR asks. A page asked for with a tag
+  `?ref=toptal…` (an old application's `toptal-<job id>`, the profile's `toptal`) moves with a 302
+  to the same path and query on the Toptal host (`TOPTAL_ORIGIN`). `/audit` offers no order, and
+  its link home is `nofollow`.
+- **The Toptal host:** `toptal.naidenko.dev` serves the Toptal build (`pnpm build:toptal`,
+  `NEXT_PUBLIC_SITE_VARIANT=toptal`) from a Worker of its own (`worker/toptal-site.ts`,
+  `wrangler.toptal.jsonc`): no form, no email, no icon row under the name, no LinkedIn or GitHub
+  profile, and no link to `naidenko.dev`; the menu's last entry is "Hire", over the badge, and the
+  sample report and its PDF link the Toptal host. Its pages carry `noindex`, its Worker sends
+  `X-Robots-Tag: noindex` with every answer, files included, and its `robots.txt` keeps AI
+  crawlers out. A link there takes a bare tag, such as a job's ID (`/audit?ref=509168`), counted
+  as `toptal-509168`; a visit with no tag counts as `toptal`. Its Worker has no database or
+  secrets: it hands `/api/hit` to the site's Worker through a service binding, so one D1, one
+  visitor key and one list of ignored networks count both hosts.
 - **Not counted:** a load with `?preview=1`; a browser that has opened `/stats` (it sets
   GoatCounter's `skipgc` flag, which both counters honour); addresses in `IGNORE_NETWORKS`; bots,
   automated browsers, frames and prerendering, as GoatCounter's count.js skips them.
@@ -178,7 +192,7 @@ such as `hire_me_toptal-badge`; `/stats` lists it as `hire_me_toptal · badge`.
 | `copy_install` | The install-command copy button | — |
 | `generate_lead` | The form was sent | `form` |
 | `form_error` | The form could not be sent | `form`, `reason` (`rate_limit` when limited) |
-| `nav_click` | A link in the in-page menu (wide screens) | `section` |
+| `nav_click` | A link in the in-page menu (wide screens) | `section` (a section's id, or `auditdesk` for "Code audit") |
 | `section_view` | A section scrolled into view, once per visit (`/stats` only) | the section's id |
 
 To track a new link or button, give it `data-track="<event>"` and any
@@ -192,10 +206,10 @@ To track a new link or button, give it `data-track="<event>"` and any
 | `src/components/` | One component per block of the page |
 | `src/app/` | The pages, the link-preview image, `robots.txt` and `sitemap.xml` |
 | `src/lib/` | Form validation shared with the Worker; the Turnstile client; analytics |
-| `worker/` | The Worker: the contact endpoint, Turnstile verification, the visit counter and `/stats` |
+| `worker/` | The site's Worker: the contact endpoint, Turnstile verification, the visit counter and `/stats`; the Toptal build's (`toptal-site.ts`) |
 | `e2e/` | Playwright tests, accessibility checks, review screenshots |
 | `assets/` | Fonts and the photo for the generated images |
-| `scripts/` | The deploy guard and the env-file runner |
+| `scripts/` | The deploy guards, the env-file runner and the Toptal build's PDF |
 
 ## Credits
 

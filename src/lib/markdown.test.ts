@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import { llmsTxt, pageMarkdown } from "./markdown";
+import { asToptalBuild } from "./toptal-build.testing";
 
 describe("pageMarkdown", () => {
     const md = pageMarkdown();
@@ -49,5 +50,21 @@ describe("llmsTxt", () => {
     it("lists the code-audit page and its sample report", () => {
         expect(llmsTxt()).toContain("(https://naidenko.dev/audit)");
         expect(llmsTxt()).toContain("(https://naidenko.dev/audit/sample)");
+    });
+});
+
+describe("the Toptal build's Markdown and llms.txt", () => {
+    it("name only its own host and lead only to Toptal: no GitHub or LinkedIn profile", async () => {
+        const { llmsTxt, pageMarkdown } = await asToptalBuild(() => import("./markdown"));
+        for (const text of [pageMarkdown(), llmsTxt()]) {
+            expect(text.replaceAll("toptal.naidenko.dev", "")).not.toContain("naidenko.dev");
+            expect(text).not.toContain("linkedin.com");
+            expect(text).not.toContain("(https://github.com/anaidenko)");
+        }
+        expect(pageMarkdown()).toContain(
+            "\n## Hire\n\n[Hire me on Toptal](https://www.toptal.com/developers/resume/andrii-naidenko#qjl3b7).\n"
+        );
+        expect(pageMarkdown()).toContain("### [Auditdesk](https://toptal.naidenko.dev/audit)");
+        expect(llmsTxt()).toContain("(https://toptal.naidenko.dev/privacy): what the visit counters collect");
     });
 });
