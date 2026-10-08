@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import {
     applySkipToggle,
+    bareRef,
     chosenToCount,
     createVisibleClock,
     detailOf,
@@ -161,6 +162,31 @@ describe("withRef", () => {
         expect(withRef("/", "", "toptal-509168")).toBe("/?ref=toptal-509168");
         expect(withRef("/", "?ref=toptal-1", "toptal-2")).toBe("/?ref=toptal-1");
         expect(withRef("/", "", "")).toBe("/");
+    });
+    it("on the Toptal build carries a tag without the toptal the build counts on its own", () => {
+        expect(withRef("/audit/sample", "?ref=toptal", "toptal", true)).toBe("/audit/sample");
+        expect(withRef("/audit/sample", "?ref=toptal-509168", "toptal-509168", true)).toBe("/audit/sample?ref=509168");
+        expect(withRef("/", "?ref=509168", "toptal-509168", true)).toBe("/?ref=509168");
+        expect(withRef("/", "", "toptal-509168", true)).toBe("/?ref=509168");
+        expect(withRef("/", "", "", true)).toBe("/");
+    });
+});
+
+describe("bareRef", () => {
+    it("drops the toptal that the Toptal build adds back when it counts the visit", () => {
+        expect(bareRef("toptal")).toBe("");
+        expect(bareRef("toptal-509168")).toBe("509168");
+        expect(bareRef("509168")).toBe("509168");
+        expect(bareRef("")).toBe("");
+    });
+
+    it("keeps a tag whose shorter form would count differently", () => {
+        for (const tag of ["toptalx", "toptal-toptal", "toptal-", "toptal-toptal-1"]) expect(bareRef(tag), tag).toBe(tag);
+    });
+
+    it("never changes how the Toptal build counts the tag", () => {
+        for (const tag of ["", "toptal", "toptal-509168", "509168", "toptalx", "toptal-toptal", "toptal-", `toptal-${"9".repeat(33)}`])
+            expect(toptalRef(bareRef(tag)), tag).toBe(toptalRef(tag));
     });
 });
 

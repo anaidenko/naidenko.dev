@@ -9,5 +9,8 @@ export const ui = {
     copiedAnnouncement: "Copied to clipboard",
     privacy: "Privacy",
     notFoundTitle: "This page doesn’t exist.",
-    notFoundLink: "Back to the home page"
+    notFoundLink: "Back to the home page",
+    close: "Close",
+    previousShot: "Previous screenshot",
+    nextShot: "Next screenshot"
 } as const;

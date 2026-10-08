@@ -164,7 +164,8 @@ address. A daily cron erases the hashes older than 13 months, and the rest is ke
   sample report and its PDF link the Toptal host. Its pages carry `noindex`, its Worker sends
   `X-Robots-Tag: noindex` with every answer, files included, and its `robots.txt` keeps AI
   crawlers out. A link there takes a bare tag, such as a job's ID (`/audit?ref=509168`), counted
-  as `toptal-509168`; a visit with no tag counts as `toptal`. Its Worker has no database or
+  as `toptal-509168`; a visit with no tag counts as `toptal`. Its own links carry a visit's tag in
+  that bare form, so its addresses never show `toptal`. Its Worker has no database or
   secrets: it hands `/api/hit` to the site's Worker through a service binding, so one D1, one
   visitor key and one list of ignored networks count both hosts. On `/stats`, the link tag
   "Every Toptal link" (`?ref=toptal*`) shows the visits that came through Toptal; a move within a

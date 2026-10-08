@@ -1,6 +1,7 @@
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test } from "@playwright/test";
 
+import { hydrated } from "./helpers";
 import { TOPTAL_URL } from "./servers";
 
 const TAGS = ["wcag2a", "wcag2aa", "wcag21a", "wcag21aa"];
@@ -15,3 +16,12 @@ for (const path of ["/", "/privacy", "/audit", "/audit/sample", ...TOPTAL]) {
         expect(results.violations.map(violation => `${violation.id}: ${violation.nodes.length}`)).toEqual([]);
     });
 }
+
+test("/audit with a screenshot enlarged has no WCAG 2.1 AA violations", async ({ page }) => {
+    await page.goto("/audit");
+    await hydrated(page, "your-code");
+    await page.locator("section#how figure a").first().click();
+    await expect(page.getByRole("dialog")).toBeVisible();
+    const results = await new AxeBuilder({ page }).withTags(TAGS).analyze();
+    expect(results.violations.map(violation => `${violation.id}: ${violation.nodes.length}`)).toEqual([]);
+});

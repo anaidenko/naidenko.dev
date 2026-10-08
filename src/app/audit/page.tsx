@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Image from "next/image";
 import type { ReactNode } from "react";
 
+import { Lightbox, type Shot } from "@/components/Lightbox";
 import { RefLink } from "@/components/RefLink";
 import { audit } from "@/content/audit";
 import { site } from "@/content/site";
@@ -25,8 +26,6 @@ export const metadata: Metadata = {
     },
     twitter: { card: "summary_large_image", title: shared, description: audit.description, images: [image] }
 };
-
-type Shot = { src: string; alt: string; width: number; height: number };
 
 const LINK = "font-medium text-ink-strong underline underline-offset-4 hover:text-accent";
 
@@ -59,6 +58,7 @@ function Section({ id, title, children }: { id: string; title: string; children:
 
 export default function Audit() {
     const { hero, sample, steps, coverage, deliverables, yourCode } = audit;
+    const gallery = steps.items.flatMap(({ shot }) => (shot ? [shot] : []));
     return (
         <main id="content" className="mx-auto max-w-4xl px-6 py-16 md:py-24">
             <header>
@@ -126,7 +126,7 @@ export default function Audit() {
                                     <Screenshot
                                         shot={shot}
                                         link={picture => (
-                                            <a href={shot.src} className="block">
+                                            <a href={shot.src} data-lightbox={gallery.indexOf(shot)} className="block">
                                                 {picture}
                                             </a>
                                         )}
@@ -161,6 +161,7 @@ export default function Audit() {
                     ))}
                 </div>
             </Section>
+            <Lightbox shots={gallery} />
         </main>
     );
 }

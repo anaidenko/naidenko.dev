@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import { isToptalLink, toptalRedirect } from "../../worker/toptal";
 
-import { landingRef } from "./analytics";
+import { bareRef, landingRef, refOf } from "./analytics";
 import { TOPTAL_ATTRIBUTE, toptalScript, toptalTag } from "./toptal";
 
 /** Runs the inline script against a fake page and returns the mark it leaves on <html>. */
@@ -59,6 +59,15 @@ describe("the Worker's move to the Toptal host", () => {
                 "Location"
             );
             expect(landingRef(new URL(location!).search, "", true), search).toBe(landingRef(search, "", true));
+        }
+    });
+
+    it("gives the tag the form the Toptal build's own links carry", () => {
+        for (const search of ["?ref=toptal", "?ref=toptal-509168", "?utm_source=Toptal-1&x=1", "?ref=toptalx", "?ref=toptal-toptal"]) {
+            const location = toptalRedirect(new Request(`https://naidenko.dev/${search}`), "https://toptal.naidenko.dev")?.headers.get(
+                "Location"
+            );
+            expect(refOf(new URL(location!).search), search).toBe(bareRef(refOf(search)));
         }
     });
 });
