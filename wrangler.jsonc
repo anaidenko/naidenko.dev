@@ -19,7 +19,9 @@
     "ratelimits": [
         { "name": "CONTACT_RATE_LIMIT", "namespace_id": "1001", "simple": { "limit": 3, "period": 60 } },
         // Page views and clicks: generous for a person, a ceiling for a script.
-        { "name": "HIT_RATE_LIMIT", "namespace_id": "1002", "simple": { "limit": 60, "period": 60 } }
+        { "name": "HIT_RATE_LIMIT", "namespace_id": "1002", "simple": { "limit": 60, "period": 60 } },
+        // /stats: ten password attempts a minute per address (an IPv6 /64 is one), the owner's page loads included.
+        { "name": "STATS_RATE_LIMIT", "namespace_id": "1003", "simple": { "limit": 10, "period": 60 } }
     ],
     // The visit counter: one row per visit and per click or section reached (worker/migrations).
     "d1_databases": [

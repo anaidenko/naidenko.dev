@@ -96,15 +96,20 @@ const DATA: StatsData = {
 const DEFAULT: Filter = { from: "2026-08-26", to: "2026-09-24", country: "", ref: "" };
 const WEEK: Filter = { ...DEFAULT, from: "2026-09-18" };
 
-function get(query = "", auth?: string) {
-    return new Request(`https://naidenko.dev/stats${query}`, { headers: auth ? { Authorization: auth } : {} });
+function get(query = "", auth?: string, address?: string) {
+    const headers: Record<string, string> = {};
+    if (auth) headers.Authorization = auth;
+    if (address) headers["CF-Connecting-IP"] = address;
+    return new Request(`https://naidenko.dev/stats${query}`, { headers });
 }
 
-const basic = (password: string) => `Basic ${btoa(`andrii:${password}`)}`;
+/** The header as a browser sends it after a challenge with charset="UTF-8". */
+const basic = (password: string) => `Basic ${btoa(String.fromCharCode(...new TextEncoder().encode(`andrii:${password}`)))}`;
 
 function setup(overrides: Partial<StatsDeps> = {}): StatsDeps {
     return {
         password: "s3cret",
+        rateLimit: vi.fn(async () => true),
         load: vi.fn(async () => DATA),
         now: () => NOW,
         goatcounter: "https://naidenko.goatcounter.com/",
@@ -469,6 +474,48 @@ describe("handleStats", () => {
         expect(missing.headers.get("WWW-Authenticate")).toContain("Basic");
         expect((await handleStats(get("", basic("wrong")), setup())).status).toBe(401);
         expect((await handleStats(get("", "Bearer s3cret"), setup())).status).toBe(401);
+    });
+
+    it("accepts a password with letters beyond ASCII", async () => {
+        for (const password of ["пароль", "mot de passe € é", "密码 🔑"]) {
+            expect((await handleStats(get("", basic(password)), setup({ password }))).status).toBe(200);
+        }
+    });
+
+    it("accepts the password whether an accented letter arrives as one character or two", async () => {
+        const composed = "café".normalize("NFC");
+        const decomposed = "café".normalize("NFD");
+        expect((await handleStats(get("", basic(decomposed)), setup({ password: composed }))).status).toBe(200);
+        expect((await handleStats(get("", basic(composed)), setup({ password: decomposed }))).status).toBe(200);
+    });
+
+    it("refuses a password whose bytes are not UTF-8", async () => {
+        const latin1 = `Basic ${btoa("andrii:café")}`;
+        expect((await handleStats(get("", latin1), setup({ password: "café" }))).status).toBe(401);
+    });
+
+    it("counts every attempt against the visitor's address before it checks the password", async () => {
+        const deps = setup();
+        await handleStats(get("", basic("wrong"), "203.0.113.7"), deps);
+        expect(deps.rateLimit).toHaveBeenCalledWith("stats:203.0.113.7");
+    });
+
+    it("counts an IPv6 visitor's whole /64 as one address, since the rest of it can change at will", async () => {
+        const deps = setup();
+        await handleStats(get("", basic("wrong"), "2001:db8:1:2::a"), deps);
+        await handleStats(get("", basic("wrong"), "2001:db8:1:2:ffff::b"), deps);
+        expect(deps.rateLimit).toHaveBeenNthCalledWith(1, "stats:2001:db8:1:2::/64");
+        expect(deps.rateLimit).toHaveBeenNthCalledWith(2, "stats:2001:db8:1:2::/64");
+    });
+
+    it("answers an address over its limit with 429, even with the right password", async () => {
+        const deps = setup({ rateLimit: vi.fn(async () => false) });
+        const res = await handleStats(get("", basic("s3cret"), "203.0.113.7"), deps);
+        expect(res.status).toBe(429);
+        expect(res.headers.get("Retry-After")).toBe("60");
+        expect(res.headers.get("Cache-Control")).toBe("no-store");
+        expect(res.headers.get("WWW-Authenticate")).toBeNull();
+        expect(deps.load).not.toHaveBeenCalled();
     });
 
     it("shows the filtered numbers to the owner, privately and unindexed", async () => {
