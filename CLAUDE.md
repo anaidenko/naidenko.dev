@@ -72,6 +72,9 @@ README.md.
   background and leave it running.
 - **Ask first** for anything that leaves this machine or is hard to undo: `git push`,
   `pnpm run deploy`, `wrangler secret`, `rm -rf`, `git reset --hard`, force-push.
+- **Deploy only a tree that carries what is live.** `wrangler deployments list` names the live
+  version; a release deployed from a branch your tree lacks (v1.7.1 from `fix/stats-sign-in`,
+  2026-10-08) is merged first, or the deploy removes it.
 - **A migration that drops data:** export the table (`wrangler d1 export --remote --table`)
   right before the deploy that runs it, not when planning: on 2026-09-30 a morning copy had
   already missed a view.
