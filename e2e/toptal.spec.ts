@@ -57,11 +57,15 @@ test.describe("naidenko.dev", () => {
         await expect(page.locator("header").getByRole("link", { name: "Contact me" })).toBeVisible();
     });
 
-    test("an old link tagged on Toptal moves to the Toptal host, with its path and query", async ({ request }) => {
-        for (const path of ["/audit?ref=toptal-509168", "/?ref=toptal", "/audit/sample?utm_source=toptal&x=1"]) {
+    test("an old link tagged on Toptal moves to the same path on the Toptal host, its tag shortened", async ({ request }) => {
+        for (const [path, moved] of [
+            ["/audit?ref=toptal-509168", "/audit?ref=509168"],
+            ["/?ref=toptal", "/"],
+            ["/audit/sample?utm_source=toptal&x=1", "/audit/sample?x=1"]
+        ]) {
             const response = await request.get(path, { maxRedirects: 0 });
             expect(response.status(), path).toBe(302);
-            expect(response.headers()["location"], path).toBe(`${TOPTAL_URL}${path}`);
+            expect(response.headers()["location"], path).toBe(`${TOPTAL_URL}${moved}`);
         }
         expect((await request.get("/audit?ref=linkedin", { maxRedirects: 0 })).status()).toBe(200);
     });
@@ -82,7 +86,7 @@ test.describe("naidenko.dev", () => {
 
     test("a visitor following an old Toptal link lands on the Toptal build, with no form or email", async ({ page }) => {
         await page.goto("/?ref=toptal-e2e");
-        await expect(page).toHaveURL(`${TOPTAL_URL}/?ref=toptal-e2e`);
+        await expect(page).toHaveURL(`${TOPTAL_URL}/?ref=e2e`);
         await hydrated(page, "hire");
         await expect(page.locator("form")).toHaveCount(0);
         await expect(page.locator('a[href^="mailto:"]')).toHaveCount(0);

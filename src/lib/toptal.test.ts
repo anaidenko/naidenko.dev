@@ -1,7 +1,8 @@
 import { describe, expect, it } from "vitest";
 
-import { isToptalLink } from "../../worker/toptal";
+import { isToptalLink, toptalRedirect } from "../../worker/toptal";
 
+import { landingRef } from "./analytics";
 import { TOPTAL_ATTRIBUTE, toptalScript, toptalTag } from "./toptal";
 
 /** Runs the inline script against a fake page and returns the mark it leaves on <html>. */
@@ -41,6 +42,24 @@ describe("toptalTag", () => {
 
     it("marks every visit to the Toptal build, with its tag as the counter keeps it", () => {
         for (const [search, tag] of TOPTAL_BUILD) expect(toptalTag(search, true), search).toBe(tag);
+    });
+});
+
+describe("the Worker's move to the Toptal host", () => {
+    it("lands where the Toptal build counts the visit under the old link's tag", () => {
+        for (const search of [
+            "?ref=toptal",
+            "?ref=toptal-509168",
+            "?ref=Toptal-509168&x=1",
+            "?utm_source=toptal",
+            "?ref=toptalx",
+            "?ref=toptal-toptal"
+        ]) {
+            const location = toptalRedirect(new Request(`https://naidenko.dev/audit${search}`), "https://toptal.naidenko.dev")?.headers.get(
+                "Location"
+            );
+            expect(landingRef(new URL(location!).search, "", true), search).toBe(landingRef(search, "", true));
+        }
     });
 });
 

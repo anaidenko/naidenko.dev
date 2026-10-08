@@ -5,13 +5,21 @@ import { handleToptalSite, toptalRedirect } from "./toptal";
 const ORIGIN = "https://toptal.naidenko.dev";
 
 describe("toptalRedirect", () => {
-    it("moves a page tagged on Toptal to the same path and query on the Toptal host", () => {
-        const response = toptalRedirect(new Request("https://naidenko.dev/audit?ref=toptal-509168&x=1"), ORIGIN);
+    const moved = (path: string, method = "GET") => toptalRedirect(new Request(`https://naidenko.dev${path}`, { method }), ORIGIN);
+
+    it("moves a page tagged on Toptal to the same path on the Toptal host, with the tag it needs there", () => {
+        const response = moved("/audit?ref=toptal-509168&x=1");
         expect(response?.status).toBe(302);
-        expect(response?.headers.get("Location")).toBe(`${ORIGIN}/audit?ref=toptal-509168&x=1`);
-        expect(
-            toptalRedirect(new Request("https://naidenko.dev/?utm_source=toptal", { method: "HEAD" }), ORIGIN)?.headers.get("Location")
-        ).toBe(`${ORIGIN}/?utm_source=toptal`);
+        expect(response?.headers.get("Location")).toBe(`${ORIGIN}/audit?ref=509168&x=1`);
+        expect(moved("/?ref=toptal")?.headers.get("Location")).toBe(`${ORIGIN}/`);
+        expect(moved("/?utm_source=toptal", "HEAD")?.headers.get("Location")).toBe(`${ORIGIN}/`);
+        expect(moved("/audit/sample?utm_source=toptal&x=1")?.headers.get("Location")).toBe(`${ORIGIN}/audit/sample?x=1`);
+        expect(moved("/audit?ref=Toptal-509168")?.headers.get("Location")).toBe(`${ORIGIN}/audit?ref=509168`);
+    });
+
+    it("keeps a tag whose shorter form the Toptal host would count differently", () => {
+        expect(moved("/?ref=toptalx")?.headers.get("Location")).toBe(`${ORIGIN}/?ref=toptalx`);
+        expect(moved("/?ref=toptal-toptal")?.headers.get("Location")).toBe(`${ORIGIN}/?ref=toptal-toptal`);
     });
 
     it("leaves every other request alone", () => {

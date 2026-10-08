@@ -152,7 +152,8 @@ address. A daily cron erases the hashes older than 13 months, and the rest is ke
   browser, so the static HTML and the Markdown never carry them, and the privacy note names
   `privacy@naidenko.dev` as text, with no link, as the GDPR asks. A page asked for with a tag
   `?ref=toptal…` or `utm_source=toptal…` (an old application's `toptal-<job id>`, the profile's
-  `toptal`) moves with a 302 to the same path and query on the Toptal host (`TOPTAL_ORIGIN`).
+  `toptal`) moves with a 302 to the same path on the Toptal host (`TOPTAL_ORIGIN`), its tag in the
+  form that host counts the same: `?ref=toptal` goes, `?ref=toptal-509168` becomes `?ref=509168`.
   With `TOPTAL_ORIGIN` empty it stays, in the page's own Toptal mode: an inline script marks
   `<html data-toptal>` before the first paint, and the page shows no form, no email and no
   "Contact me" (`src/lib/toptal.ts`). `/audit` offers no order, and its link home is `nofollow`.

@@ -9,14 +9,33 @@
  */
 export function isToptalLink(search: string): boolean {
     const params = new URLSearchParams(search);
-    const tag = (params.get("ref") || params.get("utm_source") || "").toLowerCase().replace(/[^a-z0-9._-]/g, "");
-    return tag.startsWith("toptal");
+    return tagOf(params.get("ref") || params.get("utm_source") || "").startsWith("toptal");
+}
+
+const tagOf = (value: string) => value.toLowerCase().replace(/[^a-z0-9._-]/g, "");
+
+/**
+ * A link's query as the Toptal host wants it: that host counts a visit with no tag as "toptal" and
+ * a bare tag as "toptal-<tag>", so "toptal" goes and "toptal-509168" becomes "509168". A tag whose
+ * shorter form would count differently ("toptalx", "toptal-toptal") stays as it is.
+ */
+function onToptalHost(search: string): string {
+    const params = new URLSearchParams(search);
+    for (const name of ["ref", "utm_source"]) {
+        const tag = tagOf(params.get(name) ?? "");
+        const rest = tag.slice("toptal-".length);
+        if (tag === "toptal") params.delete(name);
+        else if (tag.startsWith("toptal-") && rest && !rest.startsWith("toptal")) params.set(name, rest);
+    }
+    const query = params.toString();
+    return query ? `?${query}` : "";
 }
 
 /**
- * A page asked for with a Toptal tag, answered with a move to the same path and query on the Toptal
- * host (an application's old link, naidenko.dev/audit?ref=toptal-509168); null for anything else.
- * The API and the owner's statistics stay where they are.
+ * A page asked for with a Toptal tag, answered with a move to the same path on the Toptal host, its
+ * tag shortened (onToptalHost): naidenko.dev/audit?ref=toptal-509168, an application's old link,
+ * lands on toptal.naidenko.dev/audit?ref=509168. Null for anything else; the API and the owner's
+ * statistics stay where they are.
  */
 export function toptalRedirect(request: Request, origin: string): Response | null {
     if (!origin || (request.method !== "GET" && request.method !== "HEAD")) return null;
@@ -24,7 +43,7 @@ export function toptalRedirect(request: Request, origin: string): Response | nul
     if (url.pathname.startsWith("/api/") || url.pathname === "/stats" || !isToptalLink(url.search)) return null;
     return new Response(null, {
         status: 302,
-        headers: { "Location": `${origin}${url.pathname}${url.search}`, "Cache-Control": "no-store" }
+        headers: { "Location": `${origin}${url.pathname}${onToptalHost(url.search)}`, "Cache-Control": "no-store" }
     });
 }
 
