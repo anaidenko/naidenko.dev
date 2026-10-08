@@ -18,7 +18,10 @@ paths:
   either port is reused, so a `pnpm preview` left running from another checkout is tested instead
   of this build: check `lsof -iTCP:8788 -sTCP:LISTEN` first and pass `E2E_PORT=8790` if it is
   taken. After editing `worker/`, restart them: a hot reload dropped the rate-limit bindings on
-  2026-09-24, and `/api/hit` answered 500.
+  2026-09-24, and `/api/hit` answered 500. Two `wrangler dev` started in the same second can
+  collide on a workerd port (`bind(): Address already in use`, 2026-10-08), and the loser exits:
+  start a server by hand only after the other answers, and rerun a suite whose every test on one
+  port fails with `ERR_CONNECTION_REFUSED`.
   One spec: `pnpm test:e2e e2e/analytics.spec.ts -g "<title>"` (it still builds first); calling
   `scripts/with-env.mjs … next build` outside a pnpm script fails with ENOENT, since `next` is
   on the PATH only inside one.
