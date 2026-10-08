@@ -35,8 +35,8 @@ README.md.
 
 - Every claim must survive an interview question.
 - The sources, and the rules the copy keeps, are in a private plan outside this repository:
-  `../../.claude/plans/2026-09-24-personal-site-two-column.md`. Read it before adding or
-  rewording anything in `src/content/`.
+  `~/Work/andrii/resume/.claude/plans/2026-09-24-personal-site-two-column.md`. Read it before
+  adding or rewording anything in `src/content/`.
 - The Toptal badge (`src/content/toptal-badge.ts`) is verbatim. Never edit or restyle it.
 
 ## Factual rigor
