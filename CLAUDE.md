@@ -59,6 +59,9 @@ README.md.
 - **Before a commit that touches code:**
   `pnpm format:check && pnpm lint && pnpm typecheck && pnpm test && pnpm test:e2e`.
 - **Commits** follow Conventional Commits (the `commit` skill). Work on a branch, not `main`.
+- **A release's number** is the next after the highest one released, `main` or an open PR's branch
+  (`gh pr list` titles name them), not after `main`'s `package.json`: a branch can deploy before
+  it merges.
 - **No bots that open branches or pull requests,** Dependabot included. Update dependencies by
   hand, on a branch.
 - **Token budget:**

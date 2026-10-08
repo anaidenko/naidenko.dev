@@ -43,12 +43,18 @@ interface Waiter {
  * One widget per form. The script loads when the visitor starts filling the form. Each token is
  * used once: call reset() after a failed submission, and remove() when the form is gone.
  */
-export function createTurnstile(container: HTMLElement) {
+export function createTurnstile(container: HTMLElement, events: { onInteractive?(shown: boolean): void } = {}) {
     let widgetId: string | null = null;
     let rendering: Promise<void> | null = null;
     let latest: string | null = null;
     let interactive = false;
     let waiters: Waiter[] = [];
+
+    function setInteractive(shown: boolean) {
+        if (interactive === shown) return;
+        interactive = shown;
+        events.onInteractive?.(shown);
+    }
 
     function settle(outcome: { token: string } | { error: Error }) {
         const current = waiters;
@@ -70,21 +76,21 @@ export function createTurnstile(container: HTMLElement) {
                     "size": "flexible",
                     "appearance": "interaction-only",
                     "callback": (token: string) => {
-                        interactive = false;
+                        setInteractive(false);
                         settle({ token });
                     },
                     "error-callback": () => {
-                        interactive = false;
+                        setInteractive(false);
                         settle({ error: new Error("Turnstile reported an error") });
                     },
                     "expired-callback": () => {
                         latest = null;
                     },
                     "before-interactive-callback": () => {
-                        interactive = true;
+                        setInteractive(true);
                     },
                     "after-interactive-callback": () => {
-                        interactive = false;
+                        setInteractive(false);
                     }
                 });
             })
@@ -130,7 +136,7 @@ export function createTurnstile(container: HTMLElement) {
 
     function reset() {
         latest = null;
-        interactive = false;
+        setInteractive(false);
         if (widgetId !== null) window.turnstile?.reset(widgetId);
     }
 
@@ -139,7 +145,7 @@ export function createTurnstile(container: HTMLElement) {
         widgetId = null;
         rendering = null;
         latest = null;
-        interactive = false;
+        setInteractive(false);
         settle({ error: new Error("Turnstile was removed") });
     }
 
