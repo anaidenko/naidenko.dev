@@ -224,13 +224,32 @@ test.describe("the Toptal build", () => {
     });
 });
 
-test("both sites' menus scroll to the Auditdesk project with Code audit", async ({ page, isMobile }) => {
+test("both sites' menus scroll to the Auditdesk project with Code audit, and mark it", async ({ page, isMobile }) => {
     test.skip(isMobile, "The navigation is desktop-only");
+    const transparent = "rgba(0, 0, 0, 0)";
     for (const site of ["/", `${TOPTAL_URL}/`]) {
         await page.goto(site);
         const nav = page.getByRole("navigation", { name: "In-page navigation" });
+        const card = page.locator("li#auditdesk");
+        const frame = card.locator("article > div[aria-hidden]");
+        await expect(card, site).toContainText("Code audit · sample report");
+        await expect(frame, site).toHaveCSS("border-left-color", transparent);
+
         await nav.getByRole("link", { name: "Code audit" }).click();
-        await expect(page.locator("li#auditdesk")).toBeInViewport();
+        await expect(card).toBeInViewport();
         await expect(nav.getByRole("link", { name: "Code audit" }), site).toHaveAttribute("aria-current", "true");
+        const accent = await page.evaluate(() => {
+            const probe = document.body.appendChild(document.createElement("div"));
+            probe.className = "bg-accent";
+            const color = getComputedStyle(probe).backgroundColor;
+            probe.remove();
+            return color;
+        });
+        await expect(frame, site).toHaveCSS("border-left-color", accent);
+        for (const other of await page.locator("section#projects li:not(#auditdesk) article > div[aria-hidden]").all())
+            await expect(other, site).toHaveCSS("border-left-color", transparent);
+
+        await nav.getByRole("link", { name: "Services" }).click();
+        await expect(frame, site).toHaveCSS("border-left-color", transparent);
     }
 });
