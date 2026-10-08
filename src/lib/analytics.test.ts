@@ -1,6 +1,19 @@
 import { describe, expect, it } from "vitest";
 
-import { chosenToCount, createVisibleClock, detailOf, goatcounterPath, isExcluded, originOf, refOf, withRef } from "./analytics";
+import {
+    applySkipToggle,
+    chosenToCount,
+    createVisibleClock,
+    detailOf,
+    goatcounterPath,
+    isExcluded,
+    landingRef,
+    originOf,
+    refOf,
+    referrerTag,
+    toptalRef,
+    withRef
+} from "./analytics";
 
 describe("detailOf", () => {
     it("joins the parameters' values in order", () => {
@@ -68,6 +81,53 @@ describe("isExcluded", () => {
     });
 });
 
+describe("applySkipToggle", () => {
+    /** A browser at `search` whose storage keeps what is set in it. */
+    function storingAt(search: string) {
+        const stored = new Map<string, string>();
+        const win = browserWindow({
+            location: { search },
+            localStorage: {
+                getItem: (key: string) => stored.get(key) ?? null,
+                setItem: (key: string, value: string) => stored.set(key, value)
+            }
+        });
+        return { win, stored };
+    }
+
+    it("keeps the owner's browser out with ?skipgc=t, and counts it again with ?skipgc=f", () => {
+        const out = storingAt("?skipgc=t");
+        applySkipToggle(out.win);
+        expect(out.stored.get("skipgc")).toBe("t");
+        expect(isExcluded(out.win)).toBe(true);
+
+        const back = storingAt("?skipgc=f");
+        applySkipToggle(back.win);
+        expect(isExcluded(back.win)).toBe(false);
+        expect(chosenToCount(back.win)).toBe(true);
+    });
+
+    it("stores nothing for any other value or none", () => {
+        for (const search of ["", "?skipgc=x", "?ref=toptal"]) {
+            const page = storingAt(search);
+            applySkipToggle(page.win);
+            expect(page.stored.size, search).toBe(0);
+        }
+    });
+
+    it("leaves a browser that refuses storage counted, without an error", () => {
+        const refusing = browserWindow({
+            location: { search: "?skipgc=t" },
+            localStorage: {
+                setItem: () => {
+                    throw new Error("denied");
+                }
+            }
+        });
+        expect(() => applySkipToggle(refusing)).not.toThrow();
+    });
+});
+
 describe("chosenToCount", () => {
     const storing = (flag: string | null) => browserWindow({ localStorage: { getItem: () => flag } });
 
@@ -116,6 +176,51 @@ describe("refOf", () => {
     it("keeps only the characters the counter accepts, and at most 40", () => {
         expect(refOf("?ref=Linked%20In%3Cb%3E")).toBe("linkedinb");
         expect(refOf(`?ref=${"x".repeat(60)}`)).toHaveLength(40);
+    });
+});
+
+describe("landingRef", () => {
+    it("takes the link's tag, else the tag of the site that referred the visit", () => {
+        expect(landingRef("?ref=linkedin", "", false)).toBe("linkedin");
+        expect(landingRef("", "https://github.com/", false)).toBe("github");
+        expect(landingRef("?ref=x", "https://github.com/", false)).toBe("x");
+        expect(landingRef("", "https://www.linkedin.com/", false)).toBe("");
+        expect(landingRef("", "", false)).toBe("");
+    });
+
+    it("counts every visit to the Toptal build as toptal, and a bare tag such as a job's ID as toptal-<tag>", () => {
+        expect(landingRef("", "", true)).toBe("toptal");
+        expect(landingRef("?ref=509168", "", true)).toBe("toptal-509168");
+        expect(landingRef("?ref=toptal-509168", "", true)).toBe("toptal-509168");
+        expect(landingRef("", "https://github.com/", true)).toBe("toptal");
+    });
+});
+
+describe("toptalRef", () => {
+    it("prefixes a bare tag, keeps a toptal one and names an untagged visit", () => {
+        expect(toptalRef("")).toBe("toptal");
+        expect(toptalRef("509168")).toBe("toptal-509168");
+        expect(toptalRef("toptal-509168")).toBe("toptal-509168");
+        expect(toptalRef("toptal")).toBe("toptal");
+    });
+
+    it("stays within the counter's 40 characters", () => {
+        expect(toptalRef("9".repeat(40))).toBe(`toptal-${"9".repeat(33)}`);
+    });
+});
+
+describe("referrerTag", () => {
+    it("tags a visit GitHub sent, whose profile links the bare address", () => {
+        expect(referrerTag("https://github.com/")).toBe("github");
+        expect(referrerTag("https://github.com/anaidenko")).toBe("github");
+    });
+
+    it("leaves every other referrer, and anything that is not an address, untagged", () => {
+        expect(referrerTag("https://gist.github.com/")).toBe("");
+        expect(referrerTag("https://notgithub.com/")).toBe("");
+        expect(referrerTag("https://www.linkedin.com/")).toBe("");
+        expect(referrerTag("")).toBe("");
+        expect(referrerTag("github.com")).toBe("");
     });
 });
 

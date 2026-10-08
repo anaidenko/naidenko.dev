@@ -1,14 +1,18 @@
 "use client";
 
-import { sectionIds, sections } from "@/content/sections";
+import { menu } from "@/content/sections";
 import { useActiveSection } from "@/lib/useActiveSection";
+import { TOPTAL_SITE } from "@/lib/variant";
+
+const items = menu(TOPTAL_SITE);
+const ids = items.map(item => item.id);
 
 export function Nav() {
-    const active = useActiveSection(sectionIds);
+    const active = useActiveSection(ids);
     return (
         <nav className="hidden lg:block" aria-label="In-page navigation">
             <ul className="mt-12 w-max short:mt-8">
-                {sections.map(({ id, label }) => {
+                {items.map(({ id, label }) => {
                     const isActive = active === id;
                     return (
                         <li key={id}>

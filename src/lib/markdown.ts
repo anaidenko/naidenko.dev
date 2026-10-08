@@ -6,6 +6,7 @@ import { services } from "@/content/services";
 import { site } from "@/content/site";
 import { testimonials } from "@/content/testimonials";
 import { ui } from "@/content/ui";
+import { TOPTAL_SITE } from "@/lib/variant";
 
 const link = (text: string, url: string) => `[${text}](${url})`;
 
@@ -75,12 +76,16 @@ export function pageMarkdown(): string {
         "## Services",
         "",
         ...services.flatMap(service => [`### ${service.title}`, "", service.text, "", `${ui.proof}: ${service.proof}.`, ""]),
-        "## Contact",
-        "",
-        `${contact.toptalHeading} ${link("Hire me on Toptal", site.links.toptalReferral)}.`,
-        "",
-        `Elsewhere: ${link("GitHub", site.links.github)} · ${link("LinkedIn", site.links.linkedin)}.`,
-        ""
+        ...(TOPTAL_SITE
+            ? ["## Hire", "", `${link("Hire me on Toptal", site.links.toptalReferral)}.`, ""]
+            : [
+                  "## Contact",
+                  "",
+                  `${contact.toptalHeading} ${link("Hire me on Toptal", site.links.toptalReferral)}.`,
+                  "",
+                  `Elsewhere: ${link("GitHub", site.links.github)} · ${link("LinkedIn", site.links.linkedin)}.`,
+                  ""
+              ])
     ].join("\n");
 }
 
@@ -95,16 +100,17 @@ export function llmsTxt(): string {
         "",
         "## Pages",
         "",
-        `- ${link("The whole page in Markdown", `${site.url}/index.md`)}: about, experience, client reviews, projects, services and contact`,
-        `- ${link("Privacy note", `${site.url}/privacy`)}: what the contact form and the visit counters collect`,
+        `- ${link("The whole page in Markdown", `${site.url}/index.md`)}: about, experience, client reviews, projects, services and ${TOPTAL_SITE ? "hiring through Toptal" : "contact"}`,
+        `- ${link("Privacy note", `${site.url}/privacy`)}: ${TOPTAL_SITE ? "what the visit counters collect" : "what the contact form and the visit counters collect"}`,
         `- ${link("Code audits", `${site.url}/audit`)}: how I audit a codebase, and what happens to the code`,
         `- ${link("Sample code audit report", `${site.url}/audit/sample`)}: the full report from an audit of OWASP Juice Shop, with every finding's evidence and fix`,
         "",
         "## Profiles",
         "",
         `- ${link("Toptal", site.links.toptalReferral)}: the full résumé and hiring through Toptal`,
-        `- ${link("GitHub", site.links.github)}: open-source Claude Code plugins`,
-        `- ${link("LinkedIn", site.links.linkedin)}`,
+        ...(TOPTAL_SITE
+            ? []
+            : [`- ${link("GitHub", site.links.github)}: open-source Claude Code plugins`, `- ${link("LinkedIn", site.links.linkedin)}`]),
         ""
     ].join("\n");
 }

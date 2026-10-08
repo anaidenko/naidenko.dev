@@ -130,6 +130,18 @@ describe("filterOf", () => {
         expect(filter("")).toEqual(DEFAULT);
     });
 
+    it("offers every Toptal link at once when a toptal tag was seen", () => {
+        const html = renderStats({ ...DATA, options: { countries: [], refs: ["linkedin", "toptal-509168"] } }, DEFAULT, NOW);
+        expect(html).toContain('<option value="toptal*">Every Toptal link (toptal*)</option>');
+        expect(renderStats(DATA, DEFAULT, NOW)).not.toContain("toptal*");
+    });
+
+    it("takes a tag's stem and a star for every tag that starts with it", () => {
+        expect(filter("?ref=toptal*").ref).toBe("toptal*");
+        expect(filter("?ref=Toptal-509168").ref).toBe("toptal-509168");
+        for (const query of ["?ref=*", "?ref=top*al", "?ref=toptal**", "?ref=a%20b*"]) expect(filter(query).ref, query).toBe("");
+    });
+
     it("takes a preset range, or all time", () => {
         expect(filter("?range=today")).toMatchObject({ from: "2026-09-24", to: "2026-09-24" });
         expect(filter("?range=yesterday")).toMatchObject({ from: "2026-09-23", to: "2026-09-23" });
@@ -305,6 +317,25 @@ describe("the redesigned page", () => {
         );
         expect(html).toContain('<span class="chip">contact_click</span><span class="chip">profile_click · github</span>');
         expect(html).toContain("Chrome · macOS");
+    });
+
+    it("lights the last dot for the Toptal build's Hire, as for Contact", () => {
+        const visit = { ...DATA.recent[0], path: "/", sections: "about, hire", clicks: "" };
+        expect(renderStats({ ...DATA, recent: [visit] }, DEFAULT, NOW)).toContain(
+            '<span class="dots" title="About, Hire"><i class="on"></i><i></i><i></i><i></i><i class="on"></i></span>'
+        );
+    });
+
+    it("names the menu's entries of both builds in the menu's order", () => {
+        const nav = [
+            { label: "hire", n: 1 },
+            { label: "auditdesk", n: 2 },
+            { label: "about", n: 3 }
+        ];
+        const html = renderStats({ ...DATA, nav }, DEFAULT, NOW);
+        const clicks = html.slice(html.indexOf("Menu clicks"), html.indexOf("Time on page"));
+        expect(clicks.indexOf("About")).toBeLessThan(clicks.indexOf("Code audit"));
+        expect(clicks.indexOf("Code audit")).toBeLessThan(clicks.indexOf("Hire"));
     });
 
     it("shows the latest 20 visits, and the rest on request", () => {

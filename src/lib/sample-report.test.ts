@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { sampleReport, splitReport } from "./sample-report";
+import { onOrigin, sampleReport, splitReport } from "./sample-report";
 
 const report = (extra = "") =>
     `<!doctype html><html><head><style>body{margin:0}</style></head><body><main class="doc"><h1>App</h1><form class="filters" onsubmit="return false"></form></main>${extra}<script>(()=>{})()</script></body></html>`;
@@ -35,5 +35,20 @@ describe("sampleReport", () => {
         expect(main).toContain('name="sev"');
         expect(script).toContain("beforeprint");
         expect(main).toContain('data-track="sample_filter"');
+    });
+});
+
+describe("onOrigin", () => {
+    const html =
+        '<dd><a href="https://naidenko.dev/">Andrii Naidenko</a></dd><li><a href="https://naidenko.dev/audit">naidenko.dev/audit</a>.</li>';
+
+    it("moves the report's links to the site, and the one it prints, to the build's own host", () => {
+        expect(onOrigin(html, "https://toptal.naidenko.dev")).toBe(
+            '<dd><a href="https://toptal.naidenko.dev/">Andrii Naidenko</a></dd><li><a href="https://toptal.naidenko.dev/audit">toptal.naidenko.dev/audit</a>.</li>'
+        );
+    });
+
+    it("leaves the report as exported on naidenko.dev", () => {
+        expect(onOrigin(html, "https://naidenko.dev")).toBe(html);
     });
 });

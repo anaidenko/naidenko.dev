@@ -1,6 +1,6 @@
+import { EmailIcon } from "@/components/ContactDirect";
 import { site } from "@/content/site";
 
-import { EmailIcon } from "./ContactDirect";
 import { BriefcaseIcon, GitHubIcon, LinkedInIcon } from "./Icons";
 
 const items = [

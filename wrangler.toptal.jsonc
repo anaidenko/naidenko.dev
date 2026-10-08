@@ -1,0 +1,21 @@
+{
+    "$schema": "node_modules/wrangler/config-schema.json",
+    // The Toptal build (NEXT_PUBLIC_SITE_VARIANT=toptal) on the host made for Toptal's links. It has no
+    // database or secrets of its own: naidenko.dev's Worker counts its visits (SITE).
+    "name": "naidenko-dev-toptal",
+    "main": "worker/toptal-site.ts",
+    "compatibility_date": "2026-09-24",
+    "routes": [{ "pattern": "toptal.naidenko.dev", "custom_domain": true }],
+    // No second address for the same pages.
+    "workers_dev": false,
+    "preview_urls": false,
+    "assets": {
+        "directory": "./out-toptal",
+        "binding": "ASSETS",
+        "not_found_handling": "404-page",
+        // Every request runs the Worker, so every answer, files included, carries X-Robots-Tag: noindex.
+        "run_worker_first": true
+    },
+    "services": [{ "binding": "SITE", "service": "naidenko-dev" }],
+    "observability": { "enabled": true }
+}

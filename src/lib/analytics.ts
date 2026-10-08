@@ -51,6 +51,30 @@ export function refOf(search: string): string {
 }
 
 /**
+ * A tag on the Toptal build as the counter keeps it: "toptal" for a link without one, and a bare
+ * tag, such as a job's ID in an application's link, as "toptal-<tag>".
+ */
+export function toptalRef(tag: string): string {
+    if (!tag) return "toptal";
+    return tag.startsWith("toptal") ? tag : `toptal-${tag}`.slice(0, 40);
+}
+
+/** The tag of a visit a site sent without one: GitHub's profile links the bare address, and GitHub sends its origin. */
+export function referrerTag(referrer: string): string {
+    try {
+        return new URL(referrer).hostname === "github.com" ? "github" : "";
+    } catch {
+        return "";
+    }
+}
+
+/** A visit's tag: its link's, else the referring site's (referrerTag); on the Toptal build, toptalRef's. */
+export function landingRef(search: string, referrer: string, toptalSite: boolean): string {
+    if (toptalSite) return toptalRef(refOf(search));
+    return refOf(search) || referrerTag(referrer);
+}
+
+/**
  * A link within the site carrying this page's tag, so a full page load keeps it. The fallback is
  * the tag of a visit through Toptal after a move within the site dropped it from the address.
  */
@@ -88,6 +112,21 @@ export function isExcluded(win: Window): boolean {
     if (d.__selenium_unwrapped || d.__webdriver_evaluate || d.__driver_evaluate) return true;
     if (win.self !== win.top) return true;
     return (d.visibilityState as string) === "prerender";
+}
+
+/**
+ * ?skipgc=t keeps this browser out of both counters and ?skipgc=f counts it again, even from an
+ * ignored network: what /stats sets on naidenko.dev. The flag belongs to one origin, and the Toptal
+ * build has no /stats, so this is how the owner's browsers stay out of its counts.
+ */
+export function applySkipToggle(win: Window): void {
+    const value = new URLSearchParams(win.location.search).get(SKIP_FLAG);
+    if (value !== "t" && value !== "f") return;
+    try {
+        win.localStorage.setItem(SKIP_FLAG, value);
+    } catch {
+        // A browser that refuses storage cannot carry the flag, so it stays counted.
+    }
 }
 
 /**
@@ -136,7 +175,7 @@ function send(hit: Hit): void {
  * whenever the page is hidden or left. A move to another page within the site is a new visit, with
  * no referrer or tag of its own. Returns what ends the visit, reporting its time.
  */
-export function startVisit(win: Window): () => void {
+export function startVisit(win: Window, toptalSite: boolean): () => void {
     const id = win.crypto.randomUUID();
     visit = id;
     force = chosenToCount(win);
@@ -148,7 +187,7 @@ export function startVisit(win: Window): () => void {
         visit: id,
         path: win.location.pathname,
         referrer: internal ? "" : originOf(doc.referrer),
-        ref: internal ? "" : refOf(win.location.search),
+        ref: internal ? "" : landingRef(win.location.search, doc.referrer, toptalSite),
         screen: win.screen.width || null
     });
 
