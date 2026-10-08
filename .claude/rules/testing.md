@@ -19,6 +19,10 @@ paths:
   One spec: `pnpm test:e2e e2e/analytics.spec.ts -g "<title>"` (it still builds first); calling
   `scripts/with-env.mjs … next build` outside a pnpm script fails with ENOENT, since `next` is
   on the PATH only inside one.
+- **The Worker never sees a test's host:** `wrangler dev` rewrites `request.url` and `Host` to
+  the first route's host, `naidenko.dev` (checked on 2026-10-08). So a host check in `worker/` is
+  unit-tested, and checked with `curl` after the deploy; the page's own check runs in the browser,
+  where `toptal.localhost` reaches the test server as any `*.localhost` name does.
 - **Projects:** `desktop` (1440×900) and `mobile` (Pixel 7). When a test skips one, give the
   reason.
 - **Analytics:** `e2e/analytics.spec.ts` stubs GoatCounter's count.js and watches the page's

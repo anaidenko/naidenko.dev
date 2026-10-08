@@ -288,6 +288,14 @@ test("drops hits over the limit without an error in the visitor's console", asyn
     expect(errors).toEqual([]);
 });
 
+test("counts a visit to the Toptal host under the tag toptal", async ({ page, baseURL }) => {
+    await asPerson(page);
+    await stubGoatCounter(page);
+    const hits = ownCounter(page);
+    await page.goto(`http://toptal.localhost:${new URL(baseURL!).port}/`);
+    await expect.poll(() => hits).toContainEqual(expect.objectContaining({ kind: "view", path: "/", ref: "toptal" }));
+});
+
 test("counts the sample report's visit with its tag, and the move to the audit page with the same tag", async ({ page }) => {
     await asPerson(page);
     await stubGoatCounter(page);

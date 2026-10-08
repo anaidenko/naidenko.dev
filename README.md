@@ -101,8 +101,9 @@ cost.
    the new code is already live; `pnpm exec wrangler triggers deploy` attaches the cron later.
 
    Never run `wrangler deploy` directly: it uploads whatever is in `out/`, which after
-   `pnpm test:e2e` is a test build. The route in `wrangler.jsonc` attaches the domain, and the
-   certificate is issued automatically.
+   `pnpm test:e2e` is a test build. The routes in `wrangler.jsonc` attach both custom domains,
+   `naidenko.dev` and `toptal.naidenko.dev`, and Cloudflare creates their DNS records and
+   certificates.
 8. **Search:** add the domain to Google Search Console (DNS verification) and submit
    `/sitemap.xml`.
 
@@ -142,6 +143,12 @@ address. A daily cron erases the hashes older than 13 months, and the rest is ke
   browser, for other visits. So the static HTML and the Markdown never carry them (only `/privacy`
   names the address, as the GDPR asks), and `RefLink` keeps the tag through a move within the
   site (`src/lib/toptal.ts`). `/audit` offers no order, and its link home is `nofollow`.
+- **The Toptal host:** `toptal.naidenko.dev`, a second custom domain on the same Worker, is the
+  address for Toptal's links. Every visit there is a Toptal visit, tagged `toptal` in the counter
+  when its link has no tag of its own. The Worker sends `X-Robots-Tag: noindex` with every page
+  it serves there and answers `/api/contact` and `/stats` with the 404 page (`worker/toptal.ts`);
+  canonical links still name `naidenko.dev`. Files with an extension come straight from the
+  assets, so they carry no `noindex`.
 - **Not counted:** a load with `?preview=1`; a browser that has opened `/stats` (it sets
   GoatCounter's `skipgc` flag, which both counters honour); addresses in `IGNORE_NETWORKS`; bots,
   automated browsers, frames and prerendering, as GoatCounter's count.js skips them.

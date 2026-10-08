@@ -4,7 +4,10 @@
     "main": "worker/index.ts",
     "compatibility_date": "2026-09-24",
     // `wrangler deploy` attaches the domain and Cloudflare issues its certificate.
-    "routes": [{ "pattern": "naidenko.dev", "custom_domain": true }],
+    "routes": [
+        { "pattern": "naidenko.dev", "custom_domain": true },
+        { "pattern": "toptal.naidenko.dev", "custom_domain": true }
+    ],
     "assets": {
         "directory": "./out",
         "binding": "ASSETS",

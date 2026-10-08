@@ -50,6 +50,11 @@ export function refOf(search: string): string {
         .slice(0, 40);
 }
 
+/** A visit's tag: its link's, or "toptal" on the host made for Toptal's links, which needs none. */
+export function landingRef(search: string, hostname: string): string {
+    return refOf(search) || (hostname.startsWith("toptal.") ? "toptal" : "");
+}
+
 /**
  * A link within the site carrying this page's tag, so a full page load keeps it. The fallback is
  * the tag of a visit through Toptal after a move within the site dropped it from the address.
@@ -148,7 +153,7 @@ export function startVisit(win: Window): () => void {
         visit: id,
         path: win.location.pathname,
         referrer: internal ? "" : originOf(doc.referrer),
-        ref: internal ? "" : refOf(win.location.search),
+        ref: internal ? "" : landingRef(win.location.search, win.location.hostname),
         screen: win.screen.width || null
     });
 

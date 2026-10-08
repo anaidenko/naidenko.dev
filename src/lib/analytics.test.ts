@@ -1,6 +1,16 @@
 import { describe, expect, it } from "vitest";
 
-import { chosenToCount, createVisibleClock, detailOf, goatcounterPath, isExcluded, originOf, refOf, withRef } from "./analytics";
+import {
+    chosenToCount,
+    createVisibleClock,
+    detailOf,
+    goatcounterPath,
+    isExcluded,
+    landingRef,
+    originOf,
+    refOf,
+    withRef
+} from "./analytics";
 
 describe("detailOf", () => {
     it("joins the parameters' values in order", () => {
@@ -116,6 +126,15 @@ describe("refOf", () => {
     it("keeps only the characters the counter accepts, and at most 40", () => {
         expect(refOf("?ref=Linked%20In%3Cb%3E")).toBe("linkedinb");
         expect(refOf(`?ref=${"x".repeat(60)}`)).toHaveLength(40);
+    });
+});
+
+describe("landingRef", () => {
+    it("counts a visit to the Toptal host as tagged toptal, unless its link has a tag of its own", () => {
+        expect(landingRef("", "toptal.naidenko.dev")).toBe("toptal");
+        expect(landingRef("?ref=toptal-509168", "toptal.naidenko.dev")).toBe("toptal-509168");
+        expect(landingRef("", "naidenko.dev")).toBe("");
+        expect(landingRef("?ref=linkedin", "naidenko.dev")).toBe("linkedin");
     });
 });
 
