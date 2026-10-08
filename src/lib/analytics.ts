@@ -59,6 +59,17 @@ export function toptalRef(tag: string): string {
     return tag.startsWith("toptal") ? tag : `toptal-${tag}`.slice(0, 40);
 }
 
+/**
+ * A tag as a link on the Toptal build carries it: the shortest that toptalRef counts the same, so
+ * "toptal" goes and "toptal-509168" becomes "509168". A tag whose shorter form would count
+ * differently ("toptalx", "toptal-toptal") stays as it is.
+ */
+export function bareRef(tag: string): string {
+    if (tag === "toptal") return "";
+    const rest = tag.startsWith("toptal-") ? tag.slice("toptal-".length) : "";
+    return rest && !rest.startsWith("toptal") ? rest : tag;
+}
+
 /** The tag of a visit a site sent without one: GitHub's profile links the bare address, and GitHub sends its origin. */
 export function referrerTag(referrer: string): string {
     try {
@@ -76,10 +87,12 @@ export function landingRef(search: string, referrer: string, toptalSite: boolean
 
 /**
  * A link within the site carrying this page's tag, so a full page load keeps it. The fallback is
- * the tag of a visit through Toptal after a move within the site dropped it from the address.
+ * the tag of a visit through Toptal after a move within the site dropped it from the address. On
+ * the Toptal build the tag goes in bareRef's form, since that build counts every visit as Toptal's.
  */
-export function withRef(href: string, search: string, fallback = ""): string {
-    const tag = refOf(search) || fallback;
+export function withRef(href: string, search: string, fallback = "", toptalSite = false): string {
+    const found = refOf(search) || fallback;
+    const tag = toptalSite ? bareRef(found) : found;
     if (!tag) return href;
     const url = new URL(href, "https://site.invalid");
     url.searchParams.set("ref", tag);

@@ -1,19 +1,10 @@
 import { type APIRequestContext, type Page, expect, test } from "@playwright/test";
 
-import { asPerson } from "./helpers";
+import { asPerson, hydrated } from "./helpers";
 import { TOPTAL_URL } from "./servers";
 
 const EMAIL = "hello@naidenko.dev";
 const TOPTAL_HOST = "https://toptal.naidenko.dev";
-
-/** Waits until React has hydrated the page's last section; its client-only parts settle right after. */
-async function hydrated(page: Page, section = "contact") {
-    await page.waitForFunction(id => {
-        const element = document.querySelector(`section#${id}`);
-        return element !== null && Object.keys(element).some(key => key.startsWith("__reactFiber$"));
-    }, section);
-    await page.waitForTimeout(300);
-}
 
 /** What the page sends to the site's own counter. */
 function ownCounter(page: Page) {
@@ -204,7 +195,19 @@ test.describe("the Toptal build", () => {
         await hydrated(page, "hire");
         await page.locator("section#projects").getByRole("link", { name: "Auditdesk" }).click();
         await expect(page).toHaveURL(/\/audit$/);
-        await expect(page.getByRole("link", { name: "← Andrii Naidenko" })).toHaveAttribute("href", "/?ref=toptal-509168");
+        await expect(page.getByRole("link", { name: "← Andrii Naidenko" })).toHaveAttribute("href", "/?ref=509168");
+    });
+
+    test("the audit page's links never add toptal to the address: the build counts every visit as one", async ({ page }) => {
+        await page.goto("/audit?ref=toptal-509168");
+        const screenshot = page.locator("main header figure").getByRole("link", { name: "Open the sample report" });
+        await expect(screenshot).toHaveAttribute("href", "/audit/sample?ref=509168");
+        for (const path of ["/audit?ref=toptal", "/audit?utm_source=toptal", "/audit"]) {
+            await page.goto(path);
+            await hydrated(page, "your-code");
+            await expect(screenshot, path).toHaveAttribute("href", "/audit/sample");
+            await expect(page.getByRole("link", { name: "← Andrii Naidenko" }), path).toHaveAttribute("href", "/");
+        }
     });
 
     test("the sample report links the Toptal host, and its PDF is there", async ({ page, request }) => {

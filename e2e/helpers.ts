@@ -18,3 +18,12 @@ export async function asNewVisitor(page: Page) {
 export async function asPerson(page: Page) {
     await page.addInitScript(() => Object.defineProperty(Navigator.prototype, "webdriver", { get: () => false }));
 }
+
+/** Waits until React has hydrated the page's last section; its client-only parts settle right after. */
+export async function hydrated(page: Page, section = "contact") {
+    await page.waitForFunction(id => {
+        const element = document.querySelector(`section#${id}`);
+        return element !== null && Object.keys(element).some(key => key.startsWith("__reactFiber$"));
+    }, section);
+    await page.waitForTimeout(300);
+}
