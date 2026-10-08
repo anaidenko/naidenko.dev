@@ -5,6 +5,7 @@ type Options = Record<string, unknown> & {
     "callback": (token: string) => void;
     "error-callback": () => void;
     "before-interactive-callback": () => void;
+    "after-interactive-callback": () => void;
 };
 
 function fakeApi() {
@@ -91,6 +92,31 @@ describe("createTurnstile", () => {
         expect(settled).not.toHaveBeenCalled();
         api.widgets[0].callback("solved-token");
         await expect(pending).resolves.toBe("solved-token");
+    });
+
+    it("tells the form when the check turns interactive and when it is done", async () => {
+        const api = fakeApi();
+        window.turnstile = api;
+        const { createTurnstile } = await load();
+        const onInteractive = vi.fn();
+        const session = createTurnstile(document.createElement("div"), { onInteractive });
+        await session.prime();
+        api.widgets[0]["before-interactive-callback"]();
+        expect(onInteractive).toHaveBeenLastCalledWith(true);
+        api.widgets[0]["after-interactive-callback"]();
+        expect(onInteractive).toHaveBeenLastCalledWith(false);
+    });
+
+    it("clears the interactive check when the widget is reset", async () => {
+        const api = fakeApi();
+        window.turnstile = api;
+        const { createTurnstile } = await load();
+        const onInteractive = vi.fn();
+        const session = createTurnstile(document.createElement("div"), { onInteractive });
+        await session.prime();
+        api.widgets[0]["before-interactive-callback"]();
+        session.reset();
+        expect(onInteractive).toHaveBeenLastCalledWith(false);
     });
 
     it("removes the widget when the form is done with it", async () => {

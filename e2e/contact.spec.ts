@@ -32,6 +32,79 @@ test("sends a valid message", async ({ page }) => {
     await expect(page.locator("section#contact").getByRole("status")).toContainText("I’ll reply to ada@example.com", { timeout: 30_000 });
 });
 
+test("moves focus to the confirmation, announced in a region that was there before the send", async ({ page }) => {
+    await asNewVisitor(page);
+    await page.goto("/#contact");
+    const status = page.locator("section#contact").getByRole("status");
+    await expect(status).toHaveCount(1);
+    await expect(status).toBeEmpty();
+    await fillValid(page);
+    await page.getByRole("button", { name: "Send message" }).click();
+    await expect(status).toContainText("I’ll reply to ada@example.com", { timeout: 30_000 });
+    await expect(status).toBeFocused();
+});
+
+test("keeps focus on the button while the message is sending", async ({ page }) => {
+    let release!: () => void;
+    const released = new Promise<void>(resolve => (release = resolve));
+    await page.route("**/api/contact", async route => {
+        await released;
+        await route.fulfill({ json: { ok: true } });
+    });
+    await page.goto("/#contact");
+    await fillValid(page);
+    const button = page.locator('section#contact button[type="submit"]');
+    await button.click();
+    await expect(button).toHaveText("Sending…", { timeout: 30_000 });
+    await expect(button).toHaveAttribute("aria-disabled", "true");
+    await expect(button).toBeFocused();
+    release();
+    await expect(page.locator("section#contact").getByRole("status")).toContainText("I’ll reply to", { timeout: 30_000 });
+});
+
+test("announces a failure in a region that was there before it, with focus left on the button", async ({ page }) => {
+    await page.route("https://challenges.cloudflare.com/**", route => route.abort());
+    await page.goto("/#contact");
+    const alert = page.locator("section#contact").getByRole("alert");
+    await expect(alert).toHaveCount(1);
+    await expect(alert).toBeEmpty();
+    await fillValid(page);
+    await page.getByRole("button", { name: "Send message" }).click();
+    await expect(alert).toContainText("didn’t go through", { timeout: 30_000 });
+    await expect(page.getByRole("button", { name: "Send message" })).toBeFocused();
+});
+
+test("focuses the first field the server rejects", async ({ page }) => {
+    await page.route("**/api/contact", route =>
+        route.fulfill({ status: 422, json: { ok: false, error: "invalid", fields: { email: "Please enter a valid email." } } })
+    );
+    await page.goto("/#contact");
+    await fillValid(page);
+    await page.getByRole("button", { name: "Send message" }).click();
+    const email = page.locator("section#contact form").getByLabel("Email");
+    await expect(email).toBeFocused({ timeout: 30_000 });
+    await expect(email).toHaveAccessibleDescription("Please enter a valid email.");
+});
+
+test("tells a screen reader when the human check appears above the button", async ({ page }) => {
+    await page.addInitScript(() => {
+        Object.defineProperty(window, "turnstile", {
+            configurable: true,
+            value: {
+                render: (_container: HTMLElement, options: Record<string, () => void>) => {
+                    setTimeout(() => options["before-interactive-callback"](), 0);
+                    return "widget-1";
+                },
+                reset: () => {},
+                remove: () => {}
+            }
+        });
+    });
+    await page.goto("/#contact");
+    await page.locator("section#contact form").getByLabel("Name").focus();
+    await expect(page.locator("section#contact").getByRole("status")).toHaveText("Please complete the check above the Send button.");
+});
+
 test("sends once on a double click", async ({ page }) => {
     let posts = 0;
     page.on("request", request => {
@@ -45,7 +118,7 @@ test("sends once on a double click", async ({ page }) => {
         button?.click();
         button?.click();
     });
-    await expect(page.locator("section#contact").getByRole("status")).toBeVisible({ timeout: 30_000 });
+    await expect(page.locator("section#contact").getByRole("status")).toContainText("I’ll reply to", { timeout: 30_000 });
     expect(posts).toBe(1);
 });
 

@@ -12,6 +12,7 @@ export const contact = {
     },
     send: "Send message",
     sending: "Sending…",
+    check: "Please complete the check above the Send button.",
     privacyLine: "I use your details only to reply.",
     privacyLink: "Privacy note",
     sent: "Thanks, your message is on its way. I’ll reply to",

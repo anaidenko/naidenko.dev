@@ -28,6 +28,11 @@ paths:
 - **Turnstile** uses Cloudflare's public test keys and needs network access. The email is only
   logged.
 - **Scope locators to a section** (`section#contact`): Next.js injects its own `role="alert"`.
+- **Wait for a live region's text, not for it to show:** the contact form's `role="status"` and
+  `role="alert"` are on the page from the first render, and Playwright counts an `sr-only` element
+  (1×1 px) as visible, so `toBeVisible()` passes before anything was said.
+- **A route that holds a request until the test releases it** creates the release promise outside
+  the handler: the handler runs only when the request arrives, which can be after `release()`.
 - **Accessibility:** `e2e/a11y.spec.ts` runs axe (WCAG 2.1 AA) on every page. Toptal's badge
   (`#r`) is excluded as third-party markup.
 - **A test that passes before the change exists** is a finding about the test. A red run counts
