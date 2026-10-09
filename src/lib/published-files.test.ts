@@ -48,3 +48,34 @@ describe("the sample report's files", () => {
         for (const pattern of FORBIDDEN) expect(text).not.toMatch(pattern);
     });
 });
+
+// The static export drops a route's Content-Type: the host serves the file by its extension, and
+// in production with no charset, so a browser read UTF-8 as Windows-1252 ("Master’s" showed as
+// "Masterâ€™s", 2026-10-10). wrangler dev adds the charset itself, so no e2e test can see this.
+describe("public/_headers", () => {
+    const rules: Record<string, Record<string, string>> = {};
+    let path = "";
+    for (const line of readFileSync(join(process.cwd(), "public/_headers"), "utf8").split("\n")) {
+        if (/^\S/.test(line)) rules[(path = line.trim())] = {};
+        else if (line.trim()) {
+            const [name, ...value] = line.trim().split(":");
+            rules[path][name] = value.join(":").trim();
+        }
+    }
+    const app = join(process.cwd(), "src/app");
+    const textRoutes = readdirSync(app, { recursive: true, encoding: "utf8" })
+        .filter(file => /(^|\/)route\.tsx?$/.test(file))
+        .map(file => [
+            `/${file.replace(/\/route\.tsx?$/, "")}`,
+            /"Content-Type": "(text\/[^"]+)"/.exec(readFileSync(join(app, file), "utf8"))?.[1]
+        ])
+        .filter((route): route is [string, string] => route[1] !== undefined);
+
+    it("finds the text routes", () => {
+        expect(textRoutes.map(([route]) => route).sort()).toEqual(["/index.md", "/llms.txt", "/robots.txt"]);
+    });
+    it.each(textRoutes)("serves %s as %s", (route, type) => {
+        expect(type).toMatch(/; charset=utf-8$/);
+        expect(rules[route]?.["Content-Type"]).toBe(type);
+    });
+});

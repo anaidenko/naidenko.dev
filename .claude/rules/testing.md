@@ -28,6 +28,10 @@ paths:
 - **The Toptal build's service binding** reaches whichever `naidenko-dev` dev session the local
   dev registry names, another checkout's included (2026-10-08: a hit went to a two-day-old
   preview's D1). So the e2e tests check what the page sends, not what lands in the database.
+- **`wrangler dev` adds `charset=utf-8` to a text file's type; production does not** (2026-10-10:
+  `/index.md` read as Windows-1252 live while every e2e test passed). A header that only
+  production lacks is unit-tested against `public/_headers` (`src/lib/published-files.test.ts`)
+  and checked with `curl` after the deploy.
 - **The Worker never sees a test's host:** `wrangler dev` rewrites `request.url` and `Host` to
   its config's first route: `naidenko.dev`, or `toptal.naidenko.dev` on the Toptal build's server
   (checked on 2026-10-08). So a host check in `worker/` is unit-tested, and checked with `curl`
