@@ -1,6 +1,6 @@
 {
     "name": "naidenko-dev",
-    "version": "1.10.1",
+    "version": "1.11.0",
     "private": true,
     "scripts": {
         "dev": "next dev",
@@ -12,7 +12,7 @@
         "preview": "wrangler dev --port 8788 --ip 127.0.0.1 --var TOPTAL_ORIGIN:http://127.0.0.1:8789",
         "preview:toptal": "wrangler dev -c wrangler.toptal.jsonc --port 8789 --ip 127.0.0.1",
         "typecheck": "wrangler types worker/worker-configuration.d.ts >/dev/null && tsc --noEmit && tsc --noEmit -p worker",
-        "deploy": "node scripts/require-env.mjs NEXT_PUBLIC_TURNSTILE_SITE_KEY NEXT_PUBLIC_GOATCOUNTER_URL && next build && node scripts/check-build.mjs out e2e/e2e.env && pnpm build:toptal && node scripts/check-build.mjs out-toptal e2e/e2e.env --toptal && wrangler secret list | node scripts/check-secrets.mjs TURNSTILE_SECRET_KEY CONTACT_TO SLACK_WEBHOOK_URL STATS_PASSWORD VISITOR_KEY && wrangler d1 migrations apply naidenko-stats --remote && wrangler deploy -c wrangler.toptal.jsonc && wrangler deploy",
+        "deploy": "node scripts/require-env.mjs NEXT_PUBLIC_TURNSTILE_SITE_KEY NEXT_PUBLIC_GOATCOUNTER_URL && next build && node scripts/check-build.mjs out e2e/e2e.env && node scripts/check-links.mjs out && pnpm build:toptal && node scripts/check-build.mjs out-toptal e2e/e2e.env --toptal && node scripts/check-links.mjs out-toptal && wrangler secret list | node scripts/check-secrets.mjs TURNSTILE_SECRET_KEY CONTACT_TO SLACK_WEBHOOK_URL STATS_PASSWORD VISITOR_KEY && wrangler d1 migrations apply naidenko-stats --remote && wrangler deploy -c wrangler.toptal.jsonc && wrangler deploy",
         "test:e2e": "node scripts/with-env.mjs e2e/e2e.env next build && node scripts/with-env.mjs e2e/e2e.env pnpm build:toptal && playwright test",
         "format": "prettier --write .",
         "format:check": "prettier --check ."

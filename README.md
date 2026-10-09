@@ -101,6 +101,8 @@ cost.
    - checks that neither carries a test value from `e2e/e2e.env`, and that the Toptal build leads
      only to Toptal: no address but the privacy note's, no `naidenko.dev` outside its own host, no
      LinkedIn or GitHub profile (`scripts/check-build.mjs --toptal`);
+   - checks that every page, file and anchor either build links to exists
+     (`scripts/check-links.mjs`; CI runs it too);
    - checks that the five required Worker secrets exist;
    - applies new D1 migrations;
    - deploys the Toptal build's Worker, then the site's, whose move of tagged pages points at the
@@ -123,7 +125,15 @@ The Worker posts to Slack through `SLACK_WEBHOOK_URL`:
 - a copy of every message, in case the email lands in spam. When the email does not go out,
   the post says so, and the visitor is still told the message went through;
 - Turnstile refuses the site's own check: a wrong secret, or siteverify out of reach;
-- anything else fails unexpectedly.
+- anything else fails unexpectedly;
+- a broken outside link, found by the daily cron (`worker/links.ts`). It reads the pages of the
+  sitemap from the deployed build, checks the home page's links every day and the sample report's
+  references fifteen a day, within the 50 requests a Free plan's cron may make. A link counts as
+  broken on a 404 or 410, a network error, a timeout or a redirect loop, twice in a row. A 403,
+  429 or 503 is a bot wall, not a dead page: it goes to the logs as unverified. LinkedIn is not
+  checked (it answers 999 to any script, a missing profile included), nor Toptal (its terms bar
+  scripts). Run it locally with `pnpm exec wrangler dev --test-scheduled`, then
+  `curl "http://127.0.0.1:8787/__scheduled?cron=17+3+*+*+*"`.
 
 A visitor's bad or expired token raises no alert. When Slack cannot be reached, the alert goes to
 the Worker's logs instead. Stream the live logs with `pnpm exec wrangler tail naidenko-dev`. Past
@@ -193,6 +203,7 @@ such as `hire_me_toptal-badge`; `/stats` lists it as `hire_me_toptal · badge`.
 | `profile_click` | GitHub, LinkedIn or Toptal icon | `network` |
 | `email_click` | Any email link | `placement` (`header`, `contact`, `form_error`) |
 | `client_site_click` | A client's name in Experience | `company` |
+| `testimonial_click` | A client's name or photo under "What clients said" (their LinkedIn) | `client` |
 | `store_click` | App Store or Google Play | `store` |
 | `project_click` | A project's title in Projects | `project` |
 | `sample_report_click` | A link from `/audit` to the sample report | `placement` (`hero`, `screenshot`, `section`) |

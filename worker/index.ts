@@ -2,6 +2,7 @@ import { postToSlack } from "./alert";
 import { handleContact } from "./contact";
 import { handleHit, placeOf, recordEvent, recordTime, recordVisit } from "./hits";
 import { handleHome, handlePage, tagPage } from "./home";
+import { runLinkCheck } from "./links";
 import { forgetVisitors, retentionCutoff } from "./retention";
 import { handleStats, loadStats } from "./stats";
 import { toptalRedirect } from "./toptal";
@@ -60,6 +61,20 @@ export default {
     },
 
     async scheduled(controller, env, ctx) {
-        ctx.waitUntil(forgetVisitors(env.STATS_DB, retentionCutoff(new Date(controller.scheduledTime))));
+        const now = new Date(controller.scheduledTime);
+        ctx.waitUntil(forgetVisitors(env.STATS_DB, retentionCutoff(now)));
+        ctx.waitUntil(
+            runLinkCheck({
+                page: async path => {
+                    const response = await env.ASSETS.fetch(new URL(path, "https://naidenko.dev"));
+                    if (!response.ok) throw new Error(`${path} answered ${response.status}`);
+                    return response.text();
+                },
+                fetch: (url, init) => fetch(url, init),
+                alert: text => postToSlack(env.SLACK_WEBHOOK_URL, text),
+                now,
+                log: message => console.log(message)
+            })
+        );
     }
 } satisfies ExportedHandler<Env>;
