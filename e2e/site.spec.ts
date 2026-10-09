@@ -208,6 +208,35 @@ test("quotes Buddy Punch's co-founder first, with no rating, then three repeat U
     }
 });
 
+const CLIENTS = [
+    { name: "Nick Murphy", photo: "/clients/nick-murphy.jpg", profile: "https://www.linkedin.com/in/nicholas--murphy/" },
+    { name: "Bruce van Zyl", photo: "/clients/bruce-van-zyl.jpg", profile: "https://www.linkedin.com/in/bruce-van-zyl-87853aa/" },
+    { name: "Chris Robichaud", photo: "/clients/chris-robichaud.jpg", profile: "https://www.linkedin.com/in/chrisrobichaud/" },
+    { name: "Alex Harper", photo: "/clients/alex-harper.jpg", profile: "https://www.linkedin.com/in/alexanderwharper/" }
+];
+
+test("puts each client's photo and name above their words, both linked to their LinkedIn profile", async ({ page }) => {
+    await page.goto("/");
+    const figures = page.locator("section#about figure");
+    for (const [i, client] of CLIENTS.entries()) {
+        const figure = figures.nth(i);
+        expect(await figure.evaluate(node => [...node.children].map(child => child.tagName))).toEqual(["FIGCAPTION", "BLOCKQUOTE"]);
+        const photo = figure.locator(`img[src="${client.photo}"]`);
+        await photo.scrollIntoViewIfNeeded();
+        await expect.poll(() => photo.evaluate(img => (img as HTMLImageElement).naturalWidth)).toBe(144);
+        await expect(figure.getByRole("link")).toHaveCount(1);
+        await expect(figure.getByRole("link", { name: `${client.name} on LinkedIn (opens in a new tab)` })).toHaveAttribute(
+            "href",
+            client.profile
+        );
+        // The photo opens the same profile; the name's link is the one a keyboard or a screen reader meets.
+        const photoLink = figure.locator("a", { has: page.locator(`img[src="${client.photo}"]`) });
+        await expect(photoLink).toHaveAttribute("href", client.profile);
+        await expect(photoLink).toHaveAttribute("tabindex", "-1");
+        await expect(photoLink).toHaveAttribute("aria-hidden", "true");
+    }
+});
+
 test("the audit page offers no order, form or email, and its home link is nofollow", async ({ browser }) => {
     const context = await browser.newContext({ javaScriptEnabled: false });
     const page = await context.newPage();

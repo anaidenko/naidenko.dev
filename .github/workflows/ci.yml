@@ -28,6 +28,7 @@ jobs:
       - run: pnpm test
       - run: pnpm exec playwright install --with-deps --only-shell chromium
       - run: pnpm test:e2e
+      - run: node scripts/check-links.mjs out && node scripts/check-links.mjs out-toptal
       - uses: actions/upload-artifact@v7
         if: failure()
         with:

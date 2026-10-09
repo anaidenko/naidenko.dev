@@ -108,6 +108,14 @@ test.describe("the Toptal build", () => {
         await expect(page.locator("section#hire")).toContainText("Hire me through Toptal");
     });
 
+    test("shows the clients' photos and names with no link to their LinkedIn profiles", async ({ page }) => {
+        await page.goto("/");
+        const about = page.locator("section#about");
+        await expect(about.locator('img[src^="/clients/"]')).toHaveCount(4);
+        await expect(about.locator("figcaption")).toContainText(["Nick Murphy", "Bruce van Zyl", "Chris Robichaud", "Alex Harper"]);
+        await expect(about.locator("figure a")).toHaveCount(0);
+    });
+
     test("keeps the Toptal line, the résumé link and the repositories", async ({ page }) => {
         await page.goto("/");
         await expect(page.locator("header").getByRole("link", { name: "Verified Expert in Engineering at Toptal" })).toBeVisible();
