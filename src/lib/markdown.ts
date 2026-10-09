@@ -43,7 +43,7 @@ export function pageMarkdown(): string {
         ...testimonials.items.flatMap(item => [
             ...item.quote.split("\n\n").flatMap((paragraph, i) => (i ? [">", `> ${paragraph}`] : [`> ${paragraph}`])),
             ">",
-            `> — ${item.name}${"project" in item ? `, ${item.project}` : ""}. ${item.hired}.${item.rating ? ` Rated ${item.rating} out of 5.` : ""}`,
+            `> — ${TOPTAL_SITE ? item.name : link(item.name, item.linkedin)}${"project" in item ? `, ${item.project}` : ""}. ${item.hired}.${item.rating ? ` Rated ${item.rating} out of 5.` : ""}`,
             ""
         ]),
         "## Experience",

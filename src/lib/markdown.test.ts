@@ -21,8 +21,19 @@ describe("pageMarkdown", () => {
     });
 
     it("rates only the reviews that came with a rating", () => {
-        expect(md).toContain("> — Nick Murphy, Co-Founder, Buddy Punch. Client through Toptal since 2019 · LinkedIn recommendation.\n");
+        expect(md).toContain(
+            "> — [Nick Murphy](https://www.linkedin.com/in/nicholas--murphy/), Co-Founder, Buddy Punch. Client through Toptal since 2019 · LinkedIn recommendation.\n"
+        );
         expect(md.match(/Rated 5 out of 5\./g)).toHaveLength(3);
+    });
+
+    it("links each client's name to their LinkedIn profile", () => {
+        for (const line of [
+            "> — [Bruce van Zyl](https://www.linkedin.com/in/bruce-van-zyl-87853aa/), OnCue Technology.",
+            "> — [Chris Robichaud](https://www.linkedin.com/in/chrisrobichaud/), BitRights.",
+            "> — [Alex Harper](https://www.linkedin.com/in/alexanderwharper/). Hired me three times"
+        ])
+            expect(md).toContain(line);
     });
 
     it("keeps a review's paragraphs inside its quote", () => {
@@ -74,6 +85,9 @@ describe("the Toptal build's Markdown and llms.txt", () => {
             "\n## Hire\n\n[Hire me on Toptal](https://www.toptal.com/developers/resume/andrii-naidenko#qjl3b7).\n"
         );
         expect(pageMarkdown()).toContain("### [Auditdesk](https://toptal.naidenko.dev/audit)");
+        expect(pageMarkdown()).toContain(
+            "> — Nick Murphy, Co-Founder, Buddy Punch. Client through Toptal since 2019 · LinkedIn recommendation.\n"
+        );
         expect(llmsTxt()).toContain("(https://toptal.naidenko.dev/privacy): what the visit counters collect");
         expect(llmsTxt()).toContain("services and hiring through Toptal");
     });

@@ -103,6 +103,18 @@ test("records the calls to action in both counters", async ({ page, isMobile }) 
     await expect.poll(() => goatcounterPaths(page)).toContain("copy_install");
 });
 
+test("records a click on a client's LinkedIn profile, by the client's name", async ({ page }) => {
+    await asPerson(page);
+    await stubGoatCounter(page);
+    const hits = ownCounter(page);
+    await page.goto("/");
+    const popup = page.context().waitForEvent("page");
+    await page.getByRole("link", { name: "Bruce van Zyl on LinkedIn (opens in a new tab)" }).click();
+    await (await popup).close();
+    await expect.poll(() => goatcounterPaths(page)).toContain("testimonial_click-bruce-van-zyl");
+    expect(hits).toContainEqual(expect.objectContaining({ kind: "event", name: "testimonial_click", detail: "bruce-van-zyl" }));
+});
+
 test("records a sent message as a lead", async ({ page }) => {
     await asPerson(page);
     await stubGoatCounter(page);
