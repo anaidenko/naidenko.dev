@@ -191,9 +191,16 @@ test("shows the current year in the footer, not the year of the build", async ({
     await expect(page.locator("footer")).toContainText("© 2031");
 });
 
-test("quotes three repeat clients by name under the numbers, each with a rating", async ({ page }) => {
+test("quotes Buddy Punch's co-founder first, with no rating, then three repeat Upwork clients with theirs", async ({ page }) => {
     await page.goto("/");
-    await expect(page.locator("section#about figure")).toHaveCount(3);
+    const figures = page.locator("section#about figure");
+    await expect(figures).toHaveCount(4);
+    await expect(figures.first().locator("blockquote p")).toHaveCount(2);
+    const first = figures.first().locator("figcaption");
+    await expect(first).toContainText("Nick Murphy · Co-Founder, Buddy Punch");
+    await expect(first).toContainText("LinkedIn recommendation");
+    await expect(first).not.toContainText("Rated");
+    await expect(first).not.toContainText("★");
     for (const name of ["Bruce van Zyl", "Chris Robichaud", "Alex Harper"]) {
         const caption = page.locator("section#about figcaption", { hasText: name });
         await expect(caption).toContainText("Rated 5 out of 5.");

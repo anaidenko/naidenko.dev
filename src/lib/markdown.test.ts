@@ -20,6 +20,15 @@ describe("pageMarkdown", () => {
         expect(md).toContain("(https://www.toptal.com/developers/resume/andrii-naidenko#qjl3b7)");
     });
 
+    it("rates only the reviews that came with a rating", () => {
+        expect(md).toContain("> — Nick Murphy, Co-Founder, Buddy Punch. Client through Toptal since 2019 · LinkedIn recommendation.\n");
+        expect(md.match(/Rated 5 out of 5\./g)).toHaveLength(3);
+    });
+
+    it("keeps a review's paragraphs inside its quote", () => {
+        expect(md).toContain("where things stand.\n>\n> He has been a main contributor");
+    });
+
     it("gives no email address and no form, which an agent sent from Toptal would read", () => {
         expect(md).not.toContain("@naidenko.dev");
         expect(md).not.toContain("#contact");
