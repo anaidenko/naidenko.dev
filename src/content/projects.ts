@@ -1,8 +1,6 @@
-import { AUDITDESK_ID } from "./sections";
-
 export interface Project {
     name: string;
-    /** The anchor a menu entry scrolls to. */
+    /** An anchor for links: `/#auditdesk` was the menu's "Code audit" before it moved to Services. */
     id?: string;
     /** Absent for client work whose code is private. */
     url?: string;
@@ -34,7 +32,7 @@ export const projects: readonly Project[] = [
     },
     {
         name: "Auditdesk",
-        id: AUDITDESK_ID,
+        id: "auditdesk",
         url: "/audit",
         note: "Code audit · sample report",
         description:

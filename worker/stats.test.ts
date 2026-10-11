@@ -329,13 +329,21 @@ describe("the redesigned page", () => {
     it("names the menu's entries of both builds in the menu's order", () => {
         const nav = [
             { label: "hire", n: 1 },
-            { label: "auditdesk", n: 2 },
+            { label: "code-audit", n: 2 },
             { label: "about", n: 3 }
         ];
         const html = renderStats({ ...DATA, nav }, DEFAULT, NOW);
         const clicks = html.slice(html.indexOf("Menu clicks"), html.indexOf("Time on page"));
         expect(clicks.indexOf("About")).toBeLessThan(clicks.indexOf("Code audit"));
         expect(clicks.indexOf("Code audit")).toBeLessThan(clicks.indexOf("Hire"));
+    });
+
+    it("names the clicks on Code audit from when it led to the Auditdesk project", () => {
+        const nav = [{ label: "auditdesk", n: 4 }];
+        const clicks = renderStats({ ...DATA, nav }, DEFAULT, NOW);
+        expect(clicks.slice(clicks.indexOf("Menu clicks"), clicks.indexOf("Time on page"))).toContain(
+            "Code audit, to the Auditdesk project"
+        );
     });
 
     it("shows the latest 20 visits, and the rest on request", () => {

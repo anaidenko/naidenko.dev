@@ -75,7 +75,14 @@ export function pageMarkdown(): string {
         "",
         "## Services",
         "",
-        ...services.flatMap(service => [`### ${service.title}`, "", service.text, "", `${ui.proof}: ${service.proof}.`, ""]),
+        ...services.flatMap(service => [
+            `### ${service.url ? link(service.title, `${site.url}${service.url}`) : service.title}`,
+            "",
+            service.text,
+            "",
+            `${ui.proof}: ${service.proof}.`,
+            ""
+        ]),
         ...(TOPTAL_SITE
             ? ["## Hire", "", `${link("Hire me on Toptal", site.links.toptalReferral)}.`, ""]
             : [
