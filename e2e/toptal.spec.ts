@@ -141,7 +141,7 @@ test.describe("the Toptal build", () => {
         test.skip(isMobile, "The navigation is desktop-only");
         await page.goto("/");
         const nav = page.getByRole("navigation", { name: "In-page navigation" });
-        await expect(nav.getByRole("link")).toHaveText(["About", "Experience", "Projects", "Code audit", "Services", "Hire"]);
+        await expect(nav.getByRole("link")).toHaveText(["About", "Experience", "Projects", "Services", "Code audit", "Hire"]);
         await nav.getByRole("link", { name: "Hire" }).click();
         await expect(page.locator("section#hire #r")).toBeInViewport();
         await expect(nav.getByRole("link", { name: "Hire" })).toHaveAttribute("aria-current", "true");
@@ -259,19 +259,31 @@ test.describe("the Toptal build", () => {
     });
 });
 
-test("both sites' menus scroll to the Auditdesk project with Code audit, and mark it", async ({ page, isMobile }) => {
+/** Waits out a smooth scroll, which passes through the band that lights a menu entry. */
+const settled = (page: Page) =>
+    page.waitForFunction(
+        () =>
+            new Promise(resolve => {
+                const y = scrollY;
+                setTimeout(() => resolve(scrollY === y), 300);
+            })
+    );
+
+test("both sites' menus scroll to the code-audit service with Code audit, first in Services, and mark it", async ({ page, isMobile }) => {
     test.skip(isMobile, "The navigation is desktop-only");
     const transparent = "rgba(0, 0, 0, 0)";
     for (const site of ["/", `${TOPTAL_URL}/`]) {
         await page.goto(site);
         const nav = page.getByRole("navigation", { name: "In-page navigation" });
-        const card = page.locator("li#auditdesk");
+        const card = page.locator("section#services li#code-audit");
         const frame = card.locator("article > div[aria-hidden]");
-        await expect(card, site).toContainText("Code audit · sample report");
+        await expect(page.locator("section#services li").first(), site).toHaveId("code-audit");
+        await expect(card.getByRole("link", { name: "Code audits" }), site).toHaveAttribute("href", "/audit");
         await expect(frame, site).toHaveCSS("border-left-color", transparent);
 
         await nav.getByRole("link", { name: "Code audit" }).click();
         await expect(card).toBeInViewport();
+        await settled(page);
         await expect(nav.getByRole("link", { name: "Code audit" }), site).toHaveAttribute("aria-current", "true");
         const accent = await page.evaluate(() => {
             const probe = document.body.appendChild(document.createElement("div"));
@@ -281,10 +293,13 @@ test("both sites' menus scroll to the Auditdesk project with Code audit, and mar
             return color;
         });
         await expect(frame, site).toHaveCSS("border-left-color", accent);
-        for (const other of await page.locator("section#projects li:not(#auditdesk) article > div[aria-hidden]").all())
+        for (const other of await page.locator("main li:not(#code-audit) article > div[aria-hidden]").all())
             await expect(other, site).toHaveCSS("border-left-color", transparent);
 
+        // "Services" parks the section where "Code audit" parks the service, and must light itself.
         await nav.getByRole("link", { name: "Services" }).click();
+        await settled(page);
+        await expect(nav.getByRole("link", { name: "Services" }), site).toHaveAttribute("aria-current", "true");
         await expect(frame, site).toHaveCSS("border-left-color", transparent);
     }
 });

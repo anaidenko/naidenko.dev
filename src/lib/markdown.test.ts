@@ -49,6 +49,10 @@ describe("pageMarkdown", () => {
         expect(md).toContain("### [Auditdesk](https://naidenko.dev/audit)");
     });
 
+    it("opens Services with code audits, linked to their page", () => {
+        expect(md).toContain("\n## Services\n\n### [Code audits](https://naidenko.dev/audit)\n");
+    });
+
     it("is plain Markdown, with no HTML and no empty values", () => {
         expect(md).not.toMatch(/<\/?[a-z][^>]*>/i);
         expect(md).not.toMatch(/undefined|null|\[object/);
@@ -85,6 +89,7 @@ describe("the Toptal build's Markdown and llms.txt", () => {
             "\n## Hire\n\n[Hire me on Toptal](https://www.toptal.com/developers/resume/andrii-naidenko#qjl3b7).\n"
         );
         expect(pageMarkdown()).toContain("### [Auditdesk](https://toptal.naidenko.dev/audit)");
+        expect(pageMarkdown()).toContain("### [Code audits](https://toptal.naidenko.dev/audit)");
         expect(pageMarkdown()).toContain(
             "> — Nick Murphy, Co-Founder, Buddy Punch. Client through Toptal since 2019 · LinkedIn recommendation.\n"
         );

@@ -233,8 +233,15 @@ type Sections = readonly { id: string; label: string }[];
 /** Each page with sections that /stats follows, by path. */
 const SECTIONS_OF: Record<string, Sections> = { "/": pageSections, [samplePage.path]: samplePage.sections };
 
-/** Both builds' menu entries in the menu's order: naidenko.dev's, then the Toptal build's "Hire". */
-const MENU: Sections = [...menu(false), ...menu(true).filter(entry => !menu(false).some(own => own.id === entry.id))];
+/**
+ * Both builds' menu entries in the menu's order: naidenko.dev's, then the Toptal build's "Hire",
+ * then "Code audit" as it was until it moved under Services, so its old clicks keep a name.
+ */
+const MENU: Sections = [
+    ...menu(false),
+    ...menu(true).filter(entry => !menu(false).some(own => own.id === entry.id)),
+    { id: "auditdesk", label: "Code audit, to the Auditdesk project" }
+];
 
 /**
  * The home page's dots: a visit saw one build, whose last section is "contact" on naidenko.dev and

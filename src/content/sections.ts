@@ -13,15 +13,15 @@ export const sections: readonly { id: SectionId; label: string }[] = [
     { id: "hire", label: "Hire" }
 ];
 
-/** The id on the Auditdesk project, which the menu's "Code audit" scrolls to. */
-export const AUDITDESK_ID = "auditdesk";
+/** The id on the code-audit service, which the menu's "Code audit" scrolls to. */
+export const CODE_AUDIT_ID = "code-audit";
 
 /**
- * One build's in-page menu: its sections, with "Code audit" under Projects. A plain function of
+ * One build's in-page menu: its sections, with "Code audit" under Services. A plain function of
  * the build, since the Worker imports this file and cannot read the build's variable.
  */
 export function menu(toptalSite: boolean): readonly { id: string; label: string }[] {
     const own = sections.filter(section => section.id !== (toptalSite ? "contact" : "hire"));
-    const projects = own.findIndex(section => section.id === "projects") + 1;
-    return [...own.slice(0, projects), { id: AUDITDESK_ID, label: "Code audit" }, ...own.slice(projects)];
+    const services = own.findIndex(section => section.id === "services") + 1;
+    return [...own.slice(0, services), { id: CODE_AUDIT_ID, label: "Code audit" }, ...own.slice(services)];
 }
