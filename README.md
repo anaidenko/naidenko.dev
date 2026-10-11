@@ -210,6 +210,7 @@ such as `hire_me_toptal-badge`; `/stats` lists it as `hire_me_toptal · badge`.
 | `testimonial_click` | A client's name or photo under "What clients said" (their LinkedIn) | `client` |
 | `store_click` | App Store or Google Play | `store` |
 | `project_click` | A project's title in Projects | `project` |
+| `service_click` | A service's title in Services that links a page of the site ("Code audits", to `/audit`) | `service` |
 | `sample_report_click` | A link from `/audit` to the sample report | `placement` (`hero`, `screenshot`, `section`) |
 | `sample_pdf` | The sample report's PDF | `placement` (`audit`, `sample`) |
 | `sample_md` | The sample report's Markdown for AI agents | `placement` (`audit`, `sample`) |
@@ -222,7 +223,7 @@ such as `hire_me_toptal-badge`; `/stats` lists it as `hire_me_toptal · badge`.
 | `copy_install` | The install-command copy button | — |
 | `generate_lead` | The form was sent | `form` |
 | `form_error` | The form could not be sent | `form`, `reason` (`rate_limit` when limited) |
-| `nav_click` | A link in the in-page menu (wide screens) | `section` (a section's id, or `auditdesk` for "Code audit") |
+| `nav_click` | A link in the in-page menu (wide screens) | `section` (a section's id, or `code-audit` for "Code audit", which until 1.15.0 sent `auditdesk`) |
 | `section_view` | A section scrolled into view, once per visit (`/stats` only) | the section's id |
 
 To track a new link or button, give it `data-track="<event>"` and any
