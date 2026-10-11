@@ -158,15 +158,19 @@ test("answers unknown paths with the 404 page", async ({ page }) => {
 });
 
 test("lands an order link on the form, though the form appears only after the browser has scrolled", async ({ page }) => {
+    // A slow CPU, as on CI, mounts the form while the browser's own smooth scroll to #contact is still running.
+    await (await page.context().newCDPSession(page)).send("Emulation.setCPUThrottlingRate", { rate: 6 });
     await page.goto("/?order=full#contact");
     await hydrated(page);
     const section = page.locator("section#contact");
+    await expect
+        .poll(() =>
+            section.evaluate(element =>
+                Math.abs(element.getBoundingClientRect().top - parseFloat(getComputedStyle(element).scrollMarginTop))
+            )
+        )
+        .toBeLessThanOrEqual(1);
     await expect(section.locator("form").getByLabel("Name")).toBeInViewport();
-    const offset = await section.evaluate(
-        element => element.getBoundingClientRect().top - parseFloat(getComputedStyle(element).scrollMarginTop)
-    );
-    // Chrome's scrollIntoView lands about 2 px off the margin; the page without it stopped 170–590 px short.
-    expect(Math.abs(offset)).toBeLessThanOrEqual(4);
 });
 
 test("marks the form with the accent line when a link ordered a package, and only then", async ({ page }) => {
