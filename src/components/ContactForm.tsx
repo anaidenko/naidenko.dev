@@ -136,7 +136,11 @@ export function ContactForm() {
                             ?.prime()
                             .catch(() => undefined)
                     }
-                    className="relative mt-8 space-y-5"
+                    className={
+                        order
+                            ? "relative -mx-4 mt-4 space-y-5 rounded-xl border-l-2 border-accent bg-surface/70 p-4 lg:-mx-6 lg:px-6"
+                            : "relative mt-8 space-y-5"
+                    }
                 >
                     {order ? (
                         <p className="text-sm text-ink-strong">

@@ -1,6 +1,6 @@
 import { type Page, expect, test } from "@playwright/test";
 
-import { asNewVisitor } from "./helpers";
+import { asNewVisitor, hydrated } from "./helpers";
 
 async function fillValid(page: Page) {
     const form = page.locator("section#contact form");
@@ -155,6 +155,36 @@ test("answers unknown paths with the 404 page", async ({ page }) => {
     const response = await page.goto("/no-such-page");
     expect(response?.status()).toBe(404);
     await expect(page.getByRole("heading", { level: 1 })).toContainText("doesn’t exist");
+});
+
+test("lands an order link on the form, though the form appears only after the browser has scrolled", async ({ page }) => {
+    await page.goto("/?order=full#contact");
+    await hydrated(page);
+    const section = page.locator("section#contact");
+    await expect(section.locator("form").getByLabel("Name")).toBeInViewport();
+    const offset = await section.evaluate(
+        element => element.getBoundingClientRect().top - parseFloat(getComputedStyle(element).scrollMarginTop)
+    );
+    // Chrome's scrollIntoView lands about 2 px off the margin; the page without it stopped 170–590 px short.
+    expect(Math.abs(offset)).toBeLessThanOrEqual(4);
+});
+
+test("marks the form with the accent line when a link ordered a package, and only then", async ({ page }) => {
+    await page.goto("/?order=full#contact");
+    await hydrated(page);
+    const form = page.locator("section#contact form");
+    const accent = await page.evaluate(() => {
+        const probe = document.body.appendChild(document.createElement("div"));
+        probe.className = "bg-accent";
+        const color = getComputedStyle(probe).backgroundColor;
+        probe.remove();
+        return color;
+    });
+    await expect(form).toHaveCSS("border-left-color", accent);
+    await expect(form).toHaveCSS("border-left-width", "2px");
+    await page.goto("/#contact");
+    await hydrated(page);
+    await expect(form).toHaveCSS("border-left-width", "0px");
 });
 
 test("ships no form without JavaScript, so a message can never leak into a URL", async ({ browser }) => {
