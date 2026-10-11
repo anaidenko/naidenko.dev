@@ -1,5 +1,7 @@
 "use client";
 
+import { useEffect } from "react";
+
 import { contact } from "@/content/contact";
 import { email } from "@/content/email";
 import { useToptalVisit } from "@/lib/useToptalVisit";
@@ -10,6 +12,13 @@ import { MailIcon } from "./Icons";
 /** The form and the email: rendered in the browser, and never on a visit through Toptal. */
 export function ContactDirect() {
     const toptal = useToptalVisit();
+    // The browser scrolls to #contact before this block exists, and the page then ends short of
+    // the form by the block's height: a link from another page (/audit's order links) stops there.
+    // The scroll follows the page's CSS: an instant one while the browser's own smooth scroll still
+    // runs mixed with it and landed up to 45 px off.
+    useEffect(() => {
+        if (toptal === false && location.hash === "#contact") document.getElementById("contact")?.scrollIntoView();
+    }, [toptal]);
     if (toptal !== false) return null;
     return (
         <div className="mb-10 border-b border-ink-faint/20 pb-12">
