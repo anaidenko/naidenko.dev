@@ -237,13 +237,17 @@ test("puts each client's photo and name above their words, both linked to their 
     }
 });
 
-test("the audit page offers no order, form or email, and its home link is nofollow", async ({ browser }) => {
+test("the audit page orders only through its prices' links to the home page's form, with no form or email of its own, and its home link is nofollow", async ({
+    browser
+}) => {
     const context = await browser.newContext({ javaScriptEnabled: false });
     const page = await context.newPage();
     await page.goto("/audit");
     await expect(page.getByRole("heading", { level: 1, name: "Code audits" })).toBeVisible();
-    await expect(page.getByText("Order an audit")).toHaveCount(0);
-    await expect(page.locator('a[href^="mailto:"], a[href*="#contact"], form, details#order')).toHaveCount(0);
+    await expect(page.locator('a[href^="mailto:"], form, details#order')).toHaveCount(0);
+    const orders = page.locator('a[href*="#contact"]');
+    await expect(orders).toHaveCount(4);
+    await expect(page.locator('section#pricing a[href^="/?order="][href$="#contact"]')).toHaveCount(4);
     await expect(page.getByRole("link", { name: "← Andrii Naidenko" })).toHaveAttribute("rel", "nofollow");
     await context.close();
 });
@@ -384,6 +388,45 @@ test("the audit page links the sample report in HTML and PDF", async ({ page }) 
     await expect(sample.getByRole("link", { name: "Download it as a PDF" })).toHaveAttribute("href", "/audit/sample-report.pdf");
     const pdf = await page.request.get("/audit/sample-report.pdf");
     expect([pdf.status(), pdf.headers()["content-type"]]).toEqual([200, "application/pdf"]);
+});
+
+test("the audit page offers the sample as Markdown for AI agents, on the page and in the sample's bar", async ({ page }) => {
+    await page.goto("/audit");
+    await expect(page.locator("section#sample").getByRole("link", { name: "Markdown for AI agents" })).toHaveAttribute(
+        "href",
+        "/audit/sample-report.md"
+    );
+    await page.goto("/audit/sample");
+    await expect(page.getByRole("link", { name: "Markdown for AI", exact: true })).toHaveAttribute("href", "/audit/sample-report.md");
+    const md = await page.request.get("/audit/sample-report.md");
+    expect(md.status()).toBe(200);
+    expect(md.headers()["content-type"]).toMatch(/^text\/markdown/);
+    expect(await md.text()).toMatch(/^# Code audit: OWASP Juice Shop v20\.2\.0\n[\s\S]*## How to work through it/);
+});
+
+test("the audit page says why this audit, then gives its prices, each package ordered through the contact form", async ({ page }) => {
+    await page.goto("/audit");
+    await expect(page.locator("section#edge li")).toHaveCount(6);
+    await expect(page.locator("section#edge").getByRole("link", { name: "Auditdesk on GitHub" })).toHaveAttribute(
+        "href",
+        "https://github.com/anaidenko/auditdesk"
+    );
+    const prices = page.locator("section#pricing");
+    await page.locator("main header").getByRole("link", { name: "See prices" }).click();
+    await expect(prices.getByRole("heading", { name: "Prices" })).toBeInViewport();
+    await expect(prices.locator(":scope > ul > li")).toHaveCount(3);
+    await expect(prices).toContainText("$799");
+    await expect(prices.getByRole("link", { name: "Ask for a quote" })).toHaveAttribute("href", "/?order=custom#contact");
+    const order = prices.getByRole("link", { name: "Order a full audit" });
+    await expect(order).toHaveAttribute("href", "/?order=full#contact");
+    await order.click();
+    await hydrated(page);
+    await expect(page.locator("section#contact textarea[name=message]")).toHaveValue(
+        "I’d like the Full audit package. The repository, or a few lines about the product: "
+    );
+    await page.goto("/?order=nothing#contact");
+    await hydrated(page);
+    await expect(page.locator("section#contact textarea[name=message]")).toHaveValue("");
 });
 
 test("carries a link's tag from the audit page to the sample report and back", async ({ page }) => {

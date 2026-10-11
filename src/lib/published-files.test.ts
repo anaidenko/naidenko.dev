@@ -32,18 +32,18 @@ describe("the leak patterns", () => {
     });
 });
 
-const htmlFiles = DIRS.flatMap(dir =>
+const textFiles = DIRS.flatMap(dir =>
     readdirSync(dir)
-        .filter(name => name.endsWith(".html"))
+        .filter(name => /\.(html|md)$/.test(name))
         .map(name => join(dir, name))
 );
 
 describe("the sample report's files", () => {
-    it("are the HTML for the page and the PDF to download", () => {
-        expect(readdirSync(DIRS[0])).toContain("sample-report.pdf");
+    it("are the HTML for the page, and the PDF and the Markdown for AI agents to download", () => {
+        expect(readdirSync(DIRS[0])).toEqual(expect.arrayContaining(["sample-report.pdf", "sample-report.md"]));
         expect(readdirSync(DIRS[1])).toContain("sample-report.html");
     });
-    it.each(htmlFiles)("%s carries no local path, key or address", file => {
+    it.each(textFiles)("%s carries no local path, key or address", file => {
         const text = EXAMPLES.reduce((rest, example) => rest.replaceAll(example, ""), readFileSync(file, "utf8"));
         for (const pattern of FORBIDDEN) expect(text).not.toMatch(pattern);
     });
@@ -77,5 +77,12 @@ describe("public/_headers", () => {
     it.each(textRoutes)("serves %s as %s", (route, type) => {
         expect(type).toMatch(/; charset=utf-8$/);
         expect(rules[route]?.["Content-Type"]).toBe(type);
+    });
+    // A static file is served by its extension too, with no charset unless a rule names one.
+    const publicText = readdirSync(join(process.cwd(), "public"), { recursive: true, encoding: "utf8" })
+        .filter(file => /\.(md|txt)$/.test(file))
+        .map(file => `/${file}`);
+    it.each(publicText)("serves %s with its charset", file => {
+        expect(rules[file]?.["Content-Type"]).toMatch(/^text\/[a-z]+; charset=utf-8$/);
     });
 });

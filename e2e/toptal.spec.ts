@@ -75,6 +75,17 @@ test.describe("naidenko.dev", () => {
         await expect(page.locator("section#contact")).toContainText("Prefer to hire through Toptal?");
     });
 
+    test("with the move turned off, a tagged visit to the audit page sees no prices", async ({ page, request }) => {
+        await page.route(
+            url => url.search === "?ref=toptal-e2e",
+            async route => route.fulfill({ response: await request.get("/audit") })
+        );
+        await page.goto("/audit?ref=toptal-e2e");
+        await expect(page.locator("section#pricing")).toBeHidden();
+        await expect(page.getByRole("link", { name: "See prices" })).toBeHidden();
+        await expect(page.locator("section#edge")).toBeVisible();
+    });
+
     test("a visitor following an old Toptal link lands on the Toptal build, with no form or email", async ({ page }) => {
         await page.goto("/?ref=toptal-e2e");
         await expect(page).toHaveURL(`${TOPTAL_URL}/?ref=e2e`);
@@ -216,6 +227,15 @@ test.describe("the Toptal build", () => {
             await expect(screenshot, path).toHaveAttribute("href", "/audit/sample");
             await expect(page.getByRole("link", { name: "← Andrii Naidenko" }), path).toHaveAttribute("href", "/");
         }
+    });
+
+    test("the audit page says why this audit, and names no price and no order, in the page and its scripts", async ({ page, request }) => {
+        await page.goto("/audit");
+        await expect(page.locator("section#edge")).toBeVisible();
+        await expect(page.locator("section#edge a")).toHaveCount(0);
+        await expect(page.locator("section#pricing")).toHaveCount(0);
+        await expect(page.getByRole("link", { name: "See prices" })).toHaveCount(0);
+        for (const text of await withScripts(request, "/audit")) expect(text).not.toMatch(/\$799|[?&]order=/);
     });
 
     test("the sample report links the Toptal host, and its PDF is there", async ({ page, request }) => {

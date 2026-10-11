@@ -14,6 +14,9 @@ export function SampleBar() {
                     <a href={audit.sample.pdfHref} download data-track="sample_pdf" data-track-placement="sample" className="secondary">
                         {samplePage.pdf}
                     </a>
+                    <a href={audit.sample.mdHref} download data-track="sample_md" data-track-placement="sample" className="secondary">
+                        {samplePage.md}
+                    </a>
                 </nav>
             </div>
         </aside>

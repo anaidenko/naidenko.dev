@@ -1,7 +1,9 @@
 /**
  * The code-audit page and the sample report's page. Each sentence is checked against Auditdesk's
- * README, design note and code at main 11eedfe, the mobile and AI-exclusion sentences at 9ee82b3
- * (sources per sentence: paste-sheet 13).
+ * README, design note and code at main 11eedfe, the mobile and AI-exclusion sentences at 9ee82b3,
+ * the Markdown for AI agents at feat/ai-markdown-export a898f5e and 7fe4acf (sources per sentence:
+ * paste-sheet 13).
+ * The prices are in `pricing.ts`, for naidenko.dev only.
  */
 export const audit = {
     path: "/audit",
@@ -13,6 +15,7 @@ export const audit = {
         lead: "Know what to fix in your codebase, and what can wait.",
         text: "An independent audit before a launch, a fundraise or a handover. I run it on Auditdesk, a workbench I built for it: scanners first, then an AI agent per aspect, and my own review of every finding before you see it.",
         sample: "See a sample report",
+        prices: "See prices",
         shot: {
             src: "/audit/report-finding.png",
             alt: "F-031 in the sample report, a critical finding: its recommendation in view, then its details and the evidence with line numbers",
@@ -26,7 +29,9 @@ export const audit = {
         link: "Open the sample report",
         href: "/audit/sample",
         pdf: "Download it as a PDF",
-        pdfHref: "/audit/sample-report.pdf"
+        pdfHref: "/audit/sample-report.pdf",
+        md: "Markdown for AI agents",
+        mdHref: "/audit/sample-report.md"
     },
     steps: {
         title: "How it works",
@@ -43,7 +48,7 @@ export const audit = {
                     src: "/audit/run-form.png",
                     alt: "Starting an audit: the repository, its detected stack, and the aspects to examine",
                     width: 1136,
-                    height: 738
+                    height: 830
                 }
             },
             {
@@ -57,6 +62,36 @@ export const audit = {
                 }
             }
         ]
+    },
+    edge: {
+        title: "Why this audit",
+        items: [
+            {
+                title: "A person checks every finding",
+                text: "Scanners and AI agents find candidates. I accept, edit, merge or reject each one, so false alarms stop with me instead of reaching your team."
+            },
+            {
+                title: "Written for the people who decide",
+                text: "The report opens with what to fix before sign-off and what can wait, and the effort for each: the decisions first, the technical detail a click away."
+            },
+            {
+                title: "Ready for your AI agent",
+                text: "With the report comes a Markdown file for an AI coding agent such as Claude Code or Cursor to work through, finding by finding, with each fix named by its ID."
+            },
+            {
+                title: "Re-audits that track every finding",
+                text: "Every finding keeps its ID. After your fixes, a re-audit of the new commit shows which are fixed, which still stand, and which came back."
+            },
+            {
+                title: "The whole product, not one repository",
+                text: "Security and twelve more aspects to choose from, among them a mobile checklist mapped to OWASP MASVS and a pass that reads your front end and its API together."
+            },
+            {
+                title: "A method you can check",
+                text: "Auditdesk's code is public on GitHub, and so is a full sample report: you can see how the audit works before you commit to one."
+            }
+        ],
+        github: { label: "Auditdesk on GitHub", href: "https://github.com/anaidenko/auditdesk" }
     },
     coverage: {
         title: "What it covers",
@@ -73,6 +108,7 @@ export const audit = {
             "For founders and leadership: what to fix before sign-off and what can wait, with an estimate of the effort for each.",
             "For your engineers: each finding with its evidence by file and line, the fix, and links to the OWASP Top 10, ASVS and CWE, and to MASVS for a mobile app.",
             "One HTML file with filters and search, and a PDF.",
+            "A Markdown file for an AI coding agent such as Claude Code or Cursor: the findings worst first, each with its evidence and fix, and the files your team keeps from AI tools.",
             "The accepted findings as issue drafts for Linear or GitHub, and as SARIF for code scanning.",
             "After your fixes, a re-audit of the new commit re-checks every finding the last report listed."
         ]
@@ -99,6 +135,7 @@ export const samplePage = {
     note: "A sample: the full report from an audit of OWASP Juice Shop v20.2.0, an online shop built to be insecure on purpose, so its count of findings is not a typical client's.",
     about: "How the audit works",
     pdf: "Download PDF",
+    md: "Markdown for AI",
     /** The report's sections, in its order, for /stats: the ids Auditdesk's renderReport gives them. */
     sections: [
         { id: "summary", label: "Summary" },
