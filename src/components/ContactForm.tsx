@@ -4,6 +4,7 @@ import { type FormEvent, useEffect, useRef, useState, useSyncExternalStore } fro
 
 import { contact } from "@/content/contact";
 import { email } from "@/content/email";
+import { orderMessage } from "@/content/orders";
 import { track } from "@/lib/analytics";
 import { CONTACT_LIMITS, type ContactErrors, type ContactField, validateContact } from "@/lib/contact";
 import { createTurnstile } from "@/lib/turnstile-client";
@@ -32,6 +33,14 @@ export function ContactForm() {
     );
 
     useEffect(() => () => turnstileRef.current?.remove(), []);
+
+    // An order link from /audit's prices (?order=full) starts the message with its package. The
+    // form is in the static HTML, which cannot know the query, so the field is filled after mount.
+    useEffect(() => {
+        const text = orderMessage(new URLSearchParams(location.search).get("order"));
+        const field = formRef.current?.elements.namedItem("message");
+        if (text && field instanceof HTMLTextAreaElement && !field.value) field.value = text;
+    }, []);
 
     // After the render, so the field already carries its error as its description when it is focused.
     useEffect(() => {

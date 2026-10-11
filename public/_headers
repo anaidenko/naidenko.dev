@@ -9,3 +9,5 @@
   Content-Type: text/plain; charset=utf-8
 /robots.txt
   Content-Type: text/plain; charset=utf-8
+/audit/sample-report.md
+  Content-Type: text/markdown; charset=utf-8

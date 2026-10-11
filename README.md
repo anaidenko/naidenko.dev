@@ -166,7 +166,8 @@ address. A daily cron erases the hashes older than 13 months, and the rest is ke
   form that host counts the same: `?ref=toptal` goes, `?ref=toptal-509168` becomes `?ref=509168`.
   With `TOPTAL_ORIGIN` empty it stays, in the page's own Toptal mode: an inline script marks
   `<html data-toptal>` before the first paint, and the page shows no form, no email and no
-  "Contact me" (`src/lib/toptal.ts`). `/audit` offers no order, and its link home is `nofollow`.
+  "Contact me" (`src/lib/toptal.ts`). `/audit` hides its prices and order buttons, and its link
+  home is `nofollow`; the Toptal build renders no prices at all.
 - **The Toptal host:** `toptal.naidenko.dev` serves the Toptal build (`pnpm build:toptal`,
   `NEXT_PUBLIC_SITE_VARIANT=toptal`) from a Worker of its own (`worker/toptal-site.ts`,
   `wrangler.toptal.jsonc`): no form, no email, no icon row under the name, no LinkedIn or GitHub
@@ -208,6 +209,10 @@ such as `hire_me_toptal-badge`; `/stats` lists it as `hire_me_toptal · badge`.
 | `project_click` | A project's title in Projects | `project` |
 | `sample_report_click` | A link from `/audit` to the sample report | `placement` (`hero`, `screenshot`, `section`) |
 | `sample_pdf` | The sample report's PDF | `placement` (`audit`, `sample`) |
+| `sample_md` | The sample report's Markdown for AI agents | `placement` (`audit`, `sample`) |
+| `prices_click` | "See prices" in `/audit`'s hero (naidenko.dev only) | — |
+| `audit_order` | A package's order button under `/audit`'s prices (naidenko.dev only) | `placement` (`launch`, `full`, `diligence`, `custom`) |
+| `github_auditdesk` | "Auditdesk on GitHub" on `/audit` | — |
 | `sample_to_audit` | "How the audit works" on `/audit/sample` | — |
 | `sample_filter` | A click in the sample report's filters | — |
 | `copy_install` | The install-command copy button | — |

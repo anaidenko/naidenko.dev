@@ -17,7 +17,7 @@ describe("toptal-pdf", () => {
     });
 
     it("prints Auditdesk's footer: the report's title and date", () => {
-        expect(footerOf(html)).toBe("Code audit: OWASP Juice Shop v20.2.0 · 2026-10-07");
+        expect(footerOf(html)).toBe("Code audit: OWASP Juice Shop v20.2.0 · 2026-10-11");
     });
 
     it("unescapes the title once, since the footer is escaped when it is printed", () => {

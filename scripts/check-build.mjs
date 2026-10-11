@@ -3,7 +3,8 @@
 // site key, the made-up GoatCounter endpoint): `pnpm test:e2e` leaves exactly such a build in out/.
 // With --toptal it also fails the Toptal build on any way to reach Andrii but Toptal, in every
 // file but images and fonts: an email address, a mailto, tel or messenger link, naidenko.dev
-// outside toptal.naidenko.dev, LinkedIn or the GitHub profile. The privacy note alone names
+// outside toptal.naidenko.dev, LinkedIn, the GitHub profile, or an order link from /audit's prices,
+// and on any of those prices (naidenko.dev only, src/content/pricing.ts). The privacy note alone names
 // privacy@naidenko.dev, as the GDPR asks (Art. 13).
 import { readFileSync, readdirSync, statSync } from "node:fs";
 import { join, relative } from "node:path";
@@ -15,6 +16,15 @@ if (!outDir || !envFile || (flag && flag !== "--toptal")) {
     process.exit(2);
 }
 const toptal = flag === "--toptal";
+
+/** The prices /audit shows on naidenko.dev, read from their source so a new one is guarded too. */
+const PRICES = [...readFileSync(new URL("../src/content/pricing.ts", import.meta.url), "utf8").matchAll(/\bprice: "(\$[\d,]+)"/g)].map(
+    m => m[1]
+);
+if (!PRICES.length) {
+    console.error("check-build found no price in src/content/pricing.ts: has its shape changed?");
+    process.exit(2);
+}
 
 const testValues = Object.entries(parseEnv(readFileSync(envFile, "utf8"))).filter(([, value]) => value);
 
@@ -58,6 +68,8 @@ function contactsIn(name, raw) {
     if (/\b(?:t\.me|wa\.me)\//i.test(text)) found.add("a messenger link");
     if (/linkedin\.com/i.test(text)) found.add("linkedin.com");
     if (/github\.com\/anaidenko\/?(?=["'\s<>)?#\\]|$)/i.test(text)) found.add("the GitHub profile");
+    if (/[?&]order=/.test(text)) found.add("an order link");
+    for (const price of PRICES) if (text.includes(price)) found.add(`a price (${price})`);
     return [...found];
 }
 

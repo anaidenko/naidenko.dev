@@ -82,7 +82,9 @@ describe("check-build --toptal", () => {
             ["index.html", '<a href="https://t.me/anaidenko">', "a messenger link"],
             ["llms.txt", "(https://www.linkedin.com/in/anaidenko/)", "linkedin.com"],
             ["index.html", '"sameAs":["https://github.com/anaidenko"]', "the GitHub profile"],
-            ["index.html", '<a href="https://github.com/anaidenko/">', "the GitHub profile"]
+            ["index.html", '<a href="https://github.com/anaidenko/">', "the GitHub profile"],
+            ["audit.html", '<a href="/?order=full#contact">', "an order link"],
+            ["llms.txt", "Code audits from $799", "a price ($799)"]
         ]) {
             const result = run(fixture({ ...clean, [path]: contents }), "--toptal");
             expect(result.status, contents).toBe(1);
