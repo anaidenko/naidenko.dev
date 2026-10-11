@@ -17,13 +17,19 @@ if (!outDir || !envFile || (flag && flag !== "--toptal")) {
 }
 const toptal = flag === "--toptal";
 
-/** The prices /audit shows on naidenko.dev, read from their source so a new one is guarded too. */
-const PRICES = [...readFileSync(new URL("../src/content/pricing.ts", import.meta.url), "utf8").matchAll(/\bprice: "(\$[\d,]+)"/g)].map(
-    m => m[1]
-);
+const pricingSource = readFileSync(new URL("../src/content/pricing.ts", import.meta.url), "utf8");
+/** The prices /audit shows on naidenko.dev, the launch offer's too, read from their source so a new one is guarded. */
+const PRICES = [...pricingSource.matchAll(/\b(?:price|promoPrice): "(\$[\d,]+)"/g)].map(m => m[1]);
 if (!PRICES.length) {
     console.error("check-build found no price in src/content/pricing.ts: has its shape changed?");
     process.exit(2);
+}
+// An ended launch offer must not ship: its date is in the page's own words. CHECK_BUILD_TODAY is for the tests.
+const promoUntil = /\bpercent: \d+,\s*until: "(\d{4}-\d{2}-\d{2})"/.exec(pricingSource)?.[1];
+const today = process.env.CHECK_BUILD_TODAY ?? new Date().toISOString().slice(0, 10);
+if (promoUntil && today > promoUntil) {
+    console.error(`The launch offer ended on ${promoUntil}: update or remove it in src/content/pricing.ts.`);
+    process.exit(1);
 }
 
 const testValues = Object.entries(parseEnv(readFileSync(envFile, "utf8"))).filter(([, value]) => value);

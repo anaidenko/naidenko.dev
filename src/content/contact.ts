@@ -12,6 +12,9 @@ export const contact = {
         message: "Message",
         optional: "(optional)"
     },
+    /** Above the fields when an order link from /audit's prices opened the form. */
+    order: "Package",
+    orderChange: "Change",
     send: "Send message",
     sending: "Sending…",
     check: "Please complete the check above the Send button.",

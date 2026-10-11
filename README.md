@@ -124,6 +124,9 @@ cost.
 The Worker posts to Slack through `SLACK_WEBHOOK_URL`:
 - a copy of every message, in case the email lands in spam. When the email does not go out,
   the post says so, and the visitor is still told the message went through;
+- an order from `/audit`'s prices (`?order=<id>`, carried by the form's hidden `order` field) as
+  ":briefcase: Audit order: <package>", its email's subject "[naidenko.dev] Audit order: <package>
+  from <name>", and "Package:" first in the text, so a Gmail filter on the subject can label it;
 - Turnstile refuses the site's own check: a wrong secret, or siteverify out of reach;
 - anything else fails unexpectedly;
 - a broken outside link, found by the daily cron (`worker/links.ts`). It reads the pages of the
@@ -213,6 +216,7 @@ such as `hire_me_toptal-badge`; `/stats` lists it as `hire_me_toptal · badge`.
 | `prices_click` | "See prices" in `/audit`'s hero (naidenko.dev only) | — |
 | `audit_order` | A package's order button under `/audit`'s prices (naidenko.dev only) | `placement` (`launch`, `full`, `diligence`, `custom`) |
 | `github_auditdesk` | "Auditdesk on GitHub" on `/audit` | — |
+| `evidence_click` | The Semgrep benchmark's link under "What it covers" on `/audit` | — |
 | `sample_to_audit` | "How the audit works" on `/audit/sample` | — |
 | `sample_filter` | A click in the sample report's filters | — |
 | `copy_install` | The install-command copy button | — |
