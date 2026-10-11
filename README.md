@@ -216,6 +216,7 @@ such as `hire_me_toptal-badge`; `/stats` lists it as `hire_me_toptal · badge`.
 | `prices_click` | "See prices" in `/audit`'s hero (naidenko.dev only) | — |
 | `audit_order` | A package's order button under `/audit`'s prices (naidenko.dev only) | `placement` (`launch`, `full`, `diligence`, `custom`) |
 | `github_auditdesk` | "Auditdesk on GitHub" on `/audit` | — |
+| `evidence_click` | The Semgrep benchmark's link under "What it covers" on `/audit` | — |
 | `sample_to_audit` | "How the audit works" on `/audit/sample` | — |
 | `sample_filter` | A click in the sample report's filters | — |
 | `copy_install` | The install-command copy button | — |

@@ -282,6 +282,12 @@ export default function Audit() {
                     {coverage.paragraphs.map(paragraph => (
                         <p key={paragraph.slice(0, 40)}>{paragraph}</p>
                     ))}
+                    <p>
+                        {coverage.evidence.text}{" "}
+                        <a href={coverage.evidence.href} data-track="evidence_click" className={LINK}>
+                            {coverage.evidence.source}
+                        </a>
+                    </p>
                 </div>
             </Section>
 

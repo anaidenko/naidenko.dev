@@ -390,6 +390,18 @@ test("the audit page links the sample report in HTML and PDF", async ({ page }) 
     expect([pdf.status(), pdf.headers()["content-type"]]).toEqual([200, "application/pdf"]);
 });
 
+test("the audit page cites the measured insecurity of AI-written code with its source", async ({ page }) => {
+    await page.goto("/audit");
+    const coverage = page.locator("section#coverage");
+    await expect(coverage).toContainText(
+        "Claude Opus 5.5 wrote working code for 93.5% of them, and code both working and secure for 54.8%"
+    );
+    await expect(coverage.getByRole("link", { name: "Semgrep, 29 September 2026" })).toHaveAttribute(
+        "href",
+        "https://semgrep.dev/blog/2026/claude-opus-5-5-susvibes-benchmark"
+    );
+});
+
 test("the audit page offers the sample as Markdown for AI agents, on the page and in the sample's bar", async ({ page }) => {
     await page.goto("/audit");
     await expect(page.locator("section#sample").getByRole("link", { name: "Markdown for AI agents" })).toHaveAttribute(

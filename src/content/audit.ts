@@ -100,7 +100,14 @@ export const audit = {
             "For a mobile app built with Capacitor, Cordova, React Native or Expo, a checklist of its own, mapped to OWASP MASVS 2.1.0: tokens and data on the device, transport, the WebView and its bridge, deep links, platform settings, secrets in the bundle and the release build. Native Swift and Kotlin code is read only where the app's JavaScript can call it.",
             "With a front end and its API in separate repositories, one more pass reads them together: the front end's calls against the back end's routes, authentication across both, and secrets in the bundle.",
             "For an app written largely with AI tools, extra checks for what is typical of such code: uneven checks, packages to verify, copies that drifted apart."
-        ]
+        ],
+        // Career plan D7 (Andrii, 2026-10-11): one model on one benchmark from a security vendor, with its link;
+        // never "AI code is 55% secure". The quote read on semgrep.dev on 2026-10-11; its tasks are Python.
+        evidence: {
+            text: "Working code is not secure code: in Semgrep's SusVibes benchmark, 186 tasks rebuilt from real vulnerabilities in open-source Python projects, Claude Opus 5.5 wrote working code for 93.5% of them, and code both working and secure for 54.8%.",
+            source: "Semgrep, 29 September 2026",
+            href: "https://semgrep.dev/blog/2026/claude-opus-5-5-susvibes-benchmark"
+        }
     },
     deliverables: {
         title: "What you get",
