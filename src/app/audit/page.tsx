@@ -62,6 +62,29 @@ function Section({ id, title, children }: { id: string; title: string; children:
     );
 }
 
+/** The package's price, or during the launch offer its launch price beside the regular one, struck through. */
+function Price({ item }: { item: Package }) {
+    const { promo } = pricing;
+    if (!promo) return <p className="mt-3 text-4xl font-semibold tracking-tight text-ink-strong">{item.price}</p>;
+    return (
+        <div className="mt-3">
+            <p className="flex flex-wrap items-baseline gap-x-3">
+                <span className="text-4xl font-semibold tracking-tight text-ink-strong">
+                    <span className="sr-only">{promo.now}: </span>
+                    {item.promoPrice}
+                </span>
+                <s className="text-lg text-ink-faint">
+                    <span className="sr-only">{promo.regular}: </span>
+                    {item.price}
+                </s>
+            </p>
+            <p className="mt-1 text-xs font-semibold text-accent">
+                −{promo.percent}% · {promo.label}
+            </p>
+        </div>
+    );
+}
+
 function PackageCard({ item }: { item: Package }) {
     return (
         <li
@@ -73,7 +96,7 @@ function PackageCard({ item }: { item: Package }) {
                     <span className="rounded-full bg-accent/15 px-2.5 py-0.5 text-xs font-semibold text-accent">{pricing.recommended}</span>
                 ) : null}
             </div>
-            <p className="mt-3 text-4xl font-semibold tracking-tight text-ink-strong">{item.price}</p>
+            <Price item={item} />
             <p className="mt-3 text-sm text-ink-strong">{item.scope}</p>
             <p className="text-sm text-ink-faint">{item.time}</p>
             <p className="mt-4 text-sm">{item.fit}</p>
@@ -100,6 +123,12 @@ function Prices() {
         <Section id="pricing" title={pricing.title}>
             <p className="mt-4 max-w-2xl">{pricing.lead}</p>
             <p className="mt-3 max-w-2xl text-sm text-ink-faint">{pricing.languages}</p>
+            {pricing.promo ? (
+                <p className="mt-6 flex flex-wrap items-center gap-x-3 gap-y-2 rounded-xl border border-accent/40 bg-accent/10 px-5 py-3 text-sm text-ink-strong">
+                    <span className="rounded-full bg-accent px-2.5 py-0.5 text-xs font-semibold text-canvas">{pricing.promo.label}</span>
+                    <span>{pricing.promo.text}</span>
+                </p>
+            ) : null}
             <ul className="mt-8 grid gap-5 md:grid-cols-3">
                 {pricing.packages.map(item => (
                     <PackageCard key={item.id} item={item} />

@@ -10,12 +10,25 @@ export interface Package {
     name: string;
     /** Andrii, 2026-10-11: Valletta Software's published tiers as the first version (paste-sheet 13). */
     price: string;
+    /** The price during the launch offer: `promo.percent` off, rounded down (pricing.test.ts). */
+    promoPrice: string;
     scope: string;
     time: string;
     fit: string;
     items: readonly string[];
     cta: string;
     recommended?: boolean;
+}
+
+export interface Promo {
+    label: string;
+    percent: number;
+    /** The last day of the offer, YYYY-MM-DD. */
+    until: string;
+    text: string;
+    /** Screen-reader names of the two prices: a strikethrough alone is not announced. */
+    regular: string;
+    now: string;
 }
 
 const order = (id: OrderId) => `/?order=${id}#contact`;
@@ -30,6 +43,7 @@ export const pricing = {
             id: "launch",
             name: orders.launch,
             price: "$199",
+            promoPrice: "$149",
             scope: "One repository, up to 5,000 lines of code",
             time: "In 3 business days",
             fit: "An MVP before its first users.",
@@ -45,6 +59,7 @@ export const pricing = {
             id: "full",
             name: orders.full,
             price: "$799",
+            promoPrice: "$599",
             scope: "Up to 25,000 lines in up to two repositories",
             time: "In 5 business days",
             fit: "A product with paying users, or one about to change hands.",
@@ -54,7 +69,7 @@ export const pricing = {
                 "Everything in the launch check",
                 "Every aspect your stack calls for",
                 "A front end and its API read together",
-                "A 30-minute call to walk through the findings",
+                "A 30-minute walkthrough of the findings, live or recorded",
                 "A re-audit of the findings to fix before sign-off, within 60 days"
             ]
         },
@@ -62,6 +77,7 @@ export const pricing = {
             id: "diligence",
             name: orders.diligence,
             price: "$1,499",
+            promoPrice: "$1,124",
             scope: "Up to 100,000 lines in up to three repositories",
             time: "In 7 business days",
             fit: "Before a fundraise, an acquisition, or a new team taking over.",
@@ -69,12 +85,24 @@ export const pricing = {
             items: [
                 "Everything in the full audit",
                 "A one-page summary for investors or a buyer",
-                "A 60-minute call with your team",
+                "A 60-minute walkthrough with your team, live or recorded",
                 "A re-audit of every finding, within 60 days"
             ]
         }
     ] satisfies readonly Package[],
     recommended: "Recommended",
+    /**
+     * The launch offer, or null for none. check-build fails a build after `until`, so an ended
+     * offer never ships (⚠️ the percent, the date and the condition await Andrii's OK).
+     */
+    promo: {
+        label: "Launch offer",
+        percent: 25,
+        until: "2026-12-31",
+        text: "25% off every package until 31 December 2026, for the first five clients who agree to a short review I may quote on this page.",
+        regular: "Regular price",
+        now: "Launch price"
+    } as Promo | null,
     href: order,
     custom: {
         id: "custom" as const,

@@ -46,6 +46,19 @@ describe("check-build", () => {
     });
 });
 
+describe("check-build and the launch offer", () => {
+    it("fails a build whose launch offer has ended, so an expired offer never ships", () => {
+        const root = fixture({ "index.html": "<p>ok</p>" });
+        const later = spawnSync(process.execPath, [script, join(root, "out"), join(root, "test.env")], {
+            encoding: "utf8",
+            env: { ...process.env, CHECK_BUILD_TODAY: "2099-01-01" }
+        });
+        expect(later.status).toBe(1);
+        expect(later.stderr).toMatch(/The launch offer ended on \d{4}-\d{2}-\d{2}: update or remove it in src\/content\/pricing\.ts/);
+        expect(run(root).status).toBe(0);
+    });
+});
+
 describe("check-build --toptal", () => {
     const clean = {
         "index.html":
@@ -84,7 +97,8 @@ describe("check-build --toptal", () => {
             ["index.html", '"sameAs":["https://github.com/anaidenko"]', "the GitHub profile"],
             ["index.html", '<a href="https://github.com/anaidenko/">', "the GitHub profile"],
             ["audit.html", '<a href="/?order=full#contact">', "an order link"],
-            ["llms.txt", "Code audits from $799", "a price ($799)"]
+            ["llms.txt", "Code audits from $799", "a price ($799)"],
+            ["audit.html", "now $599", "a price ($599)"]
         ]) {
             const result = run(fixture({ ...clean, [path]: contents }), "--toptal");
             expect(result.status, contents).toBe(1);

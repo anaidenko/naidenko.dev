@@ -116,6 +116,22 @@ describe("handleContact", () => {
         expect(text).not.toContain("did not go out");
     });
 
+    it("marks an order from /audit's prices in the subject, the text and Slack, so it stands out from other messages", async () => {
+        const alert = vi.fn(async (_text: string) => true);
+        const { deps, sent } = setup({ alert });
+        expect((await handleContact(post({ ...valid, order: "full" }), deps)).status).toBe(200);
+        expect(sent[0].subject).toBe("[naidenko.dev] Audit order: Full audit from Ada Lovelace (Analytical Engines)");
+        expect(sent[0].text).toContain("Package: Full audit");
+        expect(alert.mock.calls[0][0]).toContain("Audit order on naidenko.dev: Full audit");
+    });
+
+    it("reads an unknown order as an ordinary message", async () => {
+        const { deps, sent } = setup();
+        expect((await handleContact(post({ ...valid, order: "__proto__" }), deps)).status).toBe(200);
+        expect(sent[0].subject).toBe("[naidenko.dev] New message from Ada Lovelace (Analytical Engines)");
+        expect(sent[0].text).not.toContain("Package:");
+    });
+
     it("still reports success when the email goes out but Slack is down", async () => {
         const { deps, sent } = setup({ alert: vi.fn(async () => false) });
         expect((await handleContact(post(valid), deps)).status).toBe(200);

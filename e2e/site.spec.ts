@@ -419,11 +419,15 @@ test("the audit page says why this audit, then gives its prices, each package or
     await expect(prices.getByRole("link", { name: "Ask for a quote" })).toHaveAttribute("href", "/?order=custom#contact");
     const order = prices.getByRole("link", { name: "Order a full audit" });
     await expect(order).toHaveAttribute("href", "/?order=full#contact");
+    await expect(prices).toContainText("Launch offer");
+    await expect(prices.locator("s").first()).toHaveText(/\$199/);
     await order.click();
     await hydrated(page);
     await expect(page.locator("section#contact textarea[name=message]")).toHaveValue(
         "I’d like the Full audit package. The repository, or a few lines about the product: "
     );
+    await expect(page.locator("section#contact form")).toContainText("Package: Full audit");
+    await expect(page.locator('section#contact input[name="order"]')).toHaveValue("full");
     await page.goto("/?order=nothing#contact");
     await hydrated(page);
     await expect(page.locator("section#contact textarea[name=message]")).toHaveValue("");

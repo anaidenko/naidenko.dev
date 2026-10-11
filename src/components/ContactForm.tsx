@@ -4,7 +4,7 @@ import { type FormEvent, useEffect, useRef, useState, useSyncExternalStore } fro
 
 import { contact } from "@/content/contact";
 import { email } from "@/content/email";
-import { orderMessage } from "@/content/orders";
+import { type OrderId, orderMessage, orderOf, orders } from "@/content/orders";
 import { track } from "@/lib/analytics";
 import { CONTACT_LIMITS, type ContactErrors, type ContactField, validateContact } from "@/lib/contact";
 import { createTurnstile } from "@/lib/turnstile-client";
@@ -31,11 +31,14 @@ export function ContactForm() {
         () => true,
         () => false
     );
+    // An order link from /audit's prices (?order=full): null in the static HTML, read once in the browser.
+    const order = useSyncExternalStore(subscribeNever, readOrder, () => null);
 
     useEffect(() => () => turnstileRef.current?.remove(), []);
 
     // An order link from /audit's prices (?order=full) starts the message with its package. The
     // form is in the static HTML, which cannot know the query, so the field is filled after mount.
+    // The package also rides along as a hidden field, so the email and Slack name it whatever the message says.
     useEffect(() => {
         const text = orderMessage(new URLSearchParams(location.search).get("order"));
         const field = formRef.current?.elements.namedItem("message");
@@ -135,6 +138,15 @@ export function ContactForm() {
                     }
                     className="relative mt-8 space-y-5"
                 >
+                    {order ? (
+                        <p className="text-sm text-ink-strong">
+                            {contact.order}: <span className="font-semibold">{orders[order]}</span> ·{" "}
+                            <a href="/audit#pricing" className="underline underline-offset-2 hover:text-accent">
+                                {contact.orderChange}
+                            </a>
+                        </p>
+                    ) : null}
+                    <input type="hidden" name="order" value={order ?? ""} />
                     <Field
                         name="name"
                         label={contact.fields.name}
@@ -220,6 +232,10 @@ export function ContactForm() {
             </p>
         </>
     );
+}
+
+function readOrder(): OrderId | null {
+    return orderOf(new URLSearchParams(location.search).get("order"));
 }
 
 function subscribeNever() {

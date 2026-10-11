@@ -1,3 +1,4 @@
+import { orderOf, orders } from "../src/content/orders";
 import { singleLine, validateContact } from "../src/lib/contact";
 
 import { escapeSlack } from "./alert";
@@ -97,8 +98,18 @@ async function respond(request: Request, deps: ContactDeps, host: string): Promi
     }
 
     const { name, email, company, message } = result.value;
-    const subject = singleLine(`[naidenko.dev] New message from ${name}${company ? ` (${company})` : ""}`).slice(0, SUBJECT_MAX);
-    const text = [`Name: ${name}`, `Email: ${email}`, `Company or website: ${company || "—"}`, "", message].join("\n");
+    // An order link from /audit's prices names its package: such a message stands out in the inbox and in Slack.
+    const order = orderOf(fields.order);
+    const what = order ? `Audit order: ${orders[order]}` : "New message";
+    const subject = singleLine(`[naidenko.dev] ${what} from ${name}${company ? ` (${company})` : ""}`).slice(0, SUBJECT_MAX);
+    const text = [
+        ...(order ? [`Package: ${orders[order]}`] : []),
+        `Name: ${name}`,
+        `Email: ${email}`,
+        `Company or website: ${company || "—"}`,
+        "",
+        message
+    ].join("\n");
 
     let emailError: unknown = null;
     try {
@@ -116,7 +127,9 @@ async function respond(request: Request, deps: ContactDeps, host: string): Promi
     // Slack gets every message: a copy in case the email lands in spam, and the only copy when it failed.
     const heading =
         emailError === null
-            ? `:envelope_with_arrow: *New message on ${host}*`
+            ? order
+                ? `:briefcase: *Audit order on ${host}: ${orders[order]}*`
+                : `:envelope_with_arrow: *New message on ${host}*`
             : `:warning: *Contact form on ${host}: the email did not go out* (${escapeSlack(describe(emailError))}). Reply to the sender by email.`;
     const posted = await deps.alert([heading, "", escapeSlack(text)].join("\n"));
     return emailError === null || posted ? json({ ok: true }) : json({ ok: false, error: "send" }, 502);

@@ -12,11 +12,13 @@ export const orders = {
 
 export type OrderId = keyof typeof orders;
 
-const isOrder = (id: string): id is OrderId => Object.hasOwn(orders, id);
+/** A package's id from a link or a form, or null for anything else. */
+export const orderOf = (id: unknown): OrderId | null => (typeof id === "string" && Object.hasOwn(orders, id) ? (id as OrderId) : null);
 
 /** The message an order link starts the contact form with, or null for no order or an unknown one. */
-export function orderMessage(id: string | null): string | null {
-    if (!id || !isOrder(id)) return null;
+export function orderMessage(raw: string | null): string | null {
+    const id = orderOf(raw);
+    if (!id) return null;
     const what = id === "custom" ? "a quote for a code audit" : `the ${orders[id]} package`;
     return `I’d like ${what}. The repository, or a few lines about the product: `;
 }
