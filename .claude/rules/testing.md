@@ -55,4 +55,7 @@ paths:
   (`#r`) is excluded as third-party markup.
 - **A test that passes before the change exists** is a finding about the test. A red run counts
   only when the message shows the failure under test: on 2026-09-24 a "red" 429 check was a 500
-  from a stale server.
+  from a stale server. So is one that passes only some runs: on 2026-10-11 the menu check caught
+  `aria-current` while a smooth scroll swept past the band that lights an entry, over a real bug
+  where the scroll stopped. Assert a scroll's outcome after it settles (`settled` in
+  `e2e/toptal.spec.ts`), and repeat a new check (`--repeat-each=8`) before trusting it.
