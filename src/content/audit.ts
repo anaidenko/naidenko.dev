@@ -1,6 +1,7 @@
 /**
  * The code-audit page and the sample report's page. Each sentence is checked against Auditdesk's
- * README, design note and code at main 11eedfe (sources per sentence: paste-sheet 13).
+ * README, design note and code at main 11eedfe, the mobile and AI-exclusion sentences at 9ee82b3
+ * (sources per sentence: paste-sheet 13).
  */
 export const audit = {
     path: "/audit",
@@ -61,6 +62,7 @@ export const audit = {
         title: "What it covers",
         paragraphs: [
             "Security always, plus the aspects you choose: dependencies and supply chain, architecture, data model and database, code quality and tests, production readiness, API design, performance, accessibility, LLM integrations and multi-tenancy.",
+            "For a mobile app built with Capacitor, Cordova, React Native or Expo, a checklist of its own, mapped to OWASP MASVS 2.1.0: tokens and data on the device, transport, the WebView and its bridge, deep links, platform settings, secrets in the bundle and the release build. Native Swift and Kotlin code is read only where the app's JavaScript can call it.",
             "With a front end and its API in separate repositories, one more pass reads them together: the front end's calls against the back end's routes, authentication across both, and secrets in the bundle.",
             "For an app written largely with AI tools, extra checks for what is typical of such code: uneven checks, packages to verify, copies that drifted apart."
         ]
@@ -69,7 +71,7 @@ export const audit = {
         title: "What you get",
         items: [
             "For founders and leadership: what to fix before sign-off and what can wait, with an estimate of the effort for each.",
-            "For your engineers: each finding with its evidence by file and line, the fix, and links to the OWASP Top 10, ASVS and CWE.",
+            "For your engineers: each finding with its evidence by file and line, the fix, and links to the OWASP Top 10, ASVS and CWE, and to MASVS for a mobile app.",
             "One HTML file with filters and search, and a PDF.",
             "The accepted findings as issue drafts for Linear or GitHub, and as SARIF for code scanning.",
             "After your fixes, a re-audit of the new commit re-checks every finding the last report listed."
@@ -79,6 +81,7 @@ export const audit = {
         title: "Your code",
         paragraphs: [
             "The audit runs on my machine. Auditdesk never installs, builds or runs your code, and every secret gitleaks finds is masked before the model sees it.",
+            "Files your team already keeps from AI tools stay out of the agents' reach: the paths your Claude Code settings deny, the ignore files of Cursor, Gemini, JetBrains AI, Windsurf and Aider, and any others you name. The agents see their names, never their contents. The scanners still check them, and the report lists what was left out.",
             // Retention and training: code.claude.com/docs/en/data-usage, read 2026-10-07; re-check before release.
             "Two things leave my machine. What the agents read goes to Anthropic, which keeps it for 30 days and does not train on it: a map of your repository, the brief you give me, the scanners' findings, and the code the agents open or search. Your dependencies' names and versions go to OSV's vulnerability database.",
             "If your policy calls for it, the audit runs on your own Anthropic API key, under your own commercial terms with Anthropic and with every call on your account.",

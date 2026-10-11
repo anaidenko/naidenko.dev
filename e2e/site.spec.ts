@@ -248,6 +248,15 @@ test("the audit page offers no order, form or email, and its home link is nofoll
     await context.close();
 });
 
+test("the audit page names the mobile aspect's MASVS and the client's own AI exclusions", async ({ page }) => {
+    await page.goto("/audit");
+    await expect(page.locator("section#coverage")).toContainText("Capacitor, Cordova, React Native or Expo");
+    await expect(page.locator("section#coverage")).toContainText("OWASP MASVS 2.1.0");
+    await expect(page.locator("section#deliverables")).toContainText("MASVS for a mobile app");
+    await expect(page.locator("section#your-code")).toContainText("the paths your Claude Code settings deny");
+    await expect(page.locator("section#your-code")).toContainText("never their contents");
+});
+
 test("the audit page has no horizontal overflow at 320 px", async ({ page }) => {
     await page.setViewportSize({ width: 320, height: 800 });
     await page.goto("/audit");
