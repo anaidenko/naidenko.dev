@@ -61,7 +61,8 @@ README.md.
 - **Commits** follow Conventional Commits (the `commit` skill). Work on a branch, not `main`.
 - **A release's number** is the next after the highest one released, `main` or an open PR's branch
   (`gh pr list` titles name them), not after `main`'s `package.json`: a branch can deploy before
-  it merges.
+  it merges. Check again right before the merge: on 2026-10-11 #23 took 1.15.0 sixteen seconds
+  after #24 had picked it, both merged as 1.15.0, and #25 renumbered.
 - **No bots that open branches or pull requests,** Dependabot included. Update dependencies by
   hand, on a branch.
 - **Token budget:**
